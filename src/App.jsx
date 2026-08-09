@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocalData } from './lib/storage';
 import Splash from './components/Splash';
 import BottomNav from './components/BottomNav';
@@ -17,10 +17,9 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [installPrompt, setInstallPrompt] = useState(null);
   const [isInstalled, setIsInstalled] = useState(() => window.matchMedia('(display-mode: standalone)').matches);
-  const scrollRef = useRef(null);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo(0, 0);
+    window.scrollTo(0, 0);
   }, [activeTab]);
 
   // Plain navigation always resets to "create" mode; only startEditIncome opens the form pre-filled.
@@ -69,44 +68,27 @@ export default function App() {
   return (
     <div
       data-theme={data.user.theme}
-      className="app-shell"
       style={{
         width: '100%',
+        minHeight: '100%',
         background: 'var(--page-bg)',
-        position: 'relative',
         display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
+        justifyContent: 'center',
       }}
     >
       {showSplash && <Splash fading={splashFading} />}
 
-      <div
-        ref={scrollRef}
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch',
-          display: 'flex',
-          justifyContent: 'center',
-        }}
-      >
-        <div className="app-scroll" style={{ width: '100%', maxWidth: 640, padding: '0 20px var(--nav-clearance) 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {activeTab === 'dashboard' && <Dashboard data={data} setData={setData} onNavigate={navigate} />}
-          {activeTab === 'registrar' && (
-            <Registrar data={data} setData={setData} onNavigate={navigate} editingIncome={editingIncome} onDoneEditing={() => setEditingIncome(null)} />
-          )}
-          {activeTab === 'metas' && <Metas data={data} setData={setData} />}
-          {activeTab === 'tarjetas' && <Deudas data={data} setData={setData} />}
-          {activeTab === 'ingresos' && <Ingresos data={data} setData={setData} onNavigate={navigate} onEdit={startEditIncome} />}
-          {activeTab === 'config' && (
-            <Ajustes data={data} setData={setData} canInstall={!!installPrompt} isInstalled={isInstalled} onInstall={requestInstall} />
-          )}
-        </div>
+      <div className="app-scroll" style={{ width: '100%', maxWidth: 640, padding: '0 20px var(--nav-clearance) 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {activeTab === 'dashboard' && <Dashboard data={data} setData={setData} onNavigate={navigate} />}
+        {activeTab === 'registrar' && (
+          <Registrar data={data} setData={setData} onNavigate={navigate} editingIncome={editingIncome} onDoneEditing={() => setEditingIncome(null)} />
+        )}
+        {activeTab === 'metas' && <Metas data={data} setData={setData} />}
+        {activeTab === 'tarjetas' && <Deudas data={data} setData={setData} />}
+        {activeTab === 'ingresos' && <Ingresos data={data} setData={setData} onNavigate={navigate} onEdit={startEditIncome} />}
+        {activeTab === 'config' && (
+          <Ajustes data={data} setData={setData} canInstall={!!installPrompt} isInstalled={isInstalled} onInstall={requestInstall} />
+        )}
       </div>
 
       <BottomNav activeTab={activeTab} onChange={navigate} />

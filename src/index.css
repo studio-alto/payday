@@ -87,11 +87,6 @@ textarea {
   padding-right: 20px;
 }
 
-.app-shell {
-  height: 100vh;
-  height: 100dvh;
-}
-
 /* Responsive fixes for mobile */
 img,
 svg,
