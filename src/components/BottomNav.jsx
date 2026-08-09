@@ -43,7 +43,7 @@ export default function BottomNav({ activeTab, onChange }) {
         position: 'fixed',
         left: '50%',
         transform: 'translateX(-50%)',
-        bottom: 20,
+        bottom: 'var(--nav-offset)',
         width: 'min(calc(100% - 40px), 400px)',
         height: 70,
         background: 'var(--card-bg)',

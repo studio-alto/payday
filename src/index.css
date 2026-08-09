@@ -19,6 +19,10 @@
 :root {
   --accent: #ff5a36;
   color-scheme: light;
+  /* Reserves room for the floating bottom nav plus the iPhone home-indicator
+     safe area, so the last card in a scrollable screen is never hidden behind it. */
+  --nav-clearance: calc(110px + env(safe-area-inset-bottom, 0px));
+  --nav-offset: calc(20px + env(safe-area-inset-bottom, 0px));
 }
 
 * {
@@ -83,6 +87,11 @@ textarea {
   padding-right: 20px;
 }
 
+.app-shell {
+  height: 100vh;
+  height: 100dvh;
+}
+
 /* Responsive fixes for mobile */
 img,
 svg,
@@ -93,7 +102,7 @@ video {
 
 @media (max-width: 480px) {
   .app-scroll {
-    padding: 0 16px 110px 16px !important;
+    padding: 0 16px var(--nav-clearance) 16px !important;
   }
   .app-hpad {
     padding-left: 16px !important;

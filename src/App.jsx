@@ -69,8 +69,8 @@ export default function App() {
   return (
     <div
       data-theme={data.user.theme}
+      className="app-shell"
       style={{
-        height: '100vh',
         width: '100%',
         background: 'var(--page-bg)',
         position: 'relative',
@@ -95,7 +95,7 @@ export default function App() {
           justifyContent: 'center',
         }}
       >
-        <div className="app-scroll" style={{ width: '100%', maxWidth: 640, padding: '0 20px 110px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="app-scroll" style={{ width: '100%', maxWidth: 640, padding: '0 20px var(--nav-clearance) 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {activeTab === 'dashboard' && <Dashboard data={data} setData={setData} onNavigate={navigate} />}
           {activeTab === 'registrar' && (
             <Registrar data={data} setData={setData} onNavigate={navigate} editingIncome={editingIncome} onDoneEditing={() => setEditingIncome(null)} />
