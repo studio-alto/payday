@@ -64,16 +64,6 @@ export const secondaryButtonStyle = {
   border: 'none',
 };
 
-export const stickyHeaderStyle = {
-  position: 'sticky',
-  top: 0,
-  zIndex: 5,
-  background: 'var(--page-bg)',
-  paddingTop: 28,
-  paddingBottom: 14,
-  marginBottom: -14,
-};
-
 export const chipStyle = {
   padding: '10px 0',
   borderRadius: 14,

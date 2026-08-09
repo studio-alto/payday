@@ -81,12 +81,21 @@ export default function App() {
     >
       {showSplash && <Splash fading={splashFading} />}
 
-      <div style={{ flex: 1, minHeight: 0, display: 'flex', justifyContent: 'center' }}>
-        <div
-          ref={scrollRef}
-          className="app-scroll"
-          style={{ width: '100%', maxWidth: 640, height: '100%', overflowY: 'auto', padding: '0 20px 110px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}
-        >
+      <div
+        ref={scrollRef}
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch',
+          display: 'flex',
+          justifyContent: 'center',
+        }}
+      >
+        <div className="app-scroll" style={{ width: '100%', maxWidth: 640, padding: '0 20px 110px 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
           {activeTab === 'dashboard' && <Dashboard data={data} setData={setData} onNavigate={navigate} />}
           {activeTab === 'registrar' && (
             <Registrar data={data} setData={setData} onNavigate={navigate} editingIncome={editingIncome} onDoneEditing={() => setEditingIncome(null)} />

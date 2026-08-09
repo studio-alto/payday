@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
 import { todayISO } from '../lib/dates';
-import { cardStyle, labelStyle, textInputStyle, stickyHeaderStyle } from '../lib/styles';
+import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import NumberInput from '../components/NumberInput';
+import FixedHeader from '../components/FixedHeader';
 
 export default function Ajustes({ data, setData, canInstall, isInstalled, onInstall }) {
   const { user } = data;
@@ -69,8 +70,10 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ ...stickyHeaderStyle, fontWeight: 800, fontSize: 26, color: 'var(--text)', letterSpacing: '-0.02em' }}>Ajustes</div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 'var(--header-h, 88px)' }}>
+      <FixedHeader>
+        <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', letterSpacing: '-0.02em' }}>Ajustes</div>
+      </FixedHeader>
 
       {(canInstall || isInstalled) && (
         <>

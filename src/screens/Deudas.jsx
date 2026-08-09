@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { fmt } from '../lib/format';
 import { formatShortDate, todayISO } from '../lib/dates';
 import { uid } from '../lib/id';
-import { cardStyle, textInputStyle, primaryButtonStyle, stickyHeaderStyle } from '../lib/styles';
+import { cardStyle, textInputStyle, primaryButtonStyle } from '../lib/styles';
 import BottomSheet from '../components/BottomSheet';
 import InlineConfirm from '../components/InlineConfirm';
 import NumberInput from '../components/NumberInput';
 import PencilIcon from '../components/PencilIcon';
+import FixedHeader from '../components/FixedHeader';
 
 const TIPOS = ['Tarjeta de crédito', 'Préstamo', 'Otro'];
 
@@ -93,8 +94,10 @@ export default function Deudas({ data, setData }) {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <div style={{ ...stickyHeaderStyle, fontWeight: 800, fontSize: 26, color: 'var(--text)', letterSpacing: '-0.02em' }}>Deudas</div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 'var(--header-h, 88px)' }}>
+      <FixedHeader>
+        <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', letterSpacing: '-0.02em' }}>Deudas</div>
+      </FixedHeader>
 
       {cards.map((c) => {
         const paidToDate = c.history.reduce((a, h) => a + h.amount, 0);

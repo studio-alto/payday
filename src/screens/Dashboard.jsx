@@ -1,6 +1,7 @@
 import { fmt } from '../lib/format';
 import { WEEKDAY_LETTERS, dayTypeLabel, daysUntilPayday, formatShortDate, isSameMonth, last7Days, remainingDaysInMonth, todayISO } from '../lib/dates';
-import { cardStyle, labelStyle, stickyHeaderStyle } from '../lib/styles';
+import { cardStyle, labelStyle } from '../lib/styles';
+import FixedHeader from '../components/FixedHeader';
 
 export default function Dashboard({ data, setData, onNavigate }) {
   const { user, incomes, goals, cards } = data;
@@ -64,9 +65,9 @@ export default function Dashboard({ data, setData, onNavigate }) {
   const paydayLabel = paydayDays === 0 ? 'Hoy' : paydayDays === 1 ? 'En 1 día' : `En ${paydayDays} días`;
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      {/* Header */}
-      <div style={{ ...stickyHeaderStyle, display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 'var(--header-h, 150px)' }}>
+      <FixedHeader>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{ fontWeight: 800, fontSize: 30, color: 'var(--text)', letterSpacing: '-0.02em' }}>Inicio</div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -152,7 +153,8 @@ export default function Dashboard({ data, setData, onNavigate }) {
             </div>
           ))}
         </div>
-      </div>
+        </div>
+      </FixedHeader>
 
       {/* Ganado este mes */}
       <div style={{ ...cardStyle, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'center' }}>

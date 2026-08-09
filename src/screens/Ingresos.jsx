@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { fmt } from '../lib/format';
 import { dayTypeLabel, formatShortDate, isSameMonth } from '../lib/dates';
-import { cardStyle, labelStyle, stickyHeaderStyle } from '../lib/styles';
+import { cardStyle, labelStyle } from '../lib/styles';
 import InlineConfirm from '../components/InlineConfirm';
 import PencilIcon from '../components/PencilIcon';
+import FixedHeader from '../components/FixedHeader';
 
 export default function Ingresos({ data, setData, onNavigate, onEdit }) {
   const { incomes } = data;
@@ -39,8 +40,9 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <div style={{ ...stickyHeaderStyle, display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 'var(--header-h, 230px)' }}>
+      <FixedHeader>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button
             type="button"
@@ -82,7 +84,8 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
             {fmt(totalMonthFiltered, currency)}
           </div>
         </div>
-      </div>
+        </div>
+      </FixedHeader>
 
       <div style={cardStyle}>
         {filteredIncomes.length === 0 && (

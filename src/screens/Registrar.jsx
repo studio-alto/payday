@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { fmt } from '../lib/format';
 import { DAY_TYPES, todayISO } from '../lib/dates';
 import { uid } from '../lib/id';
-import { cardStyle, fieldLabelStyle, textInputStyle, primaryButtonStyle, secondaryButtonStyle, chipStyle, stickyHeaderStyle } from '../lib/styles';
+import { cardStyle, fieldLabelStyle, textInputStyle, primaryButtonStyle, secondaryButtonStyle, chipStyle } from '../lib/styles';
 import NumberInput from '../components/NumberInput';
+import FixedHeader from '../components/FixedHeader';
 
 const AHORRO_PCTS = [0.1, 0.2, 0.3, 0.4, 0.5];
 const TARJETA_PCTS = [0.1, 0.15, 0.2, 0.3, 0.4];
@@ -74,19 +75,21 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
   const stepDots = [1, 2, 3, 4].map((n) => ({ n, active: n <= step }));
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <div style={{ ...stickyHeaderStyle, display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', letterSpacing: '-0.02em' }}>
-          {isEditing ? 'Editar ingreso' : 'Registrar'}
-        </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 'var(--header-h, 110px)' }}>
+      <FixedHeader>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', letterSpacing: '-0.02em' }}>
+            {isEditing ? 'Editar ingreso' : 'Registrar'}
+          </div>
 
-        <div style={{ display: 'flex', gap: 6 }}>
-          {stepDots.map((sd) => (
-            <div key={sd.n} style={{ flex: 1, height: 4, borderRadius: 4, background: sd.active ? 'var(--text)' : 'var(--divider)' }} />
-          ))}
+          <div style={{ display: 'flex', gap: 6 }}>
+            {stepDots.map((sd) => (
+              <div key={sd.n} style={{ flex: 1, height: 4, borderRadius: 4, background: sd.active ? 'var(--text)' : 'var(--divider)' }} />
+            ))}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700 }}>PASO {step} DE 4</div>
         </div>
-        <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700 }}>PASO {step} DE 4</div>
-      </div>
+      </FixedHeader>
 
       {step === 1 && (
         <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 14 }}>

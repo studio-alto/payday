@@ -78,6 +78,11 @@ textarea {
   }
 }
 
+.app-hpad {
+  padding-left: 20px;
+  padding-right: 20px;
+}
+
 /* Responsive fixes for mobile */
 img,
 svg,
@@ -89,6 +94,10 @@ video {
 @media (max-width: 480px) {
   .app-scroll {
     padding: 0 16px 110px 16px !important;
+  }
+  .app-hpad {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
   }
 }
 
