@@ -5,13 +5,24 @@ import { uid } from '../lib/id';
 import { cardStyle, fieldLabelStyle, textInputStyle, primaryButtonStyle, secondaryButtonStyle } from '../lib/styles';
 import NumberInput from '../components/NumberInput';
 import FixedHeader from '../components/FixedHeader';
+import { METHODS, computeDebtWaterfall, reverseIncomeEffects, applyIncomeEffects } from '../lib/debt';
 
 const AHORRO_PCTS = [0, 0.1, 0.2, 0.3, 0.4, 0.5];
 const TARJETA_PCTS = [0, 0.1, 0.15, 0.2, 0.3, 0.4];
 const AMOUNT_PRESETS = [10000, 20000, 50000, 100000, 150000];
 
-function emptyForm(payBaseDay) {
-  return { name: '', amount: payBaseDay > 0 ? String(payBaseDay) : '', date: todayISO(), type: 'normal', note: '', ahorroMonto: '', tarjetaMonto: '' };
+function emptyForm(payBaseDay, goals) {
+  const defaultGoal = goals.find((g) => g.current < g.target) || goals[0];
+  return {
+    name: '',
+    amount: payBaseDay > 0 ? String(payBaseDay) : '',
+    date: todayISO(),
+    type: 'normal',
+    note: '',
+    ahorroMonto: '',
+    tarjetaMonto: '',
+    goalId: defaultGoal ? defaultGoal.id : '',
+  };
 }
 
 function formFromIncome(income) {
@@ -23,13 +34,14 @@ function formFromIncome(income) {
     note: income.note || '',
     ahorroMonto: income.distribution.ahorro ? String(income.distribution.ahorro) : '',
     tarjetaMonto: income.distribution.tarjeta ? String(income.distribution.tarjeta) : '',
+    goalId: income.distribution.goalId || '',
   };
 }
 
 export default function Registrar({ data, setData, onNavigate, editingIncome, onDoneEditing }) {
   const isEditing = !!editingIncome;
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState(() => (isEditing ? formFromIncome(editingIncome) : emptyForm(data.user.payBaseDay)));
+  const [form, setForm] = useState(() => (isEditing ? formFromIncome(editingIncome) : emptyForm(data.user.payBaseDay, data.goals)));
   const [ahorroPctText, setAhorroPctText] = useState('');
   const [tarjetaPctText, setTarjetaPctText] = useState('');
 
@@ -49,6 +61,8 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
   const ahorroMonto = Number(form.ahorroMonto) || 0;
   const tarjetaMonto = Number(form.tarjetaMonto) || 0;
   const overAllocated = ahorroMonto + tarjetaMonto > regAmount;
+  const debtMethod = data.user.debtMethod || 'bola_nieve';
+  const debtWaterfall = computeDebtWaterfall(data.cards, debtMethod, tarjetaMonto);
 
   const setField = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
   const setDate = (e) => {
@@ -95,19 +109,36 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
   };
 
   const handleSave = () => {
-    const entry = {
-      id: isEditing ? editingIncome.id : uid(),
-      name: form.name,
-      amount: regAmount,
-      date: form.date,
-      type: form.type,
-      note: form.note,
-      distribution: { ahorro: ahorroMonto, tarjeta: tarjetaMonto },
-    };
-    setData((s) => ({
-      ...s,
-      incomes: isEditing ? s.incomes.map((i) => (i.id === entry.id ? entry : i)) : [...s.incomes, entry],
-    }));
+    setData((s) => {
+      let goals = s.goals;
+      let cards = s.cards;
+
+      if (isEditing) {
+        const reversed = reverseIncomeEffects(editingIncome, goals, cards);
+        goals = reversed.goals;
+        cards = reversed.cards;
+      }
+
+      const baseEntry = {
+        id: isEditing ? editingIncome.id : uid(),
+        name: form.name,
+        amount: regAmount,
+        date: form.date,
+        type: form.type,
+        note: form.note,
+        distribution: { ahorro: ahorroMonto, tarjeta: tarjetaMonto, goalId: form.goalId || null },
+      };
+
+      const applied = applyIncomeEffects(baseEntry, goals, cards, s.user.debtMethod || 'bola_nieve');
+      const entry = { ...baseEntry, distribution: { ...baseEntry.distribution, debtAllocations: applied.debtAllocations } };
+
+      return {
+        ...s,
+        incomes: isEditing ? s.incomes.map((i) => (i.id === entry.id ? entry : i)) : [...s.incomes, entry],
+        goals: applied.goals,
+        cards: applied.cards,
+      };
+    });
     onDoneEditing?.();
     onNavigate('dashboard');
   };
@@ -310,6 +341,51 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
             </div>
           </div>
           <div style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 700 }}>Ahorro: {fmt(ahorroMonto, currency)}</div>
+          {data.goals.length > 0 && ahorroMonto > 0 && (
+            <div>
+              <div style={fieldLabelStyle}>¿A QUÉ META VA ESTE AHORRO?</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {data.goals.map((g) => {
+                  const active = form.goalId === g.id;
+                  return (
+                    <button
+                      key={g.id}
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, goalId: g.id }))}
+                      style={{
+                        padding: '9px 14px',
+                        borderRadius: 20,
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        background: active ? 'var(--text)' : 'var(--input-bg)',
+                        color: active ? 'var(--page-bg)' : 'var(--text)',
+                        border: 'none',
+                      }}
+                    >
+                      {g.name}
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => setForm((f) => ({ ...f, goalId: '' }))}
+                  style={{
+                    padding: '9px 14px',
+                    borderRadius: 20,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    background: !form.goalId ? 'var(--text)' : 'var(--input-bg)',
+                    color: !form.goalId ? 'var(--page-bg)' : 'var(--text)',
+                    border: 'none',
+                  }}
+                >
+                  Sin meta
+                </button>
+              </div>
+            </div>
+          )}
           <div style={{ display: 'flex', gap: 10 }}>
             <button type="button" onClick={() => setStep(1)} style={{ ...secondaryButtonStyle, flex: 1 }}>
               Atrás
@@ -376,6 +452,28 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
               <span style={{ fontWeight: 700, color: 'var(--accent)' }}>{fmt(tarjetaMonto, currency)}</span>
             </div>
           </div>
+          {tarjetaMonto > 0 && (
+            <div style={{ background: 'var(--input-bg)', borderRadius: 14, padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.03em' }}>
+                SE ABONARÁ AUTOMÁTICO · {METHODS.find((m) => m.key === debtMethod)?.label.toUpperCase()}
+              </div>
+              {debtWaterfall.allocations.length === 0 ? (
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>No tienes deudas pendientes.</div>
+              ) : (
+                debtWaterfall.allocations.map((a) => (
+                  <div key={a.cardId} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                    <span style={{ color: 'var(--text)' }}>{a.name}</span>
+                    <span style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(a.amount, currency)}</span>
+                  </div>
+                ))
+              )}
+              {debtWaterfall.leftover > 0 && (
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                  Sobran {fmt(debtWaterfall.leftover, currency)} sin deudas a las que aplicarlos.
+                </div>
+              )}
+            </div>
+          )}
           {overAllocated && <div style={{ fontSize: 12, color: 'var(--accent)' }}>La suma no puede superar lo ganado.</div>}
           <div style={{ display: 'flex', gap: 10 }}>
             <button type="button" onClick={() => setStep(2)} style={{ ...secondaryButtonStyle, flex: 1 }}>

@@ -8,12 +8,9 @@ import InlineConfirm from '../components/InlineConfirm';
 import NumberInput from '../components/NumberInput';
 import PencilIcon from '../components/PencilIcon';
 import FixedHeader from '../components/FixedHeader';
+import { sortDebtsByPriority, METHODS } from '../lib/debt';
 
 const TIPOS = ['Tarjeta de crédito', 'Préstamo', 'Otro'];
-const METHODS = [
-  { key: 'bola_nieve', label: 'Bola de nieve', hint: 'Prioriza el saldo más pequeño primero' },
-  { key: 'avalancha', label: 'Avalancha', hint: 'Prioriza la tasa de interés más alta primero' },
-];
 
 function emptyForm() {
   return { tipo: 'Tarjeta de crédito', name: '', balance: '', nextPayment: '', minPayment: '', interestRate: '' };
@@ -27,10 +24,7 @@ export default function Deudas({ data, setData }) {
 
   const setDebtMethod = (key) => setData((s) => ({ ...s, user: { ...s.user, debtMethod: key } }));
 
-  const sortedCards = [...cards].sort((a, b) => {
-    if (debtMethod === 'avalancha') return (b.interestRate || 0) - (a.interestRate || 0);
-    return a.balance - b.balance;
-  });
+  const sortedCards = sortDebtsByPriority(cards, debtMethod);
   const priorityId = sortedCards.find((c) => c.balance > 0)?.id;
 
   const [modalOpen, setModalOpen] = useState(false);

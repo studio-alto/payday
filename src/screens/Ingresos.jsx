@@ -5,6 +5,7 @@ import { cardStyle, labelStyle } from '../lib/styles';
 import InlineConfirm from '../components/InlineConfirm';
 import PencilIcon from '../components/PencilIcon';
 import FixedHeader from '../components/FixedHeader';
+import { reverseIncomeEffects } from '../lib/debt';
 
 export default function Ingresos({ data, setData, onNavigate, onEdit }) {
   const { incomes } = data;
@@ -35,7 +36,11 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
   });
 
   const confirmDelete = (id) => {
-    setData((s) => ({ ...s, incomes: s.incomes.filter((i) => i.id !== id) }));
+    setData((s) => {
+      const income = s.incomes.find((i) => i.id === id);
+      const reversed = reverseIncomeEffects(income, s.goals, s.cards);
+      return { ...s, incomes: s.incomes.filter((i) => i.id !== id), goals: reversed.goals, cards: reversed.cards };
+    });
     setConfirmDeleteId(null);
   };
 
