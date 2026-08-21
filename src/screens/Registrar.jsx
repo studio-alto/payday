@@ -8,6 +8,7 @@ import FixedHeader from '../components/FixedHeader';
 
 const AHORRO_PCTS = [0.1, 0.2, 0.3, 0.4, 0.5];
 const TARJETA_PCTS = [0.1, 0.15, 0.2, 0.3, 0.4];
+const AMOUNT_PRESETS = [10000, 20000, 50000, 100000, 150000];
 
 function emptyForm(payBaseDay) {
   return { name: '', amount: payBaseDay > 0 ? String(payBaseDay) : '', date: todayISO(), type: 'normal', note: '', ahorroMonto: '', tarjetaMonto: '' };
@@ -44,6 +45,8 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
     setForm((f) => ({ ...f, date: value }));
   };
   const setType = (key) => setForm((f) => ({ ...f, type: key }));
+  const setAmountPreset = (amt) => setForm((f) => ({ ...f, amount: String(amt) }));
+  const addZeros = () => setForm((f) => (f.amount ? { ...f, amount: f.amount + '000' } : f));
   const setAhorroPct = (pct) => setForm((f) => ({ ...f, ahorroMonto: String(Math.round(regAmount * pct)) }));
   const setTarjetaPct = (pct) => setForm((f) => ({ ...f, tarjetaMonto: String(Math.round(regAmount * pct)) }));
 
@@ -94,7 +97,56 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
       {step === 1 && (
         <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>¿Cuánto ganaste?</div>
-          <NumberInput value={form.amount} onChange={setField('amount')} placeholder="¿Cuánto ganaste?" style={textInputStyle(true)} />
+          <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
+            <div style={{ flex: 1 }}>
+              <NumberInput value={form.amount} onChange={setField('amount')} placeholder="¿Cuánto ganaste?" style={textInputStyle(true)} />
+            </div>
+            <button
+              type="button"
+              onClick={addZeros}
+              disabled={!form.amount}
+              style={{
+                padding: '0 16px',
+                borderRadius: 16,
+                background: 'var(--input-bg)',
+                color: 'var(--text)',
+                fontWeight: 800,
+                fontSize: 16,
+                cursor: form.amount ? 'pointer' : 'default',
+                opacity: form.amount ? 1 : 0.4,
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              +000
+            </button>
+          </div>
+          <div>
+            <div style={fieldLabelStyle}>MONTOS RÁPIDOS</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {AMOUNT_PRESETS.map((amt) => (
+                <button
+                  key={amt}
+                  type="button"
+                  onClick={() => setAmountPreset(amt)}
+                  style={{
+                    padding: '9px 14px',
+                    borderRadius: 20,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    background: form.amount === String(amt) ? 'var(--text)' : 'var(--input-bg)',
+                    color: form.amount === String(amt) ? 'var(--page-bg)' : 'var(--text)',
+                    border: 'none',
+                  }}
+                >
+                  {fmt(amt, currency)}
+                </button>
+              ))}
+            </div>
+          </div>
           <div>
             <div style={fieldLabelStyle}>NOMBRE DEL INGRESO</div>
             <input
