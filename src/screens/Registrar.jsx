@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { fmt } from '../lib/format';
 import { DAY_TYPES, todayISO } from '../lib/dates';
 import { uid } from '../lib/id';
-import { cardStyle, fieldLabelStyle, textInputStyle, primaryButtonStyle, secondaryButtonStyle, chipStyle } from '../lib/styles';
+import { cardStyle, fieldLabelStyle, textInputStyle, primaryButtonStyle, secondaryButtonStyle } from '../lib/styles';
 import NumberInput from '../components/NumberInput';
 import FixedHeader from '../components/FixedHeader';
 
-const AHORRO_PCTS = [0.1, 0.2, 0.3, 0.4, 0.5];
-const TARJETA_PCTS = [0.1, 0.15, 0.2, 0.3, 0.4];
+const AHORRO_PCTS = [0, 0.1, 0.2, 0.3, 0.4, 0.5];
+const TARJETA_PCTS = [0, 0.1, 0.15, 0.2, 0.3, 0.4];
 const AMOUNT_PRESETS = [10000, 20000, 50000, 100000, 150000];
 
 function emptyForm(payBaseDay) {
@@ -30,6 +30,8 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
   const isEditing = !!editingIncome;
   const [step, setStep] = useState(1);
   const [form, setForm] = useState(() => (isEditing ? formFromIncome(editingIncome) : emptyForm(data.user.payBaseDay)));
+  const [ahorroPctText, setAhorroPctText] = useState('');
+  const [tarjetaPctText, setTarjetaPctText] = useState('');
 
   const today = todayISO();
   const { currency } = data.user;
@@ -47,8 +49,34 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
   const setType = (key) => setForm((f) => ({ ...f, type: key }));
   const setAmountPreset = (amt) => setForm((f) => ({ ...f, amount: String(amt) }));
   const addZeros = () => setForm((f) => (f.amount ? { ...f, amount: f.amount + '000' } : f));
-  const setAhorroPct = (pct) => setForm((f) => ({ ...f, ahorroMonto: String(Math.round(regAmount * pct)) }));
-  const setTarjetaPct = (pct) => setForm((f) => ({ ...f, tarjetaMonto: String(Math.round(regAmount * pct)) }));
+  const setAhorroPct = (pct) => {
+    setAhorroPctText('');
+    setForm((f) => ({ ...f, ahorroMonto: String(Math.round(regAmount * pct)) }));
+  };
+  const setTarjetaPct = (pct) => {
+    setTarjetaPctText('');
+    setForm((f) => ({ ...f, tarjetaMonto: String(Math.round(regAmount * pct)) }));
+  };
+  const setAhorroMontoManual = (e) => {
+    setAhorroPctText('');
+    setForm((f) => ({ ...f, ahorroMonto: e.target.value }));
+  };
+  const setTarjetaMontoManual = (e) => {
+    setTarjetaPctText('');
+    setForm((f) => ({ ...f, tarjetaMonto: e.target.value }));
+  };
+  const setAhorroPctManual = (e) => {
+    const digits = e.target.value.replace(/\D/g, '').slice(0, 3);
+    const pct = Math.min(100, Number(digits) || 0);
+    setAhorroPctText(digits);
+    setForm((f) => ({ ...f, ahorroMonto: String(Math.round(regAmount * (pct / 100))) }));
+  };
+  const setTarjetaPctManual = (e) => {
+    const digits = e.target.value.replace(/\D/g, '').slice(0, 3);
+    const pct = Math.min(100, Number(digits) || 0);
+    setTarjetaPctText(digits);
+    setForm((f) => ({ ...f, tarjetaMonto: String(Math.round(regAmount * (pct / 100))) }));
+  };
 
   const goStep2 = () => {
     if (regAmount > 0) setStep(2);
@@ -208,19 +236,47 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
         <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>¿Cuánto al ahorro?</div>
           <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>De {fmt(regAmount, currency)} ganados</div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {AHORRO_PCTS.map((pct) => (
-              <button key={pct} type="button" onClick={() => setAhorroPct(pct)} style={chipStyle}>
+              <button
+                key={pct}
+                type="button"
+                onClick={() => setAhorroPct(pct)}
+                style={{
+                  padding: '9px 14px',
+                  borderRadius: 20,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  background: 'var(--input-bg)',
+                  color: 'var(--text)',
+                  border: 'none',
+                }}
+              >
                 {Math.round(pct * 100)}%
               </button>
             ))}
           </div>
-          <NumberInput
-            value={form.ahorroMonto}
-            onChange={setField('ahorroMonto')}
-            placeholder="Monto personalizado"
-            style={{ ...textInputStyle(), fontSize: 16, fontWeight: 700 }}
-          />
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ flex: 1 }}>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={ahorroPctText}
+                onChange={setAhorroPctManual}
+                placeholder="% personalizado"
+                style={textInputStyle()}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <NumberInput
+                value={form.ahorroMonto}
+                onChange={setAhorroMontoManual}
+                placeholder="Monto ($)"
+                style={textInputStyle()}
+              />
+            </div>
+          </div>
           <div style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 700 }}>Ahorro: {fmt(ahorroMonto, currency)}</div>
           <div style={{ display: 'flex', gap: 10 }}>
             <button type="button" onClick={() => setStep(1)} style={{ ...secondaryButtonStyle, flex: 1 }}>
@@ -237,20 +293,57 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
         <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>¿Cuánto a deudas?</div>
           <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Te quedan {fmt(regAmount - ahorroMonto, currency)} disponibles</div>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {TARJETA_PCTS.map((pct) => (
-              <button key={pct} type="button" onClick={() => setTarjetaPct(pct)} style={chipStyle}>
+              <button
+                key={pct}
+                type="button"
+                onClick={() => setTarjetaPct(pct)}
+                style={{
+                  padding: '9px 14px',
+                  borderRadius: 20,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  background: 'var(--input-bg)',
+                  color: 'var(--text)',
+                  border: 'none',
+                }}
+              >
                 {Math.round(pct * 100)}%
               </button>
             ))}
           </div>
-          <NumberInput
-            value={form.tarjetaMonto}
-            onChange={setField('tarjetaMonto')}
-            placeholder="Monto personalizado"
-            style={{ ...textInputStyle(), fontSize: 16, fontWeight: 700 }}
-          />
-          <div style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 700 }}>Deudas: {fmt(tarjetaMonto, currency)}</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <div style={{ flex: 1 }}>
+              <input
+                type="text"
+                inputMode="numeric"
+                value={tarjetaPctText}
+                onChange={setTarjetaPctManual}
+                placeholder="% personalizado"
+                style={textInputStyle()}
+              />
+            </div>
+            <div style={{ flex: 1 }}>
+              <NumberInput
+                value={form.tarjetaMonto}
+                onChange={setTarjetaMontoManual}
+                placeholder="Monto ($)"
+                style={textInputStyle()}
+              />
+            </div>
+          </div>
+          <div style={{ background: 'var(--input-bg)', borderRadius: 14, padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+              <span style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>Ahorro</span>
+              <span style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(ahorroMonto, currency)}</span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+              <span style={{ color: 'var(--accent)', fontWeight: 700 }}>Deudas</span>
+              <span style={{ fontWeight: 700, color: 'var(--accent)' }}>{fmt(tarjetaMonto, currency)}</span>
+            </div>
+          </div>
           {overAllocated && <div style={{ fontSize: 12, color: 'var(--accent)' }}>La suma no puede superar lo ganado.</div>}
           <div style={{ display: 'flex', gap: 10 }}>
             <button type="button" onClick={() => setStep(2)} style={{ ...secondaryButtonStyle, flex: 1 }}>

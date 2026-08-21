@@ -63,16 +63,3 @@ export const secondaryButtonStyle = {
   width: '100%',
   border: 'none',
 };
-
-export const chipStyle = {
-  padding: '10px 0',
-  borderRadius: 14,
-  textAlign: 'center',
-  fontWeight: 700,
-  fontSize: 13,
-  cursor: 'pointer',
-  background: 'var(--input-bg)',
-  color: 'var(--text)',
-  flex: 1,
-  border: 'none',
-};
