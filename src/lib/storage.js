@@ -5,7 +5,7 @@ export const STORAGE_KEY = 'payday-pwa-data-v1';
 
 function seedData() {
   return {
-    user: { currency: 'COP', payBaseDay: 60000, payDayOfMonth: 1, theme: 'light' },
+    user: { currency: 'COP', payBaseDay: 60000, payDayOfMonth: 1, theme: 'light', debtMethod: 'bola_nieve' },
     incomes: [
       { id: 'i1', name: 'Turno restaurante', amount: 60000, date: isoOffset(-4), type: 'normal', note: '', distribution: { ahorro: 12000, tarjeta: 9000 } },
       { id: 'i2', name: 'Domingo obra', amount: 95000, date: isoOffset(-3), type: 'finSemana', note: 'Turno extra', distribution: { ahorro: 30000, tarjeta: 15000 } },
@@ -18,9 +18,9 @@ function seedData() {
       { id: 'g3', name: 'Laptop', target: 2600000, current: 560000, description: '', estado: 'activa' },
     ],
     cards: [
-      { id: 'c1', name: 'Visa Roja', tipo: 'Tarjeta de crédito', balance: 780000, nextPayment: isoOffset(15), minPayment: 95000, history: [] },
-      { id: 'c2', name: 'Falabella', tipo: 'Tarjeta de crédito', balance: 180000, nextPayment: isoOffset(10), minPayment: 40000, history: [] },
-      { id: 'c3', name: 'Préstamo libre inversión', tipo: 'Préstamo', balance: 1500000, nextPayment: isoOffset(23), minPayment: 120000, history: [] },
+      { id: 'c1', name: 'Visa Roja', tipo: 'Tarjeta de crédito', balance: 780000, nextPayment: isoOffset(15), minPayment: 95000, interestRate: 28, history: [] },
+      { id: 'c2', name: 'Falabella', tipo: 'Tarjeta de crédito', balance: 180000, nextPayment: isoOffset(10), minPayment: 40000, interestRate: 32, history: [] },
+      { id: 'c3', name: 'Préstamo libre inversión', tipo: 'Préstamo', balance: 1500000, nextPayment: isoOffset(23), minPayment: 120000, interestRate: 19, history: [] },
     ],
   };
 }

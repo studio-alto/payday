@@ -10,15 +10,28 @@ import PencilIcon from '../components/PencilIcon';
 import FixedHeader from '../components/FixedHeader';
 
 const TIPOS = ['Tarjeta de crédito', 'Préstamo', 'Otro'];
+const METHODS = [
+  { key: 'bola_nieve', label: 'Bola de nieve', hint: 'Prioriza el saldo más pequeño primero' },
+  { key: 'avalancha', label: 'Avalancha', hint: 'Prioriza la tasa de interés más alta primero' },
+];
 
 function emptyForm() {
-  return { tipo: 'Tarjeta de crédito', name: '', balance: '', nextPayment: '', minPayment: '' };
+  return { tipo: 'Tarjeta de crédito', name: '', balance: '', nextPayment: '', minPayment: '', interestRate: '' };
 }
 
 export default function Deudas({ data, setData }) {
   const { cards } = data;
   const { currency } = data.user;
+  const debtMethod = data.user.debtMethod || 'bola_nieve';
   const today = todayISO();
+
+  const setDebtMethod = (key) => setData((s) => ({ ...s, user: { ...s.user, debtMethod: key } }));
+
+  const sortedCards = [...cards].sort((a, b) => {
+    if (debtMethod === 'avalancha') return (b.interestRate || 0) - (a.interestRate || 0);
+    return a.balance - b.balance;
+  });
+  const priorityId = sortedCards.find((c) => c.balance > 0)?.id;
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCardId, setEditingCardId] = useState(null);
@@ -36,7 +49,14 @@ export default function Deudas({ data, setData }) {
   };
   const openEditModal = (c) => {
     setEditingCardId(c.id);
-    setForm({ tipo: c.tipo || 'Tarjeta de crédito', name: c.name, balance: String(c.balance), nextPayment: c.nextPayment, minPayment: String(c.minPayment) });
+    setForm({
+      tipo: c.tipo || 'Tarjeta de crédito',
+      name: c.name,
+      balance: String(c.balance),
+      nextPayment: c.nextPayment,
+      minPayment: String(c.minPayment),
+      interestRate: c.interestRate ? String(c.interestRate) : '',
+    });
     setModalOpen(true);
   };
   const closeModal = () => setModalOpen(false);
@@ -50,7 +70,15 @@ export default function Deudas({ data, setData }) {
           ...s,
           cards: s.cards.map((c) =>
             c.id === editingCardId
-              ? { ...c, name: form.name, balance: Number(form.balance), nextPayment: form.nextPayment || c.nextPayment, minPayment: Number(form.minPayment) || 0, tipo: form.tipo }
+              ? {
+                  ...c,
+                  name: form.name,
+                  balance: Number(form.balance),
+                  nextPayment: form.nextPayment || c.nextPayment,
+                  minPayment: Number(form.minPayment) || 0,
+                  interestRate: Number(form.interestRate) || 0,
+                  tipo: form.tipo,
+                }
               : c,
           ),
         };
@@ -59,7 +87,16 @@ export default function Deudas({ data, setData }) {
         ...s,
         cards: [
           ...s.cards,
-          { id: uid(), name: form.name, balance: Number(form.balance), nextPayment: form.nextPayment || today, minPayment: Number(form.minPayment) || 0, tipo: form.tipo, history: [] },
+          {
+            id: uid(),
+            name: form.name,
+            balance: Number(form.balance),
+            nextPayment: form.nextPayment || today,
+            minPayment: Number(form.minPayment) || 0,
+            interestRate: Number(form.interestRate) || 0,
+            tipo: form.tipo,
+            history: [],
+          },
         ],
       };
     });
@@ -99,7 +136,44 @@ export default function Deudas({ data, setData }) {
         <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', letterSpacing: '-0.02em' }}>Deudas</div>
       </FixedHeader>
 
-      {cards.map((c) => {
+      {cards.length > 0 && (
+        <div style={cardStyle}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em', marginBottom: 10 }}>
+            MÉTODO PARA SALIR DE DEUDAS
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {METHODS.map((m) => {
+              const active = debtMethod === m.key;
+              return (
+                <button
+                  key={m.key}
+                  type="button"
+                  onClick={() => setDebtMethod(m.key)}
+                  style={{
+                    flex: 1,
+                    padding: '10px 0',
+                    borderRadius: 14,
+                    textAlign: 'center',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    cursor: 'pointer',
+                    background: active ? 'var(--text)' : 'var(--input-bg)',
+                    color: active ? 'var(--page-bg)' : 'var(--text)',
+                    border: 'none',
+                  }}
+                >
+                  {m.label}
+                </button>
+              );
+            })}
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 8 }}>
+            {METHODS.find((m) => m.key === debtMethod)?.hint}
+          </div>
+        </div>
+      )}
+
+      {sortedCards.map((c) => {
         const paidToDate = c.history.reduce((a, h) => a + h.amount, 0);
         const pct = paidToDate + c.balance > 0 ? Math.round((paidToDate / (paidToDate + c.balance)) * 100) : 0;
         const isOverdue = c.nextPayment < today && c.balance > 0;
@@ -107,7 +181,24 @@ export default function Deudas({ data, setData }) {
         return (
           <div key={c.id} style={cardStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>{c.name}</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>{c.name}</div>
+                {c.id === priorityId && (
+                  <div
+                    style={{
+                      fontSize: 10,
+                      fontWeight: 700,
+                      color: 'white',
+                      background: 'var(--accent)',
+                      padding: '3px 8px',
+                      borderRadius: 10,
+                      letterSpacing: '0.03em',
+                    }}
+                  >
+                    PRIORIDAD
+                  </div>
+                )}
+              </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                 <button
                   type="button"
@@ -151,7 +242,10 @@ export default function Deudas({ data, setData }) {
                 </button>
               </div>
             </div>
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700, marginTop: 2 }}>{c.tipo || 'Tarjeta de crédito'}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700, marginTop: 2 }}>
+              {c.tipo || 'Tarjeta de crédito'}
+              {c.interestRate > 0 && ` · ${c.interestRate}% E.A.`}
+            </div>
             <div style={{ fontWeight: 800, fontSize: 22, color: 'var(--text)', marginTop: 4 }}>{fmt(c.balance, currency)}</div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
               Próximo pago: {formatShortDate(c.nextPayment)}
@@ -203,6 +297,14 @@ export default function Deudas({ data, setData }) {
           <NumberInput value={form.balance} onChange={setField('balance')} placeholder="Saldo pendiente" style={textInputStyle()} />
           <input type="date" value={form.nextPayment} onChange={setField('nextPayment')} style={textInputStyle()} />
           <NumberInput value={form.minPayment} onChange={setField('minPayment')} placeholder="Pago mínimo (opcional)" style={textInputStyle()} />
+          <input
+            type="text"
+            inputMode="numeric"
+            value={form.interestRate}
+            onChange={(e) => setForm((f) => ({ ...f, interestRate: e.target.value.replace(/\D/g, '').slice(0, 3) }))}
+            placeholder="Tasa de interés % E.A. (opcional)"
+            style={textInputStyle()}
+          />
           <button type="button" onClick={saveCard} style={{ ...primaryButtonStyle(), height: 50, borderRadius: 25 }}>
             Guardar
           </button>

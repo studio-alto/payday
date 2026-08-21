@@ -36,6 +36,15 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
   const today = todayISO();
   const { currency } = data.user;
 
+  const nameFrequency = {};
+  data.incomes.forEach((i) => {
+    const n = i.name.trim();
+    if (n) nameFrequency[n] = (nameFrequency[n] || 0) + 1;
+  });
+  const existingNames = Object.keys(nameFrequency)
+    .sort((a, b) => nameFrequency[b] - nameFrequency[a])
+    .slice(0, 8);
+
   const regAmount = Number(form.amount) || 0;
   const ahorroMonto = Number(form.ahorroMonto) || 0;
   const tarjetaMonto = Number(form.tarjetaMonto) || 0;
@@ -184,6 +193,29 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
               placeholder="Ej: Turno restaurante, Domingo obra"
               style={textInputStyle()}
             />
+            {existingNames.length > 0 && (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+                {existingNames.map((n) => (
+                  <button
+                    key={n}
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, name: n }))}
+                    style={{
+                      padding: '7px 12px',
+                      borderRadius: 16,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      background: form.name === n ? 'var(--text)' : 'var(--input-bg)',
+                      color: form.name === n ? 'var(--page-bg)' : 'var(--text-secondary)',
+                      border: 'none',
+                    }}
+                  >
+                    {n}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
           <div>
             <div style={fieldLabelStyle}>FECHA</div>
