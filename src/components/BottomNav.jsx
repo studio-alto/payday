@@ -1,4 +1,4 @@
-const TABS = ['dashboard', 'registrar', 'metas', 'tarjetas', 'config'];
+const TABS = ['dashboard', 'registrar', 'metas', 'tarjetas'];
 
 function navColors(activeTab, key) {
   const active = activeTab === key;
@@ -35,7 +35,6 @@ export default function BottomNav({ activeTab, onChange }) {
   const registrar = navColors(activeTab, 'registrar');
   const metas = navColors(activeTab, 'metas');
   const tarjetas = navColors(activeTab, 'tarjetas');
-  const config = navColors(activeTab, 'config');
 
   return (
     <div
@@ -77,14 +76,6 @@ export default function BottomNav({ activeTab, onChange }) {
       <NavButton label="Deudas" bg={tarjetas.bg} onClick={() => onChange('tarjetas')}>
         <div style={{ width: 20, height: 14, borderRadius: 4, border: `2px solid ${tarjetas.color}`, position: 'relative' }}>
           <div style={{ position: 'absolute', top: 2, left: 0, right: 0, height: 3, background: tarjetas.color }} />
-        </div>
-      </NavButton>
-
-      <NavButton label="Ajustes" bg={config.bg} onClick={() => onChange('config')}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3, width: 16 }}>
-          <div style={{ height: 2, width: '100%', background: config.color, borderRadius: 2 }} />
-          <div style={{ height: 2, width: '65%', background: config.color, borderRadius: 2 }} />
-          <div style={{ height: 2, width: '85%', background: config.color, borderRadius: 2 }} />
         </div>
       </NavButton>
     </div>
