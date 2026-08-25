@@ -264,14 +264,12 @@ export default function Dashboard({ data, setData, onNavigate }) {
               <div style={{ height: 1, background: 'var(--divider)' }} />
               <div>
                 <div style={labelStyle}>GASTOS FIJOS</div>
-                <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 3 }}>
-                  <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)' }}>{fmt(totalGastos, user.currency)}</div>
-                  {totalMonth > 0 && (
-                    <div style={{ fontSize: 11, fontWeight: 700, color: gastosPct > budgetNecesidades ? 'var(--accent)' : 'var(--text-secondary)' }}>
-                      {gastosPct}% de lo ganado · sugerido {budgetNecesidades}%
-                    </div>
-                  )}
-                </div>
+                <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)', marginTop: 3 }}>{fmt(totalGastos, user.currency)}</div>
+                {totalMonth > 0 && (
+                  <div style={{ fontSize: 11, fontWeight: 700, color: gastosPct > budgetNecesidades ? 'var(--accent)' : 'var(--text-secondary)', marginTop: 2 }}>
+                    {gastosPct}% de lo ganado · sugerido {budgetNecesidades}%
+                  </div>
+                )}
               </div>
             </>
           )}
