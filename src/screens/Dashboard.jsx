@@ -1,6 +1,7 @@
 import { fmt } from '../lib/format';
 import { WEEKDAY_LETTERS, dayTypeLabel, daysUntilPayday, formatShortDate, isSameMonth, last7Days, remainingDaysInMonth, todayISO } from '../lib/dates';
 import { cardStyle, labelStyle } from '../lib/styles';
+import { averageRecentIncome } from '../lib/incomeStats';
 import FixedHeader from '../components/FixedHeader';
 
 export default function Dashboard({ data, setData, onNavigate }) {
@@ -67,7 +68,8 @@ export default function Dashboard({ data, setData, onNavigate }) {
   const isUSD = user.currency === 'USD';
   const setCurrency = (currency) => setData((s) => ({ ...s, user: { ...s.user, currency } }));
 
-  const projectedTotal = user.payBaseDay > 0 ? totalMonth + user.payBaseDay * remainingDaysInMonth() : null;
+  const avgDailyIncome = averageRecentIncome(incomes);
+  const projectedTotal = avgDailyIncome > 0 ? totalMonth + avgDailyIncome * remainingDaysInMonth() : null;
   const paydayDays = daysUntilPayday(user.payDayOfMonth);
   const paydayLabel = paydayDays === 0 ? 'Hoy' : paydayDays === 1 ? 'En 1 día' : `En ${paydayDays} días`;
 

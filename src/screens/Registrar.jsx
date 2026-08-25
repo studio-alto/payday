@@ -6,16 +6,17 @@ import { cardStyle, fieldLabelStyle, textInputStyle, primaryButtonStyle, seconda
 import NumberInput from '../components/NumberInput';
 import FixedHeader from '../components/FixedHeader';
 import { METHODS, computeDebtWaterfall, reverseIncomeEffects, applyIncomeEffects } from '../lib/debt';
+import { averageRecentIncome } from '../lib/incomeStats';
 
 const AHORRO_PCTS = [0, 0.1, 0.2, 0.3, 0.4, 0.5];
 const TARJETA_PCTS = [0, 0.1, 0.15, 0.2, 0.3, 0.4];
 const AMOUNT_PRESETS = [10000, 20000, 50000, 100000, 150000];
 
-function emptyForm(payBaseDay, goals) {
+function emptyForm(suggestedAmount, goals) {
   const defaultGoal = goals.find((g) => g.current < g.target) || goals[0];
   return {
     name: '',
-    amount: payBaseDay > 0 ? String(payBaseDay) : '',
+    amount: suggestedAmount > 0 ? String(suggestedAmount) : '',
     date: todayISO(),
     type: 'normal',
     note: '',
@@ -43,7 +44,9 @@ function formFromIncome(income) {
 export default function Registrar({ data, setData, onNavigate, editingIncome, onDoneEditing }) {
   const isEditing = !!editingIncome;
   const [step, setStep] = useState(1);
-  const [form, setForm] = useState(() => (isEditing ? formFromIncome(editingIncome) : emptyForm(data.user.payBaseDay, data.goals)));
+  const [form, setForm] = useState(() =>
+    isEditing ? formFromIncome(editingIncome) : emptyForm(averageRecentIncome(data.incomes), data.goals),
+  );
   const [ahorroPctText, setAhorroPctText] = useState('');
   const [tarjetaPctText, setTarjetaPctText] = useState('');
 

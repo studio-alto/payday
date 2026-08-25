@@ -1,6 +1,9 @@
 import { useRef, useState } from 'react';
-import { todayISO } from '../lib/dates';
+import { todayISO, formatFullDate } from '../lib/dates';
 import { buildSummaryCsv } from '../lib/exportCsv';
+import { averageRecentIncome } from '../lib/incomeStats';
+import { fetchLiveExchangeRates } from '../lib/exchangeRates';
+import { fmt } from '../lib/format';
 import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import NumberInput from '../components/NumberInput';
 import FixedHeader from '../components/FixedHeader';
@@ -9,8 +12,21 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
   const { user } = data;
   const dark = user.theme === 'oscuro';
   const budgetTotal = (user.budgetNecesidades ?? 50) + (user.budgetDeseos ?? 30) + (user.budgetAhorro ?? 20);
+  const avgRecentIncome = averageRecentIncome(data.incomes);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [ratesStatus, setRatesStatus] = useState('idle');
   const fileInputRef = useRef(null);
+
+  const refreshRates = async () => {
+    setRatesStatus('loading');
+    try {
+      const rates = await fetchLiveExchangeRates();
+      setData((s) => ({ ...s, user: { ...s.user, ...rates, ratesUpdatedAt: todayISO() } }));
+      setRatesStatus('idle');
+    } catch {
+      setRatesStatus('error');
+    }
+  };
 
   const setUserField = (key, transform = (v) => v) => (e) => {
     setData((s) => ({ ...s, user: { ...s.user, [key]: transform(e.target.value) } }));
@@ -107,12 +123,14 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
       <div style={labelStyle}>FINANZAS</div>
       <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div>
-          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>PAGO BASE POR DÍA</div>
-          <NumberInput
-            value={user.payBaseDay}
-            onChange={setUserField('payBaseDay', (v) => Number(v) || 0)}
-            style={{ ...textInputStyle(), padding: 12, borderRadius: 12 }}
-          />
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>PROMEDIO DE TUS ÚLTIMOS INGRESOS</div>
+          <div style={{ ...textInputStyle(), padding: 12, borderRadius: 12, color: avgRecentIncome > 0 ? 'var(--text)' : 'var(--text-secondary)' }}>
+            {avgRecentIncome > 0 ? fmt(avgRecentIncome, user.currency) : 'Aún no tienes ingresos registrados'}
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
+            Se calcula solo, del promedio de tus últimos 10 ingresos — no lo escribes tú, porque tu pago varía día a día. Se
+            usa para sugerir el monto al registrar y para proyectar tu mes en el Dashboard.
+          </div>
         </div>
         <div>
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>MONEDA</div>
@@ -140,7 +158,24 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
           />
         </div>
         <div style={{ height: 1, background: 'var(--divider)', margin: '4px 0' }} />
-        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.03em' }}>TASAS DE CAMBIO (1 COP →)</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.03em' }}>TASAS DE CAMBIO (1 COP →)</div>
+          <button
+            type="button"
+            onClick={refreshRates}
+            disabled={ratesStatus === 'loading'}
+            style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', cursor: ratesStatus === 'loading' ? 'default' : 'pointer' }}
+          >
+            {ratesStatus === 'loading' ? 'Actualizando…' : 'Actualizar ahora'}
+          </button>
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: -8 }}>
+          {ratesStatus === 'error'
+            ? 'No se pudo conectar. Revisa tu internet e intenta de nuevo.'
+            : user.ratesUpdatedAt
+              ? `Actualizado automáticamente: ${user.ratesUpdatedAt === todayISO() ? 'hoy' : formatFullDate(user.ratesUpdatedAt)}`
+              : 'Se actualiza solo, una vez al día, cuando abres la app.'}
+        </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>USD</div>
@@ -160,7 +195,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
           </div>
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-          Cuántos pesos equivalen a 1 dólar / 1 euro. Ajústalo cuando cambie la tasa real.
+          Cuántos pesos equivalen a 1 dólar / 1 euro. Se llenan solas, pero puedes escribir un valor propio si prefieres.
         </div>
         <div style={{ height: 1, background: 'var(--divider)', margin: '4px 0' }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>

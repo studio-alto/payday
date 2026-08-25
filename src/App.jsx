@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useLocalData } from './lib/storage';
 import { setExchangeRates } from './lib/format';
+import { fetchLiveExchangeRates } from './lib/exchangeRates';
+import { todayISO } from './lib/dates';
 import Splash from './components/Splash';
 import BottomNav from './components/BottomNav';
 import Dashboard from './screens/Dashboard';
@@ -57,6 +59,24 @@ export default function App() {
       window.removeEventListener('beforeinstallprompt', onBeforeInstall);
       window.removeEventListener('appinstalled', onInstalled);
     };
+  }, []);
+
+  // Refreshes USD/EUR rates once per day, automatically, on whatever screen the
+  // person opens the app to — no manual entry needed. Silently keeps the last known
+  // rate if offline or the API is unreachable; Ajustes exposes a manual retry too.
+  useEffect(() => {
+    if (data.user.ratesUpdatedAt === todayISO()) return;
+    let cancelled = false;
+    fetchLiveExchangeRates()
+      .then((rates) => {
+        if (cancelled) return;
+        setData((s) => ({ ...s, user: { ...s.user, ...rates, ratesUpdatedAt: todayISO() } }));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const requestInstall = async () => {

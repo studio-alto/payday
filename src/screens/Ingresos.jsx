@@ -6,12 +6,23 @@ import InlineConfirm from '../components/InlineConfirm';
 import PencilIcon from '../components/PencilIcon';
 import FixedHeader from '../components/FixedHeader';
 import { reverseIncomeEffects } from '../lib/debt';
+import { monthlyBreakdown } from '../lib/incomeStats';
+
+const MONTH_LABELS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 
 export default function Ingresos({ data, setData, onNavigate, onEdit }) {
   const { incomes } = data;
   const { currency } = data.user;
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [selectedJob, setSelectedJob] = useState(null);
+  const [showAnnual, setShowAnnual] = useState(false);
+  const [annualYear, setAnnualYear] = useState(new Date().getFullYear());
+
+  const annualMonths = monthlyBreakdown(incomes, annualYear).map((m) => ({ ...m, label: MONTH_LABELS[m.month] }));
+  const annualTotals = annualMonths.reduce(
+    (acc, m) => ({ ganado: acc.ganado + m.ganado, ahorro: acc.ahorro + m.ahorro, deudas: acc.deudas + m.deudas }),
+    { ganado: 0, ahorro: 0, deudas: 0 },
+  );
 
   const jobNames = [...new Set(incomes.map((i) => i.name.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 
@@ -91,6 +102,55 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
         </div>
         </div>
       </FixedHeader>
+
+      <div style={cardStyle}>
+        <button
+          type="button"
+          onClick={() => setShowAnnual((s) => !s)}
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', cursor: 'pointer' }}
+        >
+          <div style={labelStyle}>RESUMEN ANUAL</div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>{showAnnual ? 'Ocultar' : 'Ver'}</div>
+        </button>
+
+        {showAnnual && (
+          <div style={{ marginTop: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, marginBottom: 10 }}>
+              <button type="button" onClick={() => setAnnualYear((y) => y - 1)} aria-label="Año anterior" style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 700, fontSize: 14 }}>
+                ‹
+              </button>
+              <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{annualYear}</div>
+              <button type="button" onClick={() => setAnnualYear((y) => y + 1)} aria-label="Año siguiente" style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 700, fontSize: 14 }}>
+                ›
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)', padding: '4px 0', borderBottom: '1px solid var(--divider)' }}>
+              <div style={{ flex: 1.2 }}>MES</div>
+              <div style={{ flex: 2, textAlign: 'right' }}>GANADO</div>
+              <div style={{ flex: 2, textAlign: 'right' }}>AHORRO</div>
+              <div style={{ flex: 2, textAlign: 'right' }}>DEUDAS</div>
+            </div>
+            {annualMonths.map((m) => (
+              <div
+                key={m.month}
+                style={{ display: 'flex', fontSize: 11, padding: '6px 0', borderBottom: '1px solid var(--divider)', color: m.ganado > 0 ? 'var(--text)' : 'var(--text-secondary)' }}
+              >
+                <div style={{ flex: 1.2, fontWeight: 700 }}>{m.label}</div>
+                <div style={{ flex: 2, textAlign: 'right' }}>{fmt(m.ganado, currency)}</div>
+                <div style={{ flex: 2, textAlign: 'right' }}>{fmt(m.ahorro, currency)}</div>
+                <div style={{ flex: 2, textAlign: 'right' }}>{fmt(m.deudas, currency)}</div>
+              </div>
+            ))}
+            <div style={{ display: 'flex', fontSize: 12, fontWeight: 800, padding: '8px 0 0 0', color: 'var(--text)' }}>
+              <div style={{ flex: 1.2 }}>Total</div>
+              <div style={{ flex: 2, textAlign: 'right' }}>{fmt(annualTotals.ganado, currency)}</div>
+              <div style={{ flex: 2, textAlign: 'right' }}>{fmt(annualTotals.ahorro, currency)}</div>
+              <div style={{ flex: 2, textAlign: 'right' }}>{fmt(annualTotals.deudas, currency)}</div>
+            </div>
+          </div>
+        )}
+      </div>
 
       <div style={cardStyle}>
         {filteredIncomes.length === 0 && (
