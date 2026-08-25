@@ -199,6 +199,23 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
               +000
             </button>
           </div>
+          {regAmount > 0 && (
+            <div style={{ background: 'var(--input-bg)', borderRadius: 14, padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.03em' }}>SUGERENCIA 50/30/20</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Necesidades (gastos fijos)</span>
+                <span style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(regAmount * 0.5, currency)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Deseos</span>
+                <span style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(regAmount * 0.3, currency)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                <span style={{ color: 'var(--text-secondary)' }}>Ahorro + deudas</span>
+                <span style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(regAmount * 0.2, currency)}</span>
+              </div>
+            </div>
+          )}
           <div>
             <div style={fieldLabelStyle}>MONTOS RÁPIDOS</div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

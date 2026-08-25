@@ -8,7 +8,7 @@ import InlineConfirm from '../components/InlineConfirm';
 import NumberInput from '../components/NumberInput';
 import PencilIcon from '../components/PencilIcon';
 import FixedHeader from '../components/FixedHeader';
-import { sortDebtsByPriority, METHODS } from '../lib/debt';
+import { sortDebtsByPriority, simulatePayoffPlan, formatMonthsLabel, METHODS } from '../lib/debt';
 
 const TIPOS = ['Tarjeta de crédito', 'Préstamo', 'Otro'];
 const CATEGORIAS = ['Suscripción', 'Servicios', 'Transporte', 'Vivienda', 'Tarjeta de crédito', 'Otro'];
@@ -30,9 +30,12 @@ export default function Deudas({ data, setData }) {
   const [section, setSection] = useState('deudas');
 
   const setDebtMethod = (key) => setData((s) => ({ ...s, user: { ...s.user, debtMethod: key } }));
+  const extraMensual = Number(data.user.extraDeudaMensual) || 0;
+  const setExtraMensual = (e) => setData((s) => ({ ...s, user: { ...s.user, extraDeudaMensual: Number(e.target.value) || 0 } }));
 
   const sortedCards = sortDebtsByPriority(cards, debtMethod);
   const priorityId = sortedCards.find((c) => c.balance > 0)?.id;
+  const payoffPlan = simulatePayoffPlan(cards, debtMethod, extraMensual);
 
   const sortedExpenses = [...expenses].sort((a, b) => daysUntilPayday(a.dueDay) - daysUntilPayday(b.dueDay));
   const totalExpenses = expenses.reduce((a, e) => a + e.amount, 0);
@@ -262,6 +265,40 @@ export default function Deudas({ data, setData }) {
           <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 8 }}>
             {METHODS.find((m) => m.key === debtMethod)?.hint}
           </div>
+
+          <div style={{ height: 1, background: 'var(--divider)', margin: '14px 0' }} />
+
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 700 }}>
+            EXTRA MENSUAL PARA DEUDAS (además de los pagos mínimos)
+          </div>
+          <NumberInput value={data.user.extraDeudaMensual || ''} onChange={setExtraMensual} placeholder="Ej: 100.000" style={textInputStyle()} />
+
+          <div style={{ marginTop: 12 }}>
+            {payoffPlan.perCard.length === 0 ? (
+              <div style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 700 }}>Ya no tienes deudas pendientes.</div>
+            ) : payoffPlan.stuck ? (
+              <div style={{ fontSize: 12, color: 'var(--accent)' }}>
+                Con los pagos mínimos actuales no alcanzas a cubrir el interés. Aumenta el extra mensual o los pagos mínimos.
+              </div>
+            ) : (
+              <>
+                <div style={{ fontSize: 13, color: 'var(--text)' }}>
+                  Terminarías de pagar todo en{' '}
+                  <span style={{ fontWeight: 800, color: 'var(--accent)' }}>{formatMonthsLabel(payoffPlan.monthsToPayoff)}</span>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
+                  {payoffPlan.perCard.map((c) => (
+                    <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>{c.name}</span>
+                      <span style={{ fontWeight: 700, color: 'var(--text)' }}>
+                        {c.payoffMonth === null ? '—' : `mes ${c.payoffMonth}`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
       )}
 
@@ -345,6 +382,9 @@ export default function Deudas({ data, setData }) {
             </div>
             <div style={{ height: 7, background: 'var(--divider)', borderRadius: 6, overflow: 'hidden', marginTop: 10 }}>
               <div style={{ height: '100%', width: `${pct}%`, background: 'var(--accent)', borderRadius: 6, transition: 'width 0.5s ease' }} />
+            </div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
+              Abonado: {fmt(paidToDate, currency)} · {pct}%
             </div>
             <button
               type="button"
