@@ -40,6 +40,11 @@ export function formatShortDate(dateStr) {
   return new Date(dateStr + 'T00:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
 }
 
+export function formatFullDate(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+}
+
 export function daysInMonth(date = new Date()) {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
 }

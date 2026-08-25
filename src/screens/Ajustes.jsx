@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { todayISO } from '../lib/dates';
+import { buildSummaryCsv } from '../lib/exportCsv';
 import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import NumberInput from '../components/NumberInput';
 import FixedHeader from '../components/FixedHeader';
@@ -26,6 +27,17 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
     const a = document.createElement('a');
     a.href = url;
     a.download = `payday-datos-${todayISO()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const exportCsv = () => {
+    const csv = buildSummaryCsv(data);
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `payday-resumen-${todayISO()}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -223,9 +235,16 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
 
       <div style={labelStyle}>DATOS</div>
       <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <button type="button" onClick={exportCsv} style={actionRowStyle}>
+          Descargar resumen (Excel)
+        </button>
+        <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: -4 }}>
+          Para leer o compartir: ingresos, metas, deudas y gastos en una tabla.
+        </div>
         <button type="button" onClick={exportData} style={actionRowStyle}>
           Descargar datos (JSON)
         </button>
+        <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: -4 }}>Para respaldar y luego restaurar en la app.</div>
         <input type="file" ref={fileInputRef} accept="application/json" onChange={handleRestoreFile} style={{ display: 'none' }} />
         <button type="button" onClick={triggerRestore} style={actionRowStyle}>
           Restaurar datos
