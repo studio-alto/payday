@@ -117,6 +117,38 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
             style={{ ...textInputStyle(), padding: 12, borderRadius: 12 }}
           />
         </div>
+        <div>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>META DE INGRESO MENSUAL (OPCIONAL)</div>
+          <NumberInput
+            value={user.metaIngresoMensual || ''}
+            onChange={setUserField('metaIngresoMensual', (v) => Number(v) || 0)}
+            placeholder="Ej: 1.500.000"
+            style={{ ...textInputStyle(), padding: 12, borderRadius: 12 }}
+          />
+        </div>
+        <div style={{ height: 1, background: 'var(--divider)', margin: '4px 0' }} />
+        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.03em' }}>TASAS DE CAMBIO (1 COP →)</div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>USD</div>
+            <NumberInput
+              value={user.usdRate || 4000}
+              onChange={setUserField('usdRate', (v) => Number(v) || 4000)}
+              style={{ ...textInputStyle(), padding: 12, borderRadius: 12 }}
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>EUR</div>
+            <NumberInput
+              value={user.eurRate || 4500}
+              onChange={setUserField('eurRate', (v) => Number(v) || 4500)}
+              style={{ ...textInputStyle(), padding: 12, borderRadius: 12 }}
+            />
+          </div>
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+          Cuántos pesos equivalen a 1 dólar / 1 euro. Ajústalo cuando cambie la tasa real.
+        </div>
       </div>
 
       <div style={labelStyle}>APARIENCIA</div>

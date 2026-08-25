@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocalData } from './lib/storage';
+import { setExchangeRates } from './lib/format';
 import Splash from './components/Splash';
 import BottomNav from './components/BottomNav';
 import Dashboard from './screens/Dashboard';
@@ -64,6 +65,10 @@ export default function App() {
     await installPrompt.userChoice;
     setInstallPrompt(null);
   };
+
+  // Set synchronously during render (not in an effect) so every screen's fmt() call
+  // in this same pass already sees the current rate — no stale-then-refresh flicker.
+  setExchangeRates({ USD: data.user.usdRate || 4000, EUR: data.user.eurRate || 4500 });
 
   return (
     <div

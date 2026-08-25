@@ -183,6 +183,28 @@ export default function Dashboard({ data, setData, onNavigate }) {
         </div>
       </div>
 
+      {user.metaIngresoMensual > 0 && (
+        <div style={cardStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+            <div style={labelStyle}>META DE INGRESO MENSUAL</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>
+              {fmt(totalMonth, user.currency)} / {fmt(user.metaIngresoMensual, user.currency)}
+            </div>
+          </div>
+          <div style={{ height: 8, background: 'var(--divider)', borderRadius: 6, overflow: 'hidden', marginTop: 8 }}>
+            <div
+              style={{
+                height: '100%',
+                width: `${Math.min(100, Math.round((totalMonth / user.metaIngresoMensual) * 100))}%`,
+                background: 'var(--accent)',
+                borderRadius: 6,
+                transition: 'width 0.5s ease',
+              }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Proyección del mes + Próximo pago */}
       <div style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
         {projectedTotal !== null && (
