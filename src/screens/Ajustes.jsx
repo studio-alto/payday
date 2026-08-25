@@ -19,7 +19,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
   };
 
   const exportData = () => {
-    const payload = { user: data.user, incomes: data.incomes, goals: data.goals, cards: data.cards, exportedAt: todayISO() };
+    const payload = { user: data.user, incomes: data.incomes, goals: data.goals, cards: data.cards, expenses: data.expenses, exportedAt: todayISO() };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -42,6 +42,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
           incomes: parsed.incomes || [],
           goals: parsed.goals || [],
           cards: parsed.cards || [],
+          expenses: parsed.expenses || [],
         }));
       } catch {
         alert('Archivo inválido');
@@ -52,7 +53,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
   };
 
   const confirmReset = () => {
-    setData((s) => ({ ...s, incomes: [], goals: [], cards: [] }));
+    setData((s) => ({ ...s, incomes: [], goals: [], cards: [], expenses: [] }));
     setResetConfirmOpen(false);
   };
 

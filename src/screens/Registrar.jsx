@@ -22,6 +22,7 @@ function emptyForm(payBaseDay, goals) {
     ahorroMonto: '',
     tarjetaMonto: '',
     goalId: defaultGoal ? defaultGoal.id : '',
+    esFuturo: false,
   };
 }
 
@@ -35,6 +36,7 @@ function formFromIncome(income) {
     ahorroMonto: income.distribution.ahorro ? String(income.distribution.ahorro) : '',
     tarjetaMonto: income.distribution.tarjeta ? String(income.distribution.tarjeta) : '',
     goalId: income.distribution.goalId || '',
+    esFuturo: income.estado === 'proyectado',
   };
 }
 
@@ -66,9 +68,10 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
 
   const setField = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
   const setDate = (e) => {
-    const value = e.target.value > today ? today : e.target.value;
+    const value = !form.esFuturo && e.target.value > today ? today : e.target.value;
     setForm((f) => ({ ...f, date: value }));
   };
+  const toggleEsFuturo = () => setForm((f) => ({ ...f, esFuturo: !f.esFuturo, date: f.esFuturo ? (f.date > today ? today : f.date) : f.date }));
   const setType = (key) => setForm((f) => ({ ...f, type: key }));
   const setAmountPreset = (amt) => setForm((f) => ({ ...f, amount: String(amt) }));
   const addZeros = () => setForm((f) => (f.amount ? { ...f, amount: f.amount + '000' } : f));
@@ -126,10 +129,15 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
         date: form.date,
         type: form.type,
         note: form.note,
+        estado: form.esFuturo ? 'proyectado' : 'confirmado',
         distribution: { ahorro: ahorroMonto, tarjeta: tarjetaMonto, goalId: form.goalId || null },
       };
 
-      const applied = applyIncomeEffects(baseEntry, goals, cards, s.user.debtMethod || 'bola_nieve');
+      // Money not yet received shouldn't move into goals/debts yet — that happens once
+      // the income is edited and confirmed as received.
+      const applied = form.esFuturo
+        ? { goals, cards, debtAllocations: [] }
+        : applyIncomeEffects(baseEntry, goals, cards, s.user.debtMethod || 'bola_nieve');
       const entry = { ...baseEntry, distribution: { ...baseEntry.distribution, debtAllocations: applied.debtAllocations } };
 
       return {
@@ -250,8 +258,51 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
           </div>
           <div>
             <div style={fieldLabelStyle}>FECHA</div>
-            <input type="date" value={form.date} max={today} onChange={setDate} style={textInputStyle()} />
+            <input type="date" value={form.date} max={form.esFuturo ? undefined : today} onChange={setDate} style={textInputStyle()} />
           </div>
+          <button
+            type="button"
+            onClick={toggleEsFuturo}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: 12,
+              borderRadius: 14,
+              background: 'var(--input-bg)',
+              border: 'none',
+              cursor: 'pointer',
+              textAlign: 'left',
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Es un ingreso futuro</div>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>Aún no lo he recibido, quiero dejarlo planeado</div>
+            </div>
+            <div
+              style={{
+                width: 40,
+                height: 24,
+                borderRadius: 20,
+                background: form.esFuturo ? 'var(--accent)' : '#D5D5D5',
+                position: 'relative',
+                flexShrink: 0,
+              }}
+            >
+              <div
+                style={{
+                  width: 18,
+                  height: 18,
+                  borderRadius: '50%',
+                  background: 'white',
+                  position: 'absolute',
+                  top: 3,
+                  left: form.esFuturo ? 19 : 3,
+                  transition: 'left 0.2s ease',
+                }}
+              />
+            </div>
+          </button>
           <div>
             <div style={fieldLabelStyle}>TIPO DE DÍA</div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -299,6 +350,11 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
         <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>¿Cuánto al ahorro?</div>
           <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>De {fmt(regAmount, currency)} ganados</div>
+          {form.esFuturo && (
+            <div style={{ fontSize: 12, color: 'var(--accent)', background: 'var(--input-bg)', padding: 10, borderRadius: 12 }}>
+              Como es un ingreso futuro, esta distribución quedará planeada pero no se aplicará a tus metas hasta que confirmes que ya lo recibiste.
+            </div>
+          )}
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {AHORRO_PCTS.map((pct) => (
               <button
@@ -455,7 +511,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
           {tarjetaMonto > 0 && (
             <div style={{ background: 'var(--input-bg)', borderRadius: 14, padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.03em' }}>
-                SE ABONARÁ AUTOMÁTICO · {METHODS.find((m) => m.key === debtMethod)?.label.toUpperCase()}
+                {form.esFuturo ? 'SE ABONARÁ CUANDO LO CONFIRMES' : 'SE ABONARÁ AUTOMÁTICO'} · {METHODS.find((m) => m.key === debtMethod)?.label.toUpperCase()}
               </div>
               {debtWaterfall.allocations.length === 0 ? (
                 <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>No tienes deudas pendientes.</div>

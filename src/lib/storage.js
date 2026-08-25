@@ -22,6 +22,11 @@ function seedData() {
       { id: 'c2', name: 'Falabella', tipo: 'Tarjeta de crédito', balance: 180000, nextPayment: isoOffset(10), minPayment: 40000, interestRate: 32, history: [] },
       { id: 'c3', name: 'Préstamo libre inversión', tipo: 'Préstamo', balance: 1500000, nextPayment: isoOffset(23), minPayment: 120000, interestRate: 19, history: [] },
     ],
+    expenses: [
+      { id: 'e1', name: 'Netflix', categoria: 'Suscripción', amount: 29900, dueDay: 5, medioPago: 'efectivo', history: [] },
+      { id: 'e2', name: 'Internet hogar', categoria: 'Servicios', amount: 95000, dueDay: 12, medioPago: 'efectivo', history: [] },
+      { id: 'e3', name: 'Transporte', categoria: 'Transporte', amount: 120000, dueDay: 1, medioPago: 'efectivo', history: [] },
+    ],
   };
 }
 
@@ -35,6 +40,7 @@ function loadInitial() {
         incomes: parsed.incomes || [],
         goals: parsed.goals || [],
         cards: parsed.cards || [],
+        expenses: parsed.expenses || [],
       };
     }
   } catch {

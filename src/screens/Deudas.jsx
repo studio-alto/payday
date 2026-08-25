@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { fmt } from '../lib/format';
-import { formatShortDate, todayISO } from '../lib/dates';
+import { formatShortDate, todayISO, isSameMonth, daysUntilPayday } from '../lib/dates';
 import { uid } from '../lib/id';
 import { cardStyle, textInputStyle, primaryButtonStyle } from '../lib/styles';
 import BottomSheet from '../components/BottomSheet';
@@ -11,21 +11,88 @@ import FixedHeader from '../components/FixedHeader';
 import { sortDebtsByPriority, METHODS } from '../lib/debt';
 
 const TIPOS = ['Tarjeta de crédito', 'Préstamo', 'Otro'];
+const CATEGORIAS = ['Suscripción', 'Servicios', 'Transporte', 'Vivienda', 'Tarjeta de crédito', 'Otro'];
 
 function emptyForm() {
   return { tipo: 'Tarjeta de crédito', name: '', balance: '', nextPayment: '', minPayment: '', interestRate: '' };
 }
 
+function emptyExpenseForm() {
+  return { name: '', categoria: 'Suscripción', amount: '', dueDay: '', medioPago: 'efectivo' };
+}
+
 export default function Deudas({ data, setData }) {
-  const { cards } = data;
+  const { cards, expenses } = data;
   const { currency } = data.user;
   const debtMethod = data.user.debtMethod || 'bola_nieve';
   const today = todayISO();
+
+  const [section, setSection] = useState('deudas');
 
   const setDebtMethod = (key) => setData((s) => ({ ...s, user: { ...s.user, debtMethod: key } }));
 
   const sortedCards = sortDebtsByPriority(cards, debtMethod);
   const priorityId = sortedCards.find((c) => c.balance > 0)?.id;
+
+  const sortedExpenses = [...expenses].sort((a, b) => daysUntilPayday(a.dueDay) - daysUntilPayday(b.dueDay));
+  const totalExpenses = expenses.reduce((a, e) => a + e.amount, 0);
+
+  const [expenseModalOpen, setExpenseModalOpen] = useState(false);
+  const [editingExpenseId, setEditingExpenseId] = useState(null);
+  const [expenseForm, setExpenseForm] = useState(emptyExpenseForm());
+  const [confirmDeleteExpenseId, setConfirmDeleteExpenseId] = useState(null);
+
+  const openNewExpenseModal = () => {
+    setEditingExpenseId(null);
+    setExpenseForm(emptyExpenseForm());
+    setExpenseModalOpen(true);
+  };
+  const openEditExpenseModal = (e) => {
+    setEditingExpenseId(e.id);
+    setExpenseForm({ name: e.name, categoria: e.categoria, amount: String(e.amount), dueDay: String(e.dueDay), medioPago: e.medioPago });
+    setExpenseModalOpen(true);
+  };
+  const closeExpenseModal = () => setExpenseModalOpen(false);
+  const setExpenseField = (key) => (e) => setExpenseForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const saveExpense = () => {
+    if (!expenseForm.name || !expenseForm.amount || !expenseForm.dueDay) return;
+    const dueDay = Math.min(31, Math.max(1, Number(expenseForm.dueDay) || 1));
+    setData((s) => {
+      if (editingExpenseId) {
+        return {
+          ...s,
+          expenses: s.expenses.map((e) =>
+            e.id === editingExpenseId
+              ? { ...e, name: expenseForm.name, categoria: expenseForm.categoria, amount: Number(expenseForm.amount), dueDay, medioPago: expenseForm.medioPago }
+              : e,
+          ),
+        };
+      }
+      return {
+        ...s,
+        expenses: [
+          ...s.expenses,
+          { id: uid(), name: expenseForm.name, categoria: expenseForm.categoria, amount: Number(expenseForm.amount), dueDay, medioPago: expenseForm.medioPago, history: [] },
+        ],
+      };
+    });
+    setExpenseModalOpen(false);
+  };
+
+  const askDeleteExpense = (id) => setConfirmDeleteExpenseId(id);
+  const cancelDeleteExpense = () => setConfirmDeleteExpenseId(null);
+  const confirmDeleteExpense = (id) => {
+    setData((s) => ({ ...s, expenses: s.expenses.filter((e) => e.id !== id) }));
+    setConfirmDeleteExpenseId(null);
+  };
+
+  const markExpensePaid = (id) => {
+    setData((s) => ({
+      ...s,
+      expenses: s.expenses.map((e) => (e.id === id ? { ...e, history: [...e.history, { date: today, amount: e.amount }] } : e)),
+    }));
+  };
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCardId, setEditingCardId] = useState(null);
@@ -127,10 +194,41 @@ export default function Deudas({ data, setData }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 'var(--header-h, 88px)' }}>
       <FixedHeader>
-        <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', letterSpacing: '-0.02em' }}>Deudas</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', letterSpacing: '-0.02em' }}>Deudas</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {[
+              { key: 'deudas', label: 'Deudas' },
+              { key: 'gastos', label: 'Gastos fijos' },
+            ].map((s) => {
+              const active = section === s.key;
+              return (
+                <button
+                  key={s.key}
+                  type="button"
+                  onClick={() => setSection(s.key)}
+                  style={{
+                    flex: 1,
+                    padding: '9px 0',
+                    borderRadius: 20,
+                    textAlign: 'center',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    cursor: 'pointer',
+                    background: active ? 'var(--text)' : 'var(--input-bg)',
+                    color: active ? 'var(--page-bg)' : 'var(--text)',
+                    border: 'none',
+                  }}
+                >
+                  {s.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </FixedHeader>
 
-      {cards.length > 0 && (
+      {section === 'deudas' && cards.length > 0 && (
         <div style={cardStyle}>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em', marginBottom: 10 }}>
             MÉTODO PARA SALIR DE DEUDAS
@@ -167,7 +265,7 @@ export default function Deudas({ data, setData }) {
         </div>
       )}
 
-      {sortedCards.map((c) => {
+      {section === 'deudas' && sortedCards.map((c) => {
         const paidToDate = c.history.reduce((a, h) => a + h.amount, 0);
         const pct = paidToDate + c.balance > 0 ? Math.round((paidToDate / (paidToDate + c.balance)) * 100) : 0;
         const isOverdue = c.nextPayment < today && c.balance > 0;
@@ -273,9 +371,11 @@ export default function Deudas({ data, setData }) {
         );
       })}
 
-      <button type="button" onClick={openNewModal} style={primaryButtonStyle()}>
-        + Nueva deuda
-      </button>
+      {section === 'deudas' && (
+        <button type="button" onClick={openNewModal} style={primaryButtonStyle()}>
+          + Nueva deuda
+        </button>
+      )}
 
       {modalOpen && (
         <BottomSheet onClose={closeModal}>
@@ -329,6 +429,149 @@ export default function Deudas({ data, setData }) {
             Confirmar pago
           </button>
         </BottomSheet>
+      )}
+
+      {section === 'gastos' && (
+        <>
+          {expenses.length > 0 && (
+            <div style={cardStyle}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em' }}>TOTAL GASTOS FIJOS AL MES</div>
+              <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', marginTop: 6 }}>{fmt(totalExpenses, currency)}</div>
+            </div>
+          )}
+
+          {sortedExpenses.map((e) => {
+            const paidThisMonth = e.history.some((h) => isSameMonth(h.date));
+            const daysLeft = daysUntilPayday(e.dueDay);
+            const linkedCard = e.medioPago !== 'efectivo' ? cards.find((c) => c.id === e.medioPago) : null;
+
+            return (
+              <div key={e.id} style={cardStyle}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>{e.name}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                    <button
+                      type="button"
+                      onClick={() => openEditExpenseModal(e)}
+                      aria-label="Editar"
+                      style={{
+                        width: 26,
+                        height: 26,
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        background: 'var(--input-bg)',
+                        flexShrink: 0,
+                      }}
+                    >
+                      <PencilIcon />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => askDeleteExpense(e.id)}
+                      aria-label="Eliminar"
+                      style={{
+                        width: 26,
+                        height: 26,
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: 16,
+                        lineHeight: 1,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        color: 'var(--accent)',
+                        background: 'var(--input-bg)',
+                        flexShrink: 0,
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700, marginTop: 2 }}>
+                  {e.categoria}
+                  {linkedCard && ` · ${linkedCard.name}${linkedCard.interestRate > 0 ? ` · ${linkedCard.interestRate}% E.A.` : ''}`}
+                </div>
+                <div style={{ fontWeight: 800, fontSize: 22, color: 'var(--text)', marginTop: 4 }}>{fmt(e.amount, currency)}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                  Vence día {e.dueDay} · {daysLeft === 0 ? 'hoy' : daysLeft === 1 ? 'en 1 día' : `en ${daysLeft} días`}
+                  {paidThisMonth && <span style={{ color: 'var(--accent)', fontWeight: 700 }}> · Pagado este mes</span>}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => markExpensePaid(e.id)}
+                  disabled={paidThisMonth}
+                  style={{
+                    padding: '9px 16px',
+                    borderRadius: 20,
+                    background: paidThisMonth ? 'var(--input-bg)' : 'var(--text)',
+                    color: paidThisMonth ? 'var(--text-secondary)' : 'var(--page-bg)',
+                    fontWeight: 700,
+                    fontSize: 12,
+                    cursor: paidThisMonth ? 'default' : 'pointer',
+                    display: 'inline-block',
+                    marginTop: 10,
+                    border: 'none',
+                  }}
+                >
+                  {paidThisMonth ? 'Ya pagado este mes' : 'Marcar como pagado'}
+                </button>
+
+                {confirmDeleteExpenseId === e.id && (
+                  <InlineConfirm message="¿Eliminar este gasto?" onConfirm={() => confirmDeleteExpense(e.id)} onCancel={cancelDeleteExpense} />
+                )}
+              </div>
+            );
+          })}
+
+          <button type="button" onClick={openNewExpenseModal} style={primaryButtonStyle()}>
+            + Nuevo gasto
+          </button>
+
+          {expenseModalOpen && (
+            <BottomSheet onClose={closeExpenseModal}>
+              <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{editingExpenseId ? 'Editar gasto' : 'Nuevo gasto'}</div>
+              <select value={expenseForm.categoria} onChange={setExpenseField('categoria')} style={textInputStyle()}>
+                {CATEGORIAS.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="text"
+                value={expenseForm.name}
+                onChange={setExpenseField('name')}
+                placeholder="Nombre (ej: Netflix, Internet, Transporte)"
+                style={textInputStyle()}
+              />
+              <NumberInput value={expenseForm.amount} onChange={setExpenseField('amount')} placeholder="Monto mensual" style={textInputStyle()} />
+              <input
+                type="text"
+                inputMode="numeric"
+                value={expenseForm.dueDay}
+                onChange={(e) => setExpenseForm((f) => ({ ...f, dueDay: e.target.value.replace(/\D/g, '').slice(0, 2) }))}
+                placeholder="Día del mes en que vence (1-31)"
+                style={textInputStyle()}
+              />
+              <select value={expenseForm.medioPago} onChange={setExpenseField('medioPago')} style={textInputStyle()}>
+                <option value="efectivo">Efectivo / débito</option>
+                {cards.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    Tarjeta: {c.name}
+                  </option>
+                ))}
+              </select>
+              <button type="button" onClick={saveExpense} style={{ ...primaryButtonStyle(), height: 50, borderRadius: 25 }}>
+                Guardar
+              </button>
+            </BottomSheet>
+          )}
+        </>
       )}
     </div>
   );

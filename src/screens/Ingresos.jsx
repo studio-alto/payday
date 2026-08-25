@@ -19,7 +19,7 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
   const filteredIncomes = selectedJob ? sortedIncomes.filter((i) => i.name.trim() === selectedJob) : sortedIncomes;
 
   const totalMonthFiltered = incomes
-    .filter((i) => isSameMonth(i.date) && (!selectedJob || i.name.trim() === selectedJob))
+    .filter((i) => isSameMonth(i.date) && i.estado !== 'proyectado' && (!selectedJob || i.name.trim() === selectedJob))
     .reduce((a, i) => a + i.amount, 0);
 
   const jobChipStyle = (active) => ({
@@ -105,8 +105,25 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {inc.name || dayTypeLabel(inc.type)}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {inc.name || dayTypeLabel(inc.type)}
+                  </div>
+                  {inc.estado === 'proyectado' && (
+                    <div
+                      style={{
+                        fontSize: 9,
+                        fontWeight: 700,
+                        color: 'white',
+                        background: 'var(--accent)',
+                        padding: '2px 6px',
+                        borderRadius: 8,
+                        flexShrink: 0,
+                      }}
+                    >
+                      PROYECTADO
+                    </div>
+                  )}
                 </div>
                 <div style={{ fontWeight: 700, fontSize: 17, color: 'var(--text)', marginTop: 4 }}>{fmt(inc.amount, currency)}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4, whiteSpace: 'nowrap' }}>

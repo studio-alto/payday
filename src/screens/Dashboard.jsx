@@ -4,22 +4,27 @@ import { cardStyle, labelStyle } from '../lib/styles';
 import FixedHeader from '../components/FixedHeader';
 
 export default function Dashboard({ data, setData, onNavigate }) {
-  const { user, incomes, goals, cards } = data;
+  const { user, incomes, goals, cards, expenses } = data;
   const today = todayISO();
   const week = last7Days();
 
-  const incomesThisMonth = incomes.filter((i) => isSameMonth(i.date));
+  const confirmedIncomes = incomes.filter((i) => i.estado !== 'proyectado');
+  const projectedIncomes = incomes.filter((i) => i.estado === 'proyectado');
+
+  const incomesThisMonth = confirmedIncomes.filter((i) => isSameMonth(i.date));
   const totalMonth = incomesThisMonth.reduce((a, i) => a + i.amount, 0);
   const ahorroMonth = incomesThisMonth.reduce((a, i) => a + (i.distribution.ahorro || 0), 0);
   const tarjetaMonth = incomesThisMonth.reduce((a, i) => a + (i.distribution.tarjeta || 0), 0);
-  const disponible = totalMonth - ahorroMonth - tarjetaMonth;
+  const totalGastos = expenses.reduce((a, e) => a + e.amount, 0);
+  const disponible = totalMonth - ahorroMonth - tarjetaMonth - totalGastos;
 
-  const weeklyTotal = incomes.filter((i) => week.includes(i.date)).reduce((a, i) => a + i.amount, 0);
+  const weeklyTotal = confirmedIncomes.filter((i) => week.includes(i.date)).reduce((a, i) => a + i.amount, 0);
   const totalAhorro = goals.reduce((a, g) => a + g.current, 0);
   const totalDeuda = cards.reduce((a, c) => a + c.balance, 0);
+  const totalProyectado = projectedIncomes.reduce((a, i) => a + i.amount, 0);
 
   const incomeByDate = {};
-  incomes.forEach((i) => {
+  confirmedIncomes.forEach((i) => {
     incomeByDate[i.date] = i;
   });
 
@@ -54,7 +59,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
   const nextGoal = goalsWithPct.find((g) => g.pct < 100) || goalsWithPct[0] || { name: 'Sin metas', current: 0, target: 1, pct: 0 };
   const goalDonut = `conic-gradient(var(--accent) ${nextGoal.pct || 0}%, var(--divider) ${nextGoal.pct || 0}% 100%)`;
 
-  const sortedIncomes = [...incomes].sort((a, b) => b.date.localeCompare(a.date));
+  const sortedIncomes = [...confirmedIncomes].sort((a, b) => b.date.localeCompare(a.date));
   const recentIncomes = sortedIncomes.slice(0, 4);
 
   const isUSD = user.currency === 'USD';
@@ -191,6 +196,18 @@ export default function Dashboard({ data, setData, onNavigate }) {
         </div>
       </div>
 
+      {projectedIncomes.length > 0 && (
+        <div style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+            <div style={labelStyle}>PRÓXIMOS A RECIBIR</div>
+            <div style={{ fontWeight: 800, fontSize: 20, color: 'var(--text)', marginTop: 3 }}>{fmt(totalProyectado, user.currency)}</div>
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+            {projectedIncomes.length === 1 ? '1 ingreso' : `${projectedIncomes.length} ingresos`}
+          </div>
+        </div>
+      )}
+
       {/* Meta principal + Ahorro/Deudas/Disponible */}
       <div className="meta-ahorro-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 0 }}>
@@ -216,6 +233,15 @@ export default function Dashboard({ data, setData, onNavigate }) {
             <div style={labelStyle}>DEUDAS</div>
             <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)', marginTop: 3 }}>{fmt(totalDeuda, user.currency)}</div>
           </div>
+          {totalGastos > 0 && (
+            <>
+              <div style={{ height: 1, background: 'var(--divider)' }} />
+              <div>
+                <div style={labelStyle}>GASTOS FIJOS</div>
+                <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)', marginTop: 3 }}>{fmt(totalGastos, user.currency)}</div>
+              </div>
+            </>
+          )}
           <div style={{ height: 1, background: 'var(--divider)' }} />
           <div>
             <div style={labelStyle}>DISPONIBLE</div>
