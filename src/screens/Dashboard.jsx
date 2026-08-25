@@ -18,6 +18,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
   const totalGastos = expenses.reduce((a, e) => a + e.amount, 0);
   const disponible = totalMonth - ahorroMonth - tarjetaMonth - totalGastos;
   const gastosPct = totalMonth > 0 ? Math.round((totalGastos / totalMonth) * 100) : 0;
+  const budgetNecesidades = user.budgetNecesidades ?? 50;
 
   const weeklyTotal = confirmedIncomes.filter((i) => week.includes(i.date)).reduce((a, i) => a + i.amount, 0);
   const totalAhorro = goals.reduce((a, g) => a + g.current, 0);
@@ -264,8 +265,8 @@ export default function Dashboard({ data, setData, onNavigate }) {
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginTop: 3 }}>
                   <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)' }}>{fmt(totalGastos, user.currency)}</div>
                   {totalMonth > 0 && (
-                    <div style={{ fontSize: 11, fontWeight: 700, color: gastosPct > 50 ? 'var(--accent)' : 'var(--text-secondary)' }}>
-                      {gastosPct}% de lo ganado · sugerido 50%
+                    <div style={{ fontSize: 11, fontWeight: 700, color: gastosPct > budgetNecesidades ? 'var(--accent)' : 'var(--text-secondary)' }}>
+                      {gastosPct}% de lo ganado · sugerido {budgetNecesidades}%
                     </div>
                   )}
                 </div>

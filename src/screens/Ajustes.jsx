@@ -7,6 +7,7 @@ import FixedHeader from '../components/FixedHeader';
 export default function Ajustes({ data, setData, canInstall, isInstalled, onInstall }) {
   const { user } = data;
   const dark = user.theme === 'oscuro';
+  const budgetTotal = (user.budgetNecesidades ?? 50) + (user.budgetDeseos ?? 30) + (user.budgetAhorro ?? 20);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -148,6 +149,42 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
           Cuántos pesos equivalen a 1 dólar / 1 euro. Ajústalo cuando cambie la tasa real.
+        </div>
+        <div style={{ height: 1, background: 'var(--divider)', margin: '4px 0' }} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.03em' }}>REGLA DE PRESUPUESTO</div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: budgetTotal === 100 ? 'var(--text-secondary)' : 'var(--accent)' }}>
+            Total: {budgetTotal}%
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>NECESIDADES</div>
+            <NumberInput
+              value={user.budgetNecesidades ?? 50}
+              onChange={setUserField('budgetNecesidades', (v) => Math.min(100, Number(v) || 0))}
+              style={{ ...textInputStyle(), padding: 12, borderRadius: 12 }}
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>DESEOS</div>
+            <NumberInput
+              value={user.budgetDeseos ?? 30}
+              onChange={setUserField('budgetDeseos', (v) => Math.min(100, Number(v) || 0))}
+              style={{ ...textInputStyle(), padding: 12, borderRadius: 12 }}
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>AHORRO + DEUDAS</div>
+            <NumberInput
+              value={user.budgetAhorro ?? 20}
+              onChange={setUserField('budgetAhorro', (v) => Math.min(100, Number(v) || 0))}
+              style={{ ...textInputStyle(), padding: 12, borderRadius: 12 }}
+            />
+          </div>
+        </div>
+        <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+          Se usa como sugerencia al registrar un ingreso y como referencia en el Dashboard — no limita lo que realmente hagas.
         </div>
       </div>
 

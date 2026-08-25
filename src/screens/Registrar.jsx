@@ -65,6 +65,9 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
   const overAllocated = ahorroMonto + tarjetaMonto > regAmount;
   const debtMethod = data.user.debtMethod || 'bola_nieve';
   const debtWaterfall = computeDebtWaterfall(data.cards, debtMethod, tarjetaMonto);
+  const budgetNecesidades = data.user.budgetNecesidades ?? 50;
+  const budgetDeseos = data.user.budgetDeseos ?? 30;
+  const budgetAhorro = data.user.budgetAhorro ?? 20;
 
   const setField = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
   const setDate = (e) => {
@@ -201,18 +204,20 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
           </div>
           {regAmount > 0 && (
             <div style={{ background: 'var(--input-bg)', borderRadius: 14, padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.03em' }}>SUGERENCIA 50/30/20</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.03em' }}>
+                SUGERENCIA DE PRESUPUESTO ({budgetNecesidades}/{budgetDeseos}/{budgetAhorro})
+              </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Necesidades (gastos fijos)</span>
-                <span style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(regAmount * 0.5, currency)}</span>
+                <span style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(regAmount * (budgetNecesidades / 100), currency)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Deseos</span>
-                <span style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(regAmount * 0.3, currency)}</span>
+                <span style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(regAmount * (budgetDeseos / 100), currency)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
                 <span style={{ color: 'var(--text-secondary)' }}>Ahorro + deudas</span>
-                <span style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(regAmount * 0.2, currency)}</span>
+                <span style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(regAmount * (budgetAhorro / 100), currency)}</span>
               </div>
             </div>
           )}
