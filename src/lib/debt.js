@@ -3,6 +3,25 @@ export const METHODS = [
   { key: 'avalancha', label: 'Avalancha', hint: 'Prioriza la tasa de interés más alta primero' },
 ];
 
+const MONTH_LABELS_SHORT = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+// Total abonado (sum of every card's payment history) per month, for the last
+// `monthsBack` months ending this month — used to chart the recent payment trend.
+export function monthlyPaidTotals(cards, monthsBack = 6, ref = new Date()) {
+  const months = Array.from({ length: monthsBack }, (_, i) => {
+    const d = new Date(ref.getFullYear(), ref.getMonth() - (monthsBack - 1 - i), 1);
+    return { year: d.getFullYear(), month: d.getMonth(), label: MONTH_LABELS_SHORT[d.getMonth()], total: 0 };
+  });
+  cards.forEach((c) => {
+    c.history.forEach((h) => {
+      const d = new Date(h.date + 'T00:00:00');
+      const bucket = months.find((m) => m.year === d.getFullYear() && m.month === d.getMonth());
+      if (bucket) bucket.total += h.amount;
+    });
+  });
+  return months;
+}
+
 export function sortDebtsByPriority(cards, method) {
   return [...cards].sort((a, b) => {
     if (method === 'avalancha') return (b.interestRate || 0) - (a.interestRate || 0);

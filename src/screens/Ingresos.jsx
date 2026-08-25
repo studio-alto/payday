@@ -6,23 +6,94 @@ import InlineConfirm from '../components/InlineConfirm';
 import PencilIcon from '../components/PencilIcon';
 import FixedHeader from '../components/FixedHeader';
 import { reverseIncomeEffects } from '../lib/debt';
-import { monthlyBreakdown } from '../lib/incomeStats';
 
 const MONTH_LABELS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+
+function IncomeRow({ inc, currency, isLast, onEdit, confirmDeleteId, setConfirmDeleteId, confirmDelete }) {
+  return (
+    <div style={{ padding: '11px 0', borderBottom: isLast ? 'none' : '1px solid var(--divider)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {inc.name || dayTypeLabel(inc.type)}
+            </div>
+            {inc.estado === 'proyectado' && (
+              <div style={{ fontSize: 9, fontWeight: 700, color: 'white', background: 'var(--accent)', padding: '2px 6px', borderRadius: 8, flexShrink: 0 }}>
+                PROYECTADO
+              </div>
+            )}
+          </div>
+          <div style={{ fontWeight: 700, fontSize: 17, color: 'var(--text)', marginTop: 4 }}>{fmt(inc.amount, currency)}</div>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4, whiteSpace: 'nowrap' }}>
+            {formatShortDate(inc.date)} · {dayTypeLabel(inc.type)}
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          <button
+            type="button"
+            onClick={() => onEdit(inc)}
+            aria-label="Editar"
+            style={{
+              width: 26,
+              height: 26,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              background: 'var(--input-bg)',
+              flexShrink: 0,
+            }}
+          >
+            <PencilIcon />
+          </button>
+          <button
+            type="button"
+            onClick={() => setConfirmDeleteId(inc.id)}
+            aria-label="Eliminar"
+            style={{
+              width: 26,
+              height: 26,
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: 16,
+              lineHeight: 1,
+              fontWeight: 700,
+              cursor: 'pointer',
+              color: 'var(--accent)',
+              background: 'var(--input-bg)',
+              flexShrink: 0,
+            }}
+          >
+            ×
+          </button>
+        </div>
+      </div>
+      {confirmDeleteId === inc.id && (
+        <InlineConfirm message="¿Eliminar este ingreso?" onConfirm={() => confirmDelete(inc.id)} onCancel={() => setConfirmDeleteId(null)} />
+      )}
+    </div>
+  );
+}
 
 export default function Ingresos({ data, setData, onNavigate, onEdit }) {
   const { incomes } = data;
   const { currency } = data.user;
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [selectedJob, setSelectedJob] = useState(null);
-  const [showAnnual, setShowAnnual] = useState(false);
-  const [annualYear, setAnnualYear] = useState(new Date().getFullYear());
+  const [year, setYear] = useState(new Date().getFullYear());
+  const [expandedMonths, setExpandedMonths] = useState(() => new Set([new Date().getMonth()]));
 
-  const annualMonths = monthlyBreakdown(incomes, annualYear).map((m) => ({ ...m, label: MONTH_LABELS[m.month] }));
-  const annualTotals = annualMonths.reduce(
-    (acc, m) => ({ ganado: acc.ganado + m.ganado, ahorro: acc.ahorro + m.ahorro, deudas: acc.deudas + m.deudas }),
-    { ganado: 0, ahorro: 0, deudas: 0 },
-  );
+  const toggleMonth = (m) =>
+    setExpandedMonths((prev) => {
+      const next = new Set(prev);
+      if (next.has(m)) next.delete(m);
+      else next.add(m);
+      return next;
+    });
 
   const jobNames = [...new Set(incomes.map((i) => i.name.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 
@@ -32,6 +103,15 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
   const totalMonthFiltered = incomes
     .filter((i) => isSameMonth(i.date) && i.estado !== 'proyectado' && (!selectedJob || i.name.trim() === selectedJob))
     .reduce((a, i) => a + i.amount, 0);
+
+  const monthGroups = MONTH_LABELS.map((label, m) => {
+    const items = filteredIncomes.filter((i) => {
+      const d = new Date(i.date + 'T00:00:00');
+      return d.getFullYear() === year && d.getMonth() === m;
+    });
+    return { month: m, label, items, total: items.reduce((a, i) => a + i.amount, 0) };
+  });
+  const yearTotal = monthGroups.reduce((a, mo) => a + mo.total, 0);
 
   const jobChipStyle = (active) => ({
     padding: '9px 14px',
@@ -104,140 +184,68 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
       </FixedHeader>
 
       <div style={cardStyle}>
-        <button
-          type="button"
-          onClick={() => setShowAnnual((s) => !s)}
-          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', cursor: 'pointer' }}
-        >
-          <div style={labelStyle}>RESUMEN ANUAL</div>
-          <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>{showAnnual ? 'Ocultar' : 'Ver'}</div>
-        </button>
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, marginBottom: 4 }}>
+          <button type="button" onClick={() => setYear((y) => y - 1)} aria-label="Año anterior" style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 700, fontSize: 14 }}>
+            ‹
+          </button>
+          <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{year}</div>
+          <button type="button" onClick={() => setYear((y) => y + 1)} aria-label="Año siguiente" style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 700, fontSize: 14 }}>
+            ›
+          </button>
+        </div>
+        <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-secondary)', marginBottom: 8 }}>
+          Total {year}: <span style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(yearTotal, currency)}</span>
+        </div>
 
-        {showAnnual && (
-          <div style={{ marginTop: 12 }}>
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, marginBottom: 10 }}>
-              <button type="button" onClick={() => setAnnualYear((y) => y - 1)} aria-label="Año anterior" style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 700, fontSize: 14 }}>
-                ‹
-              </button>
-              <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{annualYear}</div>
-              <button type="button" onClick={() => setAnnualYear((y) => y + 1)} aria-label="Año siguiente" style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 700, fontSize: 14 }}>
-                ›
-              </button>
-            </div>
-
-            <div style={{ display: 'flex', fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)', padding: '4px 0', borderBottom: '1px solid var(--divider)' }}>
-              <div style={{ flex: 1.2 }}>MES</div>
-              <div style={{ flex: 2, textAlign: 'right' }}>GANADO</div>
-              <div style={{ flex: 2, textAlign: 'right' }}>AHORRO</div>
-              <div style={{ flex: 2, textAlign: 'right' }}>DEUDAS</div>
-            </div>
-            {annualMonths.map((m) => (
-              <div
-                key={m.month}
-                style={{ display: 'flex', fontSize: 11, padding: '6px 0', borderBottom: '1px solid var(--divider)', color: m.ganado > 0 ? 'var(--text)' : 'var(--text-secondary)' }}
+        {monthGroups.map((mo) => {
+          const expanded = expandedMonths.has(mo.month);
+          const hasItems = mo.items.length > 0;
+          return (
+            <div key={mo.month} style={{ borderTop: '1px solid var(--divider)' }}>
+              <button
+                type="button"
+                onClick={() => toggleMonth(mo.month)}
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '12px 0', cursor: 'pointer' }}
               >
-                <div style={{ flex: 1.2, fontWeight: 700 }}>{m.label}</div>
-                <div style={{ flex: 2, textAlign: 'right' }}>{fmt(m.ganado, currency)}</div>
-                <div style={{ flex: 2, textAlign: 'right' }}>{fmt(m.ahorro, currency)}</div>
-                <div style={{ flex: 2, textAlign: 'right' }}>{fmt(m.deudas, currency)}</div>
-              </div>
-            ))}
-            <div style={{ display: 'flex', fontSize: 12, fontWeight: 800, padding: '8px 0 0 0', color: 'var(--text)' }}>
-              <div style={{ flex: 1.2 }}>Total</div>
-              <div style={{ flex: 2, textAlign: 'right' }}>{fmt(annualTotals.ganado, currency)}</div>
-              <div style={{ flex: 2, textAlign: 'right' }}>{fmt(annualTotals.ahorro, currency)}</div>
-              <div style={{ flex: 2, textAlign: 'right' }}>{fmt(annualTotals.deudas, currency)}</div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      <div style={cardStyle}>
-        {filteredIncomes.length === 0 && (
-          <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
-            {selectedJob ? 'No hay ingresos de este trabajo.' : 'Todavía no has registrado ingresos.'}
-          </div>
-        )}
-        {filteredIncomes.map((inc, idx) => (
-          <div
-            key={inc.id}
-            style={{ padding: '11px 0', borderBottom: idx === filteredIncomes.length - 1 ? 'none' : '1px solid var(--divider)' }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {inc.name || dayTypeLabel(inc.type)}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: 'var(--text-secondary)',
+                      transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.2s ease',
+                    }}
+                  >
+                    ›
                   </div>
-                  {inc.estado === 'proyectado' && (
-                    <div
-                      style={{
-                        fontSize: 9,
-                        fontWeight: 700,
-                        color: 'white',
-                        background: 'var(--accent)',
-                        padding: '2px 6px',
-                        borderRadius: 8,
-                        flexShrink: 0,
-                      }}
-                    >
-                      PROYECTADO
-                    </div>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: hasItems ? 'var(--text)' : 'var(--text-secondary)' }}>{mo.label}</div>
+                </div>
+                <div style={{ fontWeight: 700, fontSize: 13, color: hasItems ? 'var(--text)' : 'var(--text-secondary)' }}>{fmt(mo.total, currency)}</div>
+              </button>
+
+              {expanded && (
+                <div style={{ paddingBottom: 8 }}>
+                  {hasItems ? (
+                    mo.items.map((inc, idx) => (
+                      <IncomeRow
+                        key={inc.id}
+                        inc={inc}
+                        currency={currency}
+                        isLast={idx === mo.items.length - 1}
+                        onEdit={onEdit}
+                        confirmDeleteId={confirmDeleteId}
+                        setConfirmDeleteId={setConfirmDeleteId}
+                        confirmDelete={confirmDelete}
+                      />
+                    ))
+                  ) : (
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', paddingBottom: 8 }}>Sin ingresos este mes.</div>
                   )}
                 </div>
-                <div style={{ fontWeight: 700, fontSize: 17, color: 'var(--text)', marginTop: 4 }}>{fmt(inc.amount, currency)}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4, whiteSpace: 'nowrap' }}>
-                  {formatShortDate(inc.date)} · {dayTypeLabel(inc.type)}
-                </div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                <button
-                  type="button"
-                  onClick={() => onEdit(inc)}
-                  aria-label="Editar"
-                  style={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    background: 'var(--input-bg)',
-                    flexShrink: 0,
-                  }}
-                >
-                  <PencilIcon />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setConfirmDeleteId(inc.id)}
-                  aria-label="Eliminar"
-                  style={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 16,
-                    lineHeight: 1,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    color: 'var(--accent)',
-                    background: 'var(--input-bg)',
-                    flexShrink: 0,
-                  }}
-                >
-                  ×
-                </button>
-              </div>
+              )}
             </div>
-            {confirmDeleteId === inc.id && (
-              <InlineConfirm message="¿Eliminar este ingreso?" onConfirm={() => confirmDelete(inc.id)} onCancel={() => setConfirmDeleteId(null)} />
-            )}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

@@ -8,7 +8,7 @@ import InlineConfirm from '../components/InlineConfirm';
 import NumberInput from '../components/NumberInput';
 import PencilIcon from '../components/PencilIcon';
 import FixedHeader from '../components/FixedHeader';
-import { sortDebtsByPriority, simulatePayoffPlan, formatMonthsLabel, METHODS } from '../lib/debt';
+import { sortDebtsByPriority, simulatePayoffPlan, formatMonthsLabel, monthlyPaidTotals, METHODS } from '../lib/debt';
 
 const TIPOS = ['Tarjeta de crédito', 'Préstamo', 'Otro'];
 const CATEGORIAS = ['Suscripción', 'Servicios', 'Transporte', 'Vivienda', 'Tarjeta de crédito', 'Otro'];
@@ -36,6 +36,13 @@ export default function Deudas({ data, setData }) {
   const sortedCards = sortDebtsByPriority(cards, debtMethod);
   const priorityId = sortedCards.find((c) => c.balance > 0)?.id;
   const payoffPlan = simulatePayoffPlan(cards, debtMethod, extraMensual);
+
+  const totalBalance = cards.reduce((a, c) => a + c.balance, 0);
+  const totalPaidAllTime = cards.reduce((a, c) => a + c.history.reduce((h, x) => h + x.amount, 0), 0);
+  const pctPaidGlobal = totalPaidAllTime + totalBalance > 0 ? Math.round((totalPaidAllTime / (totalPaidAllTime + totalBalance)) * 100) : 0;
+  const debtDonut = `conic-gradient(var(--accent) ${pctPaidGlobal}%, var(--divider) ${pctPaidGlobal}% 100%)`;
+  const monthlyPaid = monthlyPaidTotals(cards, 6);
+  const maxMonthlyPaid = Math.max(1, ...monthlyPaid.map((m) => m.total));
 
   const sortedExpenses = [...expenses].sort((a, b) => daysUntilPayday(a.dueDay) - daysUntilPayday(b.dueDay));
   const totalExpenses = expenses.reduce((a, e) => a + e.amount, 0);
@@ -230,6 +237,49 @@ export default function Deudas({ data, setData }) {
           </div>
         </div>
       </FixedHeader>
+
+      {section === 'deudas' && cards.length > 0 && (
+        <div style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: 20 }}>
+          <div style={{ width: 88, height: 88, borderRadius: '50%', background: debtDonut, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <div style={{ width: 68, height: 68, borderRadius: '50%', background: 'var(--card-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{pctPaidGlobal}%</div>
+            </div>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0, flex: 1 }}>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700 }}>FALTA POR PAGAR</div>
+              <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--text)' }}>{fmt(totalBalance, currency)}</div>
+            </div>
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700 }}>ABONADO EN TOTAL</div>
+              <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--accent)' }}>{fmt(totalPaidAllTime, currency)}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {section === 'deudas' && cards.length > 0 && totalPaidAllTime > 0 && (
+        <div style={cardStyle}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em', marginBottom: 12 }}>ABONADO POR MES</div>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 90 }}>
+            {monthlyPaid.map((m) => (
+              <div key={`${m.year}-${m.month}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, height: '100%', justifyContent: 'flex-end' }}>
+                <div style={{ fontSize: 9, color: 'var(--text-secondary)', fontWeight: 700 }}>{m.total > 0 ? fmt(m.total, currency) : ''}</div>
+                <div
+                  style={{
+                    width: '100%',
+                    borderRadius: 6,
+                    height: Math.max(4, Math.round((m.total / maxMonthlyPaid) * 60)),
+                    background: m.total > 0 ? 'var(--accent)' : 'var(--divider)',
+                    transition: 'height 0.4s ease',
+                  }}
+                />
+                <div style={{ fontSize: 10, color: 'var(--text-secondary)', fontWeight: 700 }}>{m.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {section === 'deudas' && cards.length > 0 && (
         <div style={cardStyle}>
