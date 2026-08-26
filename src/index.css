@@ -60,6 +60,11 @@ input,
 select,
 textarea {
   font-family: inherit;
+  /* iOS Safari auto-zooms the page on focus for any field under 16px, then leaves
+     it zoomed in after typing. This is the fallback for any field that doesn't
+     set its own (larger) size inline — see textInputStyle() and the few custom
+     inputs across screens, all kept at >=16px for the same reason. */
+  font-size: 16px;
 }
 
 @keyframes fadeOut {

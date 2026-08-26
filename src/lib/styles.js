@@ -24,7 +24,7 @@ export function textInputStyle(big = false) {
     padding: big ? 16 : 13,
     borderRadius: big ? 16 : 14,
     border: 'none',
-    fontSize: big ? 22 : 14,
+    fontSize: big ? 22 : 16,
     fontWeight: big ? 800 : 400,
     background: 'var(--input-bg)',
     color: 'var(--text)',
