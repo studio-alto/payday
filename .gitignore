@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# EmailJS credentials — set the same values in Cloudflare Pages' build
+# environment variables so the deployed site can send backup emails too.
+.env
+.env.local
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

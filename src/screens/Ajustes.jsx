@@ -6,6 +6,7 @@ import { fetchLiveExchangeRates } from '../lib/exchangeRates';
 import { fmt } from '../lib/format';
 import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import { hashPin } from '../lib/pin';
+import { sendBackupEmail, emailBackupConfigured } from '../lib/emailBackup';
 import NumberInput from '../components/NumberInput';
 import FixedHeader from '../components/FixedHeader';
 import BottomSheet from '../components/BottomSheet';
@@ -138,6 +139,18 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
       }
     }
     exportData();
+  };
+
+  const [emailStatus, setEmailStatus] = useState('idle');
+  const sendEmailBackup = async () => {
+    if (!user.backupEmail) return;
+    setEmailStatus('loading');
+    try {
+      await sendBackupEmail(data, user.backupEmail);
+      setEmailStatus('sent');
+    } catch {
+      setEmailStatus('error');
+    }
   };
 
   const exportCsv = () => {
@@ -412,6 +425,36 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
         <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: -4 }}>
           Mándalo a Drive, correo o donde prefieras guardarlo — luego se puede restaurar en la app.
         </div>
+
+        {emailBackupConfigured && (
+          <>
+            <div style={{ height: 1, background: 'var(--divider)', margin: '4px 0' }} />
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>ENVIAR RESPALDO POR CORREO</div>
+            <input
+              type="email"
+              value={user.backupEmail || ''}
+              onChange={setUserField('backupEmail')}
+              placeholder="tu@correo.com"
+              style={textInputStyle()}
+            />
+            <button
+              type="button"
+              onClick={sendEmailBackup}
+              disabled={!user.backupEmail || emailStatus === 'loading'}
+              style={{ ...actionRowStyle, opacity: !user.backupEmail || emailStatus === 'loading' ? 0.5 : 1 }}
+            >
+              {emailStatus === 'loading' ? 'Enviando…' : 'Enviar ahora'}
+            </button>
+            <div style={{ fontSize: 11, color: emailStatus === 'error' ? 'var(--accent-text)' : 'var(--text-secondary)', marginTop: -4 }}>
+              {emailStatus === 'sent'
+                ? 'Enviado. Revisa tu bandeja de entrada (y spam, la primera vez).'
+                : emailStatus === 'error'
+                  ? 'No se pudo enviar. Revisa tu internet e intenta de nuevo.'
+                  : 'Te llega como archivo adjunto, listo para restaurar cuando quieras.'}
+            </div>
+          </>
+        )}
+
         <input type="file" ref={fileInputRef} accept="application/json" onChange={handleRestoreFile} style={{ display: 'none' }} />
         <button type="button" onClick={triggerRestore} style={actionRowStyle}>
           Restaurar datos
