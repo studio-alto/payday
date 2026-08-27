@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { fmt } from '../lib/format';
 import { uid } from '../lib/id';
 import { cardStyle, textInputStyle, primaryButtonStyle } from '../lib/styles';
+import { computeSavingsProjection } from '../lib/goalProjection';
+import { formatFullDate } from '../lib/dates';
 import BottomSheet from '../components/BottomSheet';
 import InlineConfirm from '../components/InlineConfirm';
 import NumberInput from '../components/NumberInput';
@@ -11,7 +13,7 @@ import FixedHeader from '../components/FixedHeader';
 const GOAL_PRESETS = ['Fondo de emergencia', 'Viaje', 'Laptop', 'Curso', 'Otra'];
 
 function emptyForm() {
-  return { name: '', target: '', current: '', description: '' };
+  return { name: '', target: '', current: '', description: '', fechaObjetivo: '' };
 }
 
 export default function Metas({ data, setData }) {
@@ -32,7 +34,7 @@ export default function Metas({ data, setData }) {
   };
   const openEditModal = (g) => {
     setEditingGoalId(g.id);
-    setForm({ name: g.name, target: String(g.target), current: String(g.current), description: g.description || '' });
+    setForm({ name: g.name, target: String(g.target), current: String(g.current), description: g.description || '', fechaObjetivo: g.fechaObjetivo || '' });
     setModalOpen(true);
   };
   const closeModal = () => setModalOpen(false);
@@ -47,7 +49,7 @@ export default function Metas({ data, setData }) {
           ...s,
           goals: s.goals.map((g) =>
             g.id === editingGoalId
-              ? { ...g, name: form.name, target: Number(form.target), current: Number(form.current) || 0, description: form.description }
+              ? { ...g, name: form.name, target: Number(form.target), current: Number(form.current) || 0, description: form.description, fechaObjetivo: form.fechaObjetivo || null }
               : g,
           ),
         };
@@ -56,7 +58,7 @@ export default function Metas({ data, setData }) {
         ...s,
         goals: [
           ...s.goals,
-          { id: uid(), name: form.name, target: Number(form.target), current: Number(form.current) || 0, description: form.description, estado: 'activa' },
+          { id: uid(), name: form.name, target: Number(form.target), current: Number(form.current) || 0, description: form.description, fechaObjetivo: form.fechaObjetivo || null, estado: 'activa' },
         ],
       };
     });
@@ -98,6 +100,7 @@ export default function Metas({ data, setData }) {
 
       {goals.map((g) => {
         const pct = Math.min(100, Math.round((g.current / g.target) * 100));
+        const projection = computeSavingsProjection(g.target - g.current, g.fechaObjetivo);
         return (
           <div key={g.id} style={cardStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -170,6 +173,34 @@ export default function Metas({ data, setData }) {
               </button>
             </div>
 
+            {projection && (
+              <div style={{ marginTop: 10, padding: 12, borderRadius: 14, background: 'var(--accent-soft-bg)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {projection.overdue ? (
+                  <div style={{ fontSize: 12, color: 'var(--danger-text)', fontWeight: 700 }}>
+                    La fecha objetivo ({formatFullDate(g.fechaObjetivo)}) ya pasó — edita la meta para ponerle una nueva fecha.
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.03em' }}>
+                      PARA LLEGAR ANTES DEL {formatFullDate(g.fechaObjetivo)}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>Por día</span>
+                      <span style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(projection.daily, currency)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>Por semana</span>
+                      <span style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(projection.weekly, currency)}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>Por mes</span>
+                      <span style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(projection.monthly, currency)}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
             {addingToGoalId === g.id && (
               <div style={{ marginTop: 10, padding: 12, borderRadius: 14, background: 'var(--input-bg)', display: 'flex', gap: 8 }}>
                 <NumberInput
@@ -229,6 +260,15 @@ export default function Metas({ data, setData }) {
           <input type="text" value={form.name} onChange={setField('name')} placeholder="Nombre de la meta" style={textInputStyle()} />
           <NumberInput value={form.target} onChange={setField('target')} placeholder="Monto objetivo" style={textInputStyle()} />
           <NumberInput value={form.current} onChange={setField('current')} placeholder="Monto actual (opcional)" style={textInputStyle()} />
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>
+              ¿PARA CUÁNDO LA QUIERES? (OPCIONAL)
+            </div>
+            <input type="date" value={form.fechaObjetivo} onChange={setField('fechaObjetivo')} style={textInputStyle()} />
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
+              Si la pones, te decimos cuánto ahorrar por día, semana o mes para llegar a tiempo.
+            </div>
+          </div>
           <textarea
             value={form.description}
             onChange={setField('description')}
