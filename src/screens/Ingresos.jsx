@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { fmt } from '../lib/format';
 import { dayTypeLabel, formatShortDate, isSameMonth } from '../lib/dates';
-import { cardStyle, labelStyle } from '../lib/styles';
+import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import InlineConfirm from '../components/InlineConfirm';
 import PencilIcon from '../components/PencilIcon';
 import FixedHeader from '../components/FixedHeader';
@@ -63,7 +63,7 @@ function IncomeRow({ inc, currency, isLast, onEdit, confirmDeleteId, setConfirmD
               lineHeight: 1,
               fontWeight: 700,
               cursor: 'pointer',
-              color: 'var(--accent)',
+              color: 'var(--accent-text)',
               background: 'var(--input-bg)',
               flexShrink: 0,
             }}
@@ -84,6 +84,7 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
   const { currency } = data.user;
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [selectedJob, setSelectedJob] = useState(null);
+  const [searchText, setSearchText] = useState('');
   const [year, setYear] = useState(new Date().getFullYear());
   const [expandedMonths, setExpandedMonths] = useState(() => new Set([new Date().getMonth()]));
 
@@ -98,7 +99,12 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
   const jobNames = [...new Set(incomes.map((i) => i.name.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 
   const sortedIncomes = [...incomes].sort((a, b) => b.date.localeCompare(a.date));
-  const filteredIncomes = selectedJob ? sortedIncomes.filter((i) => i.name.trim() === selectedJob) : sortedIncomes;
+  const search = searchText.trim().toLowerCase();
+  const filteredIncomes = sortedIncomes.filter((i) => {
+    if (selectedJob && i.name.trim() !== selectedJob) return false;
+    if (search && !`${i.name} ${i.note || ''}`.toLowerCase().includes(search)) return false;
+    return true;
+  });
 
   const totalMonthFiltered = incomes
     .filter((i) => isSameMonth(i.date) && i.estado !== 'proyectado' && (!selectedJob || i.name.trim() === selectedJob))
@@ -183,6 +189,14 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
         </div>
       </FixedHeader>
 
+      <input
+        type="text"
+        value={searchText}
+        onChange={(e) => setSearchText(e.target.value)}
+        placeholder="Buscar por nombre o nota…"
+        style={textInputStyle()}
+      />
+
       <div style={cardStyle}>
         <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, marginBottom: 4 }}>
           <button type="button" onClick={() => setYear((y) => y - 1)} aria-label="Año anterior" style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 700, fontSize: 14 }}>
@@ -198,7 +212,7 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
         </div>
 
         {monthGroups.map((mo) => {
-          const expanded = expandedMonths.has(mo.month);
+          const expanded = search ? mo.items.length > 0 : expandedMonths.has(mo.month);
           const hasItems = mo.items.length > 0;
           return (
             <div key={mo.month} style={{ borderTop: '1px solid var(--divider)' }}>

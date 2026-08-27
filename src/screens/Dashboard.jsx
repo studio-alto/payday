@@ -173,7 +173,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
             {fmt(totalMonth, user.currency)}
           </div>
           <div style={{ fontSize: 12, color: 'var(--text)', marginTop: 6 }}>
-            Esta semana <span style={{ color: 'var(--accent)', fontWeight: 700 }}>{fmt(weeklyTotal, user.currency)} ↑</span>
+            Esta semana <span style={{ color: 'var(--accent-text)', fontWeight: 700 }}>{fmt(weeklyTotal, user.currency)} ↑</span>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 5, height: 70 }}>
@@ -343,7 +343,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
             <button
               type="button"
               onClick={() => onNavigate('ingresos')}
-              style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)', cursor: 'pointer' }}
+              style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer' }}
             >
               Ver todos
             </button>

@@ -5,6 +5,10 @@
   --text-secondary: #9ca3af;
   --input-bg: #f0f0f0;
   --divider: #efefef;
+  /* #ff5a36 reads fine as a button fill (white text on top) or at large sizes, but
+     falls short of readable contrast as small text on white/card backgrounds —
+     use this darker variant anywhere the accent color is the text color itself. */
+  --accent-text: #c1391c;
 }
 
 [data-theme='oscuro'] {
@@ -14,6 +18,9 @@
   --text-secondary: #9ca3af;
   --input-bg: #2a2a2c;
   --divider: #2c2c2e;
+  /* Light text on a near-black ground already has plenty of contrast at the
+     regular accent color, so no darkening needed here. */
+  --accent-text: #ff5a36;
 }
 
 :root {

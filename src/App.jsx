@@ -4,6 +4,7 @@ import { setExchangeRates } from './lib/format';
 import { fetchLiveExchangeRates } from './lib/exchangeRates';
 import { todayISO } from './lib/dates';
 import Splash from './components/Splash';
+import AppLock from './components/AppLock';
 import BottomNav from './components/BottomNav';
 import Dashboard from './screens/Dashboard';
 import Registrar from './screens/Registrar';
@@ -20,10 +21,22 @@ export default function App() {
   const [showSplash, setShowSplash] = useState(true);
   const [installPrompt, setInstallPrompt] = useState(null);
   const [isInstalled, setIsInstalled] = useState(() => window.matchMedia('(display-mode: standalone)').matches);
+  const [locked, setLocked] = useState(() => !!data.user.appLockPin);
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [activeTab]);
+
+  // Re-lock the moment the app is hidden (tab switched, phone backgrounded), so the
+  // lock screen is the first thing shown again — not a flash of the real data.
+  useEffect(() => {
+    if (!data.user.appLockPin) return;
+    const onVisibility = () => {
+      if (document.hidden) setLocked(true);
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    return () => document.removeEventListener('visibilitychange', onVisibility);
+  }, [data.user.appLockPin]);
 
   // Plain navigation always resets to "create" mode; only startEditIncome opens the form pre-filled.
   const navigate = (tab) => {
@@ -102,6 +115,7 @@ export default function App() {
       }}
     >
       {showSplash && <Splash fading={splashFading} />}
+      {locked && data.user.appLockPin && <AppLock pinHash={data.user.appLockPin} onUnlock={() => setLocked(false)} />}
 
       <div className="app-scroll" style={{ width: '100%', maxWidth: 640, padding: '0 20px var(--nav-clearance) 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
         {activeTab === 'dashboard' && <Dashboard data={data} setData={setData} onNavigate={navigate} />}

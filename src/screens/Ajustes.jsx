@@ -5,8 +5,11 @@ import { averageRecentIncome } from '../lib/incomeStats';
 import { fetchLiveExchangeRates } from '../lib/exchangeRates';
 import { fmt } from '../lib/format';
 import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
+import { hashPin } from '../lib/pin';
 import NumberInput from '../components/NumberInput';
 import FixedHeader from '../components/FixedHeader';
+import BottomSheet from '../components/BottomSheet';
+import PinPad from '../components/PinPad';
 
 // Guards against restoring a file that parses as JSON but doesn't have the shape
 // the rest of the app assumes (e.g. hand-edited, or exported by a future version
@@ -47,6 +50,51 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [ratesStatus, setRatesStatus] = useState('idle');
   const fileInputRef = useRef(null);
+
+  const [pinFlow, setPinFlow] = useState(null);
+  const [pinResetSignal, setPinResetSignal] = useState(0);
+  const bumpPinReset = () => setPinResetSignal((n) => n + 1);
+  const startPinSetup = () => setPinFlow({ action: 'setup', phase: 'new1', firstPin: null, error: null });
+  const startPinChange = () => setPinFlow({ action: 'change', phase: 'verify', firstPin: null, error: null });
+  const startPinDisable = () => setPinFlow({ action: 'disable', phase: 'verify', firstPin: null, error: null });
+  const closePinFlow = () => setPinFlow(null);
+
+  const handlePinDigits = async (digits) => {
+    if (!pinFlow) return;
+    if (pinFlow.phase === 'verify') {
+      const hash = await hashPin(digits);
+      if (hash !== user.appLockPin) {
+        setPinFlow((f) => ({ ...f, error: 'PIN incorrecto' }));
+        bumpPinReset();
+        return;
+      }
+      if (pinFlow.action === 'disable') {
+        setData((s) => ({ ...s, user: { ...s.user, appLockPin: null } }));
+        closePinFlow();
+        return;
+      }
+      setPinFlow({ action: 'change', phase: 'new1', firstPin: null, error: null });
+      bumpPinReset();
+      return;
+    }
+    if (pinFlow.phase === 'new1') {
+      setPinFlow((f) => ({ ...f, phase: 'new2', firstPin: digits, error: null }));
+      bumpPinReset();
+      return;
+    }
+    if (pinFlow.phase === 'new2') {
+      if (digits !== pinFlow.firstPin) {
+        setPinFlow((f) => ({ ...f, phase: 'new1', firstPin: null, error: 'Los PIN no coinciden, intenta otra vez' }));
+        bumpPinReset();
+        return;
+      }
+      const hash = await hashPin(digits);
+      setData((s) => ({ ...s, user: { ...s.user, appLockPin: hash } }));
+      closePinFlow();
+    }
+  };
+
+  const pinPhaseLabel = pinFlow?.phase === 'verify' ? 'Ingresa tu PIN actual' : pinFlow?.phase === 'new1' ? 'Crea un PIN de 4 dígitos' : 'Confirma tu PIN';
 
   const refreshRates = async () => {
     setRatesStatus('loading');
@@ -199,7 +247,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
             type="button"
             onClick={refreshRates}
             disabled={ratesStatus === 'loading'}
-            style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', cursor: ratesStatus === 'loading' ? 'default' : 'pointer' }}
+            style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-text)', cursor: ratesStatus === 'loading' ? 'default' : 'pointer' }}
           >
             {ratesStatus === 'loading' ? 'Actualizando…' : 'Actualizar ahora'}
           </button>
@@ -303,6 +351,39 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
         </button>
       </div>
 
+      <div style={labelStyle}>SEGURIDAD</div>
+      <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        {!user.appLockPin ? (
+          <>
+            <div style={{ fontSize: 13, color: 'var(--text)' }}>
+              Pide un PIN de 4 dígitos cada vez que abres la app, para que nadie más vea tus datos si toma tu teléfono
+              desbloqueado.
+            </div>
+            <button type="button" onClick={startPinSetup} style={{ ...actionRowStyle, background: 'var(--accent)', color: 'white' }}>
+              Activar bloqueo con PIN
+            </button>
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 700 }}>Bloqueo con PIN activado ✓</div>
+            <button type="button" onClick={startPinChange} style={actionRowStyle}>
+              Cambiar PIN
+            </button>
+            <button type="button" onClick={startPinDisable} style={{ ...actionRowStyle, color: 'var(--accent-text)' }}>
+              Desactivar bloqueo
+            </button>
+          </>
+        )}
+      </div>
+
+      {pinFlow && (
+        <BottomSheet onClose={closePinFlow}>
+          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)', textAlign: 'center' }}>{pinPhaseLabel}</div>
+          {pinFlow.error && <div style={{ fontSize: 12, color: 'var(--accent-text)', textAlign: 'center' }}>{pinFlow.error}</div>}
+          <PinPad onComplete={handlePinDigits} resetSignal={pinResetSignal} />
+        </BottomSheet>
+      )}
+
       <div style={labelStyle}>DATOS</div>
       <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 10 }}>
         <button type="button" onClick={exportCsv} style={actionRowStyle}>
@@ -319,7 +400,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
         <button type="button" onClick={triggerRestore} style={actionRowStyle}>
           Restaurar datos
         </button>
-        <button type="button" onClick={() => setResetConfirmOpen(true)} style={{ ...actionRowStyle, color: 'var(--accent)' }}>
+        <button type="button" onClick={() => setResetConfirmOpen(true)} style={{ ...actionRowStyle, color: 'var(--accent-text)' }}>
           Limpiar todo
         </button>
 

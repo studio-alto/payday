@@ -258,7 +258,7 @@ export default function Deudas({ data, setData }) {
             </div>
             <div>
               <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700 }}>ABONADO EN TOTAL</div>
-              <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--accent)' }}>{fmt(totalPaidAllTime, currency)}</div>
+              <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--accent-text)' }}>{fmt(totalPaidAllTime, currency)}</div>
             </div>
           </div>
         </div>
@@ -331,16 +331,16 @@ export default function Deudas({ data, setData }) {
 
           <div style={{ marginTop: 12 }}>
             {payoffPlan.perCard.length === 0 ? (
-              <div style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 700 }}>Ya no tienes deudas pendientes.</div>
+              <div style={{ fontSize: 13, color: 'var(--accent-text)', fontWeight: 700 }}>Ya no tienes deudas pendientes.</div>
             ) : payoffPlan.stuck ? (
-              <div style={{ fontSize: 12, color: 'var(--accent)' }}>
+              <div style={{ fontSize: 12, color: 'var(--accent-text)' }}>
                 Con los pagos mínimos actuales no alcanzas a cubrir el interés. Aumenta el extra mensual o los pagos mínimos.
               </div>
             ) : (
               <>
                 <div style={{ fontSize: 13, color: 'var(--text)' }}>
                   Terminarías de pagar todo en{' '}
-                  <span style={{ fontWeight: 800, color: 'var(--accent)' }}>{formatMonthsLabel(payoffPlan.monthsToPayoff)}</span>
+                  <span style={{ fontWeight: 800, color: 'var(--accent-text)' }}>{formatMonthsLabel(payoffPlan.monthsToPayoff)}</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
                   {payoffPlan.perCard.map((c) => (
@@ -418,7 +418,7 @@ export default function Deudas({ data, setData }) {
                     lineHeight: 1,
                     fontWeight: 700,
                     cursor: 'pointer',
-                    color: 'var(--accent)',
+                    color: 'var(--accent-text)',
                     background: 'var(--input-bg)',
                     flexShrink: 0,
                   }}
@@ -434,7 +434,7 @@ export default function Deudas({ data, setData }) {
             <div style={{ fontWeight: 800, fontSize: 22, color: 'var(--text)', marginTop: 4 }}>{fmt(c.balance, currency)}</div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
               Próximo pago: {formatShortDate(c.nextPayment)}
-              {isOverdue && <span style={{ color: 'var(--accent)', fontWeight: 700 }}> · Vencido</span>}
+              {isOverdue && <span style={{ color: 'var(--accent-text)', fontWeight: 700 }}> · Vencido</span>}
             </div>
             <div style={{ height: 7, background: 'var(--divider)', borderRadius: 6, overflow: 'hidden', marginTop: 10 }}>
               <div style={{ height: '100%', width: `${pct}%`, background: 'var(--accent)', borderRadius: 6, transition: 'width 0.5s ease' }} />
@@ -579,7 +579,7 @@ export default function Deudas({ data, setData }) {
                         lineHeight: 1,
                         fontWeight: 700,
                         cursor: 'pointer',
-                        color: 'var(--accent)',
+                        color: 'var(--accent-text)',
                         background: 'var(--input-bg)',
                         flexShrink: 0,
                       }}
@@ -595,7 +595,7 @@ export default function Deudas({ data, setData }) {
                 <div style={{ fontWeight: 800, fontSize: 22, color: 'var(--text)', marginTop: 4 }}>{fmt(e.amount, currency)}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
                   Vence día {e.dueDay} · {daysLeft === 0 ? 'hoy' : daysLeft === 1 ? 'en 1 día' : `en ${daysLeft} días`}
-                  {paidThisMonth && <span style={{ color: 'var(--accent)', fontWeight: 700 }}> · Pagado este mes</span>}
+                  {paidThisMonth && <span style={{ color: 'var(--accent-text)', fontWeight: 700 }}> · Pagado este mes</span>}
                 </div>
                 <button
                   type="button"

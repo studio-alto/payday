@@ -376,7 +376,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
           <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>¿Cuánto al ahorro?</div>
           <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>De {fmt(regAmount, currency)} ganados</div>
           {form.esFuturo && (
-            <div style={{ fontSize: 12, color: 'var(--accent)', background: 'var(--input-bg)', padding: 10, borderRadius: 12 }}>
+            <div style={{ fontSize: 12, color: 'var(--accent-text)', background: 'var(--input-bg)', padding: 10, borderRadius: 12 }}>
               Como es un ingreso futuro, esta distribución quedará planeada pero no se aplicará a tus metas hasta que confirmes que ya lo recibiste.
             </div>
           )}
@@ -421,7 +421,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
               />
             </div>
           </div>
-          <div style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 700 }}>Ahorro: {fmt(ahorroMonto, currency)}</div>
+          <div style={{ fontSize: 13, color: 'var(--accent-text)', fontWeight: 700 }}>Ahorro: {fmt(ahorroMonto, currency)}</div>
           {data.goals.length > 0 && ahorroMonto > 0 && (
             <div>
               <div style={fieldLabelStyle}>¿A QUÉ META VA ESTE AHORRO?</div>
@@ -529,8 +529,8 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
               <span style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(ahorroMonto, currency)}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-              <span style={{ color: 'var(--accent)', fontWeight: 700 }}>Deudas</span>
-              <span style={{ fontWeight: 700, color: 'var(--accent)' }}>{fmt(tarjetaMonto, currency)}</span>
+              <span style={{ color: 'var(--accent-text)', fontWeight: 700 }}>Deudas</span>
+              <span style={{ fontWeight: 700, color: 'var(--accent-text)' }}>{fmt(tarjetaMonto, currency)}</span>
             </div>
           </div>
           {tarjetaMonto > 0 && (
@@ -555,7 +555,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
               )}
             </div>
           )}
-          {overAllocated && <div style={{ fontSize: 12, color: 'var(--accent)' }}>La suma no puede superar lo ganado.</div>}
+          {overAllocated && <div style={{ fontSize: 12, color: 'var(--accent-text)' }}>La suma no puede superar lo ganado.</div>}
           <div style={{ display: 'flex', gap: 10 }}>
             <button type="button" onClick={() => setStep(2)} style={{ ...secondaryButtonStyle, flex: 1 }}>
               Atrás
@@ -585,7 +585,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, borderTop: '1px solid var(--divider)', paddingTop: 10 }}>
               <span style={{ color: 'var(--text)', fontWeight: 700 }}>Disponible</span>
-              <span style={{ fontWeight: 800, color: 'var(--accent)' }}>{fmt(regAmount - ahorroMonto - tarjetaMonto, currency)}</span>
+              <span style={{ fontWeight: 800, color: 'var(--accent-text)' }}>{fmt(regAmount - ahorroMonto - tarjetaMonto, currency)}</span>
             </div>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
