@@ -9,6 +9,7 @@
      falls short of readable contrast as small text on white/card backgrounds —
      use this darker variant anywhere the accent color is the text color itself. */
   --accent-text: #c1391c;
+  --accent-soft-bg: #fdece6;
 }
 
 [data-theme='oscuro'] {
@@ -21,6 +22,7 @@
   /* Light text on a near-black ground already has plenty of contrast at the
      regular accent color, so no darkening needed here. */
   --accent-text: #ff5a36;
+  --accent-soft-bg: #2b1c16;
 }
 
 :root {

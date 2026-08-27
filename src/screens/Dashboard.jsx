@@ -73,6 +73,20 @@ export default function Dashboard({ data, setData, onNavigate }) {
   const paydayDays = daysUntilPayday(user.payDayOfMonth);
   const paydayLabel = paydayDays === 0 ? 'Hoy' : paydayDays === 1 ? 'En 1 día' : `En ${paydayDays} días`;
 
+  const dueSoonLabel = (daysLeft) => (daysLeft < 0 ? 'vencido' : daysLeft === 0 ? 'vence hoy' : daysLeft === 1 ? 'vence en 1 día' : `vence en ${daysLeft} días`);
+
+  const urgentExpenses = expenses
+    .filter((e) => !e.history.some((h) => isSameMonth(h.date)))
+    .map((e) => ({ id: e.id, name: e.name, daysLeft: daysUntilPayday(e.dueDay) }))
+    .filter((e) => e.daysLeft <= 3);
+
+  const urgentDebts = cards
+    .filter((c) => c.balance > 0)
+    .map((c) => ({ id: c.id, name: c.name, daysLeft: Math.round((new Date(c.nextPayment + 'T00:00:00') - new Date(today + 'T00:00:00')) / 86400000) }))
+    .filter((c) => c.daysLeft <= 3);
+
+  const urgentItems = [...urgentDebts, ...urgentExpenses].sort((a, b) => a.daysLeft - b.daysLeft);
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 'var(--header-h, 150px)' }}>
       <FixedHeader>
@@ -164,6 +178,20 @@ export default function Dashboard({ data, setData, onNavigate }) {
         </div>
         </div>
       </FixedHeader>
+
+      {urgentItems.length > 0 && (
+        <div style={{ ...cardStyle, background: 'var(--accent-soft-bg)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-text)', letterSpacing: '0.06em' }}>PARA ESTAR PENDIENTE</div>
+          {urgentItems.slice(0, 3).map((it) => (
+            <div key={it.id} style={{ fontSize: 13, color: 'var(--text)' }}>
+              <b>{it.name}</b> {dueSoonLabel(it.daysLeft)}
+            </div>
+          ))}
+          {urgentItems.length > 3 && (
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>+{urgentItems.length - 3} más</div>
+          )}
+        </div>
+      )}
 
       {/* Ganado este mes */}
       <div style={{ ...cardStyle, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'center' }}>

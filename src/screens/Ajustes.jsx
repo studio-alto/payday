@@ -126,6 +126,20 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
     URL.revokeObjectURL(url);
   };
 
+  const shareBackup = async () => {
+    const payload = { user: data.user, incomes: data.incomes, goals: data.goals, cards: data.cards, expenses: data.expenses, exportedAt: todayISO() };
+    const file = new File([JSON.stringify(payload, null, 2)], `payday-datos-${todayISO()}.json`, { type: 'application/json' });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: 'Respaldo de Payday' });
+        return;
+      } catch {
+        // person cancelled the share sheet, or it failed — fall back to a plain download
+      }
+    }
+    exportData();
+  };
+
   const exportCsv = () => {
     const csv = buildSummaryCsv(data);
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -392,10 +406,12 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
         <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: -4 }}>
           Para leer o compartir: ingresos, metas, deudas y gastos en una tabla.
         </div>
-        <button type="button" onClick={exportData} style={actionRowStyle}>
-          Descargar datos (JSON)
+        <button type="button" onClick={shareBackup} style={actionRowStyle}>
+          Compartir respaldo (JSON)
         </button>
-        <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: -4 }}>Para respaldar y luego restaurar en la app.</div>
+        <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: -4 }}>
+          Mándalo a Drive, correo o donde prefieras guardarlo — luego se puede restaurar en la app.
+        </div>
         <input type="file" ref={fileInputRef} accept="application/json" onChange={handleRestoreFile} style={{ display: 'none' }} />
         <button type="button" onClick={triggerRestore} style={actionRowStyle}>
           Restaurar datos
