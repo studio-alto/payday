@@ -208,6 +208,20 @@ export default function Deudas({ data, setData }) {
     setPayModalOpen(false);
   };
 
+  const [expandedHistoryId, setExpandedHistoryId] = useState(null);
+  const [deleteHistoryTarget, setDeleteHistoryTarget] = useState(null);
+  const deleteHistoryEntry = (cardId, index) => {
+    setData((s) => ({
+      ...s,
+      cards: s.cards.map((c) => {
+        if (c.id !== cardId) return c;
+        const entry = c.history[index];
+        return { ...c, balance: c.balance + entry.amount, history: c.history.filter((_, i) => i !== index) };
+      }),
+    }));
+    setDeleteHistoryTarget(null);
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 'var(--header-h, 88px)' }}>
       <FixedHeader>
@@ -460,6 +474,49 @@ export default function Deudas({ data, setData }) {
             >
               Registrar pago
             </button>
+
+            {c.history.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setExpandedHistoryId(expandedHistoryId === c.id ? null : c.id)}
+                style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', cursor: 'pointer', marginTop: 10, display: 'block' }}
+              >
+                {expandedHistoryId === c.id ? 'Ocultar historial de pagos' : `Ver historial de pagos (${c.history.length})`}
+              </button>
+            )}
+
+            {expandedHistoryId === c.id && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
+                {[...c.history]
+                  .map((h, i) => ({ ...h, i }))
+                  .reverse()
+                  .map((h) => (
+                    <div key={h.i}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, background: 'var(--input-bg)', borderRadius: 10, padding: '8px 10px' }}>
+                        <div style={{ color: 'var(--text-secondary)' }}>{formatShortDate(h.date)}{h.note ? ` · ${h.note}` : ''}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(h.amount, currency)}</div>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteHistoryTarget({ cardId: c.id, index: h.i })}
+                            aria-label="Eliminar pago"
+                            style={{ color: 'var(--danger-text)', fontWeight: 700, fontSize: 14, cursor: 'pointer', lineHeight: 1 }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      </div>
+                      {deleteHistoryTarget?.cardId === c.id && deleteHistoryTarget?.index === h.i && (
+                        <InlineConfirm
+                          message="¿Eliminar este pago? El monto vuelve al saldo pendiente."
+                          onConfirm={() => deleteHistoryEntry(c.id, h.i)}
+                          onCancel={() => setDeleteHistoryTarget(null)}
+                        />
+                      )}
+                    </div>
+                  ))}
+              </div>
+            )}
 
             {confirmDeleteId === c.id && (
               <InlineConfirm message="¿Eliminar esta deuda?" onConfirm={() => confirmDelete(c.id)} onCancel={cancelDelete} />
