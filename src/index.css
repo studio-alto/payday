@@ -47,6 +47,27 @@
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+/* Global tactile press feedback so every button in the app (cards, pills, icon
+   buttons, nav) confirms a tap without each screen having to style it itself. */
+button {
+  transition: transform 0.12s ease, opacity 0.12s ease;
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.96);
+  opacity: 0.8;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  button {
+    transition: none;
+  }
+
+  button:active:not(:disabled) {
+    transform: none;
+  }
+}
+
 html,
 body {
   margin: 0;
