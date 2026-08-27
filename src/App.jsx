@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useLocalData } from './lib/storage';
 import { setExchangeRates } from './lib/format';
 import { fetchLiveExchangeRates } from './lib/exchangeRates';
@@ -6,12 +6,16 @@ import { todayISO } from './lib/dates';
 import Splash from './components/Splash';
 import AppLock from './components/AppLock';
 import BottomNav from './components/BottomNav';
+// Dashboard loads eagerly since it's the very first screen shown; every other
+// screen is only fetched the moment the person actually navigates to it, so the
+// initial bundle doesn't carry code (charts, forms, the debt simulator) for
+// screens they might never open in a given session.
 import Dashboard from './screens/Dashboard';
-import Registrar from './screens/Registrar';
-import Metas from './screens/Metas';
-import Deudas from './screens/Deudas';
-import Ingresos from './screens/Ingresos';
-import Ajustes from './screens/Ajustes';
+const Registrar = lazy(() => import('./screens/Registrar'));
+const Metas = lazy(() => import('./screens/Metas'));
+const Deudas = lazy(() => import('./screens/Deudas'));
+const Ingresos = lazy(() => import('./screens/Ingresos'));
+const Ajustes = lazy(() => import('./screens/Ajustes'));
 
 export default function App() {
   const [data, setData] = useLocalData();
@@ -118,16 +122,18 @@ export default function App() {
       {locked && data.user.appLockPin && <AppLock pinHash={data.user.appLockPin} onUnlock={() => setLocked(false)} />}
 
       <div className="app-scroll" style={{ width: '100%', maxWidth: 640, padding: '0 20px var(--nav-clearance) 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {activeTab === 'dashboard' && <Dashboard data={data} setData={setData} onNavigate={navigate} />}
-        {activeTab === 'registrar' && (
-          <Registrar data={data} setData={setData} onNavigate={navigate} editingIncome={editingIncome} onDoneEditing={() => setEditingIncome(null)} />
-        )}
-        {activeTab === 'metas' && <Metas data={data} setData={setData} />}
-        {activeTab === 'tarjetas' && <Deudas data={data} setData={setData} />}
-        {activeTab === 'ingresos' && <Ingresos data={data} setData={setData} onNavigate={navigate} onEdit={startEditIncome} />}
-        {activeTab === 'config' && (
-          <Ajustes data={data} setData={setData} canInstall={!!installPrompt} isInstalled={isInstalled} onInstall={requestInstall} />
-        )}
+        <Suspense fallback={<div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>Cargando…</div>}>
+          {activeTab === 'dashboard' && <Dashboard data={data} setData={setData} onNavigate={navigate} />}
+          {activeTab === 'registrar' && (
+            <Registrar data={data} setData={setData} onNavigate={navigate} editingIncome={editingIncome} onDoneEditing={() => setEditingIncome(null)} />
+          )}
+          {activeTab === 'metas' && <Metas data={data} setData={setData} />}
+          {activeTab === 'tarjetas' && <Deudas data={data} setData={setData} />}
+          {activeTab === 'ingresos' && <Ingresos data={data} setData={setData} onNavigate={navigate} onEdit={startEditIncome} />}
+          {activeTab === 'config' && (
+            <Ajustes data={data} setData={setData} canInstall={!!installPrompt} isInstalled={isInstalled} onInstall={requestInstall} />
+          )}
+        </Suspense>
       </div>
 
       <BottomNav activeTab={activeTab} onChange={navigate} />

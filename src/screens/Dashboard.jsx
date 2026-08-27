@@ -55,8 +55,9 @@ export default function Dashboard({ data, setData, onNavigate }) {
     const isToday = d === today;
     const height = Math.max(6, Math.round((amt / 120000) * 70));
     const color = isToday ? 'var(--accent)' : amt > 0 ? 'var(--text)' : 'var(--divider)';
-    return { date: d, letter: WEEKDAY_LETTERS[dow], height, color };
+    return { date: d, letter: WEEKDAY_LETTERS[dow], height, color, amt };
   });
+  const weekBarsLabel = `Ingresos de los últimos 7 días: ${weekBars.map((wb) => `${wb.letter} ${fmt(wb.amt, user.currency)}`).join(', ')}`;
 
   const goalsWithPct = goals.map((g) => ({ ...g, pct: Math.min(100, Math.round((g.current / g.target) * 100)) }));
   const nextGoal = goalsWithPct.find((g) => g.pct < 100) || goalsWithPct[0] || { name: 'Sin metas', current: 0, target: 1, pct: 0 };
@@ -204,9 +205,9 @@ export default function Dashboard({ data, setData, onNavigate }) {
             Esta semana <span style={{ color: 'var(--accent-text)', fontWeight: 700 }}>{fmt(weeklyTotal, user.currency)} ↑</span>
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 5, height: 70 }}>
+        <div role="img" aria-label={weekBarsLabel} style={{ display: 'flex', alignItems: 'flex-end', gap: 5, height: 70 }}>
           {weekBars.map((wb) => (
-            <div key={wb.date} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, height: '100%', justifyContent: 'flex-end' }}>
+            <div key={wb.date} aria-hidden="true" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, height: '100%', justifyContent: 'flex-end' }}>
               <div style={{ width: '100%', borderRadius: 6, height: wb.height, background: wb.color, transition: 'height 0.4s ease' }} />
               <div style={{ fontSize: 9, color: 'var(--text-secondary)', fontWeight: 700 }}>{wb.letter}</div>
             </div>

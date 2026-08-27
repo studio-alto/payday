@@ -43,6 +43,7 @@ export default function Deudas({ data, setData }) {
   const debtDonut = `conic-gradient(var(--accent) ${pctPaidGlobal}%, var(--divider) ${pctPaidGlobal}% 100%)`;
   const monthlyPaid = monthlyPaidTotals(cards, 6);
   const maxMonthlyPaid = Math.max(1, ...monthlyPaid.map((m) => m.total));
+  const monthlyPaidLabel = `Abonado por mes: ${monthlyPaid.map((m) => `${m.label} ${fmt(m.total, currency)}`).join(', ')}`;
 
   const sortedExpenses = [...expenses].sort((a, b) => daysUntilPayday(a.dueDay) - daysUntilPayday(b.dueDay));
   const totalExpenses = expenses.reduce((a, e) => a + e.amount, 0);
@@ -267,9 +268,9 @@ export default function Deudas({ data, setData }) {
       {section === 'deudas' && cards.length > 0 && totalPaidAllTime > 0 && (
         <div style={cardStyle}>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em', marginBottom: 12 }}>ABONADO POR MES</div>
-          <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 90 }}>
+          <div role="img" aria-label={monthlyPaidLabel} style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 90 }}>
             {monthlyPaid.map((m) => (
-              <div key={`${m.year}-${m.month}`} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, height: '100%', justifyContent: 'flex-end' }}>
+              <div key={`${m.year}-${m.month}`} aria-hidden="true" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, height: '100%', justifyContent: 'flex-end' }}>
                 <div style={{ fontSize: 9, color: 'var(--text-secondary)', fontWeight: 700 }}>{m.total > 0 ? fmt(m.total, currency) : ''}</div>
                 <div
                   style={{
