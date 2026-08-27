@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { fmt } from '../lib/format';
 import { DAY_TYPES, todayISO } from '../lib/dates';
 import { uid } from '../lib/id';
-import { cardStyle, fieldLabelStyle, textInputStyle, primaryButtonStyle, secondaryButtonStyle } from '../lib/styles';
+import { cardStyle, labelStyle, fieldLabelStyle, textInputStyle, primaryButtonStyle, secondaryButtonStyle } from '../lib/styles';
 import NumberInput from '../components/NumberInput';
 import FixedHeader from '../components/FixedHeader';
 import { METHODS, computeDebtWaterfall, reverseIncomeEffects, applyIncomeEffects } from '../lib/debt';
@@ -583,9 +583,11 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
               <span style={{ color: 'var(--text-secondary)' }}>Deudas</span>
               <span style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(tarjetaMonto, currency)}</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, borderTop: '1px solid var(--divider)', paddingTop: 10 }}>
-              <span style={{ color: 'var(--text)', fontWeight: 700 }}>Disponible</span>
-              <span style={{ fontWeight: 800, color: 'var(--accent-text)' }}>{fmt(regAmount - ahorroMonto - tarjetaMonto, currency)}</span>
+          </div>
+          <div style={{ background: 'var(--accent-soft-bg)', borderRadius: 16, padding: 16 }}>
+            <div style={labelStyle}>DISPONIBLE PARA GASTAR</div>
+            <div style={{ fontWeight: 800, fontSize: 32, color: 'var(--text)', marginTop: 6, letterSpacing: '-0.02em' }}>
+              {fmt(regAmount - ahorroMonto - tarjetaMonto, currency)}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
