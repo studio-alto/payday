@@ -7,14 +7,11 @@ const PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
 export const emailBackupConfigured = !!(SERVICE_ID && TEMPLATE_ID && PUBLIC_KEY);
 
-function toBase64(str) {
-  // btoa only handles Latin1, so escape the UTF-8 string first (accented names,
-  // ñ, etc. in income/goal/debt names would otherwise break the encoding).
-  return btoa(unescape(encodeURIComponent(str)));
-}
-
-// Sends the full backup as a JSON attachment via EmailJS — see README for the
-// one-time account setup this depends on (service, template, public key).
+// Sends the full backup as plain text in the email body (not an attachment) —
+// EmailJS's free tier doesn't support attachments, only paid plans do. To
+// restore, the user copies this text back into the app's "pegar para
+// restaurar" field. See README for the one-time account setup this depends on
+// (service, template, public key).
 export async function sendBackupEmail(data, toEmail) {
   if (!emailBackupConfigured) {
     throw new Error('EmailJS no está configurado todavía (faltan las variables VITE_EMAILJS_*).');
@@ -28,7 +25,7 @@ export async function sendBackupEmail(data, toEmail) {
     {
       to_email: toEmail,
       fecha: formatFullDate(todayISO()),
-      attachment: [{ name: `payday-datos-${todayISO()}.json`, data: toBase64(json) }],
+      backup_json: json,
     },
     { publicKey: PUBLIC_KEY },
   );

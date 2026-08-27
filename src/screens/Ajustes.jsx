@@ -164,6 +164,16 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
     URL.revokeObjectURL(url);
   };
 
+  const restoreFromParsed = (parsed) => {
+    setData((s) => ({
+      user: parsed.user || s.user,
+      incomes: parsed.incomes || [],
+      goals: parsed.goals || [],
+      cards: parsed.cards || [],
+      expenses: parsed.expenses || [],
+    }));
+  };
+
   const triggerRestore = () => fileInputRef.current?.click();
   const handleRestoreFile = (e) => {
     const file = e.target.files[0];
@@ -176,19 +186,30 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
           alert('Este archivo no tiene el formato de un respaldo de Payday.');
           return;
         }
-        setData((s) => ({
-          user: parsed.user || s.user,
-          incomes: parsed.incomes || [],
-          goals: parsed.goals || [],
-          cards: parsed.cards || [],
-          expenses: parsed.expenses || [],
-        }));
+        restoreFromParsed(parsed);
       } catch {
         alert('Archivo inválido');
       }
     };
     reader.readAsText(file);
     e.target.value = '';
+  };
+
+  const [pasteText, setPasteText] = useState('');
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const restoreFromPaste = () => {
+    try {
+      const parsed = JSON.parse(pasteText);
+      if (!isValidBackup(parsed)) {
+        alert('Este texto no tiene el formato de un respaldo de Payday.');
+        return;
+      }
+      restoreFromParsed(parsed);
+      setPasteText('');
+      setPasteOpen(false);
+    } catch {
+      alert('Texto inválido. Revisa que lo hayas copiado completo.');
+    }
   };
 
   const confirmReset = () => {
@@ -447,18 +468,45 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
             </button>
             <div style={{ fontSize: 11, color: emailStatus === 'error' ? 'var(--accent-text)' : 'var(--text-secondary)', marginTop: -4 }}>
               {emailStatus === 'sent'
-                ? 'Enviado. Revisa tu bandeja de entrada (y spam, la primera vez).'
+                ? 'Enviado. Te llega como texto en el correo — para restaurar, cópialo y usa "Pegar para restaurar" abajo.'
                 : emailStatus === 'error'
                   ? 'No se pudo enviar. Revisa tu internet e intenta de nuevo.'
-                  : 'Te llega como archivo adjunto, listo para restaurar cuando quieras.'}
+                  : 'Te llega como texto dentro del correo (no como archivo adjunto).'}
             </div>
           </>
         )}
 
         <input type="file" ref={fileInputRef} accept="application/json" onChange={handleRestoreFile} style={{ display: 'none' }} />
         <button type="button" onClick={triggerRestore} style={actionRowStyle}>
-          Restaurar datos
+          Restaurar datos (archivo)
         </button>
+
+        {emailBackupConfigured && (
+          <>
+            <button type="button" onClick={() => setPasteOpen((v) => !v)} style={actionRowStyle}>
+              {pasteOpen ? 'Cancelar' : 'Pegar para restaurar (desde el correo)'}
+            </button>
+            {pasteOpen && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <textarea
+                  value={pasteText}
+                  onChange={(e) => setPasteText(e.target.value)}
+                  placeholder="Pega aquí el texto del correo de respaldo"
+                  rows={5}
+                  style={{ ...textInputStyle(), padding: 12, borderRadius: 12, resize: 'vertical', fontFamily: 'monospace', fontSize: 12 }}
+                />
+                <button
+                  type="button"
+                  onClick={restoreFromPaste}
+                  disabled={!pasteText.trim()}
+                  style={{ ...actionRowStyle, background: 'var(--accent)', color: 'white', opacity: pasteText.trim() ? 1 : 0.5 }}
+                >
+                  Restaurar desde texto
+                </button>
+              </div>
+            )}
+          </>
+        )}
         <button type="button" onClick={() => setResetConfirmOpen(true)} style={{ ...actionRowStyle, color: 'var(--accent-text)' }}>
           Limpiar todo
         </button>
