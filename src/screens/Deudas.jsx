@@ -177,7 +177,13 @@ export default function Deudas({ data, setData }) {
   const askDelete = (id) => setConfirmDeleteId(id);
   const cancelDelete = () => setConfirmDeleteId(null);
   const confirmDelete = (id) => {
-    setData((s) => ({ ...s, cards: s.cards.filter((c) => c.id !== id) }));
+    setData((s) => ({
+      ...s,
+      cards: s.cards.filter((c) => c.id !== id),
+      // Fall back linked expenses to efectivo so they don't keep pointing at a card
+      // that no longer exists (they'd silently stop showing its name/tasa otherwise).
+      expenses: s.expenses.map((e) => (e.medioPago === id ? { ...e, medioPago: 'efectivo' } : e)),
+    }));
     setConfirmDeleteId(null);
   };
 

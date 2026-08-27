@@ -66,7 +66,15 @@ export default function Metas({ data, setData }) {
   const askDelete = (id) => setConfirmDeleteId(id);
   const cancelDelete = () => setConfirmDeleteId(null);
   const confirmDelete = (id) => {
-    setData((s) => ({ ...s, goals: s.goals.filter((g) => g.id !== id) }));
+    setData((s) => ({
+      ...s,
+      goals: s.goals.filter((g) => g.id !== id),
+      // Clear the dangling reference so editing/deleting one of these incomes later
+      // doesn't silently no-op the ahorro reversal against a goal that no longer exists.
+      incomes: s.incomes.map((i) =>
+        i.distribution.goalId === id ? { ...i, distribution: { ...i.distribution, goalId: null } } : i,
+      ),
+    }));
     setConfirmDeleteId(null);
   };
 

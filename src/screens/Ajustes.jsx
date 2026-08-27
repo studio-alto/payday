@@ -8,6 +8,37 @@ import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import NumberInput from '../components/NumberInput';
 import FixedHeader from '../components/FixedHeader';
 
+// Guards against restoring a file that parses as JSON but doesn't have the shape
+// the rest of the app assumes (e.g. hand-edited, or exported by a future version
+// with a different schema) — those would otherwise crash later on a missing field.
+function isValidBackup(parsed) {
+  if (!parsed || typeof parsed !== 'object') return false;
+  for (const key of ['incomes', 'goals', 'cards', 'expenses']) {
+    if (parsed[key] !== undefined && !Array.isArray(parsed[key])) return false;
+  }
+  if (Array.isArray(parsed.incomes)) {
+    for (const i of parsed.incomes) {
+      if (typeof i.amount !== 'number' || typeof i.date !== 'string' || typeof i.distribution !== 'object' || i.distribution === null) return false;
+    }
+  }
+  if (Array.isArray(parsed.goals)) {
+    for (const g of parsed.goals) {
+      if (typeof g.target !== 'number' || typeof g.current !== 'number') return false;
+    }
+  }
+  if (Array.isArray(parsed.cards)) {
+    for (const c of parsed.cards) {
+      if (typeof c.balance !== 'number' || !Array.isArray(c.history)) return false;
+    }
+  }
+  if (Array.isArray(parsed.expenses)) {
+    for (const e of parsed.expenses) {
+      if (typeof e.amount !== 'number' || !Array.isArray(e.history)) return false;
+    }
+  }
+  return true;
+}
+
 export default function Ajustes({ data, setData, canInstall, isInstalled, onInstall }) {
   const { user } = data;
   const dark = user.theme === 'oscuro';
@@ -66,6 +97,10 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
     reader.onload = () => {
       try {
         const parsed = JSON.parse(reader.result);
+        if (!isValidBackup(parsed)) {
+          alert('Este archivo no tiene el formato de un respaldo de Payday.');
+          return;
+        }
         setData((s) => ({
           user: parsed.user || s.user,
           incomes: parsed.incomes || [],
@@ -290,7 +325,10 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
 
         {resetConfirmOpen && (
           <div style={{ padding: 14, borderRadius: 14, background: 'var(--input-bg)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: 12, color: 'var(--text)' }}>Esto borrará todos tus datos de la app. ¿Continuar?</div>
+            <div style={{ fontSize: 12, color: 'var(--text)' }}>
+              Esto borrará tus ingresos, metas, deudas y gastos fijos. Tus ajustes (moneda, tema, tasas de cambio, etc.) se
+              conservan. ¿Continuar?
+            </div>
             <div style={{ display: 'flex', gap: 8 }}>
               <button
                 type="button"
