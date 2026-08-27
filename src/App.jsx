@@ -4,6 +4,7 @@ import { setExchangeRates } from './lib/format';
 import { fetchLiveExchangeRates } from './lib/exchangeRates';
 import { todayISO } from './lib/dates';
 import Splash from './components/Splash';
+import Welcome from './components/Welcome';
 import AppLock from './components/AppLock';
 import BottomNav from './components/BottomNav';
 // Dashboard loads eagerly since it's the very first screen shown; every other
@@ -96,6 +97,10 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const finishOnboarding = (backupEmail) => {
+    setData((s) => ({ ...s, user: { ...s.user, onboarded: true, ...(backupEmail ? { backupEmail } : {}) } }));
+  };
+
   const requestInstall = async () => {
     if (!installPrompt) return;
     installPrompt.prompt();
@@ -119,6 +124,7 @@ export default function App() {
       }}
     >
       {showSplash && <Splash fading={splashFading} />}
+      {!showSplash && !data.user.onboarded && <Welcome onFinish={finishOnboarding} />}
       {locked && data.user.appLockPin && <AppLock pinHash={data.user.appLockPin} onUnlock={() => setLocked(false)} />}
 
       <div className="app-scroll" style={{ width: '100%', maxWidth: 640, padding: '0 20px var(--nav-clearance) 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
