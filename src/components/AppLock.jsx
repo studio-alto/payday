@@ -40,7 +40,7 @@ export default function AppLock({ pinHash, onUnlock }) {
     >
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
         <div style={{ fontWeight: 800, fontSize: 22, color: 'var(--text)', letterSpacing: '-0.02em' }}>Payday está bloqueada</div>
-        <div style={{ fontSize: 13, color: error ? 'var(--accent-text)' : 'var(--text-secondary)' }}>
+        <div style={{ fontSize: 13, color: error ? 'var(--danger-text)' : 'var(--text-secondary)' }}>
           {error ? 'PIN incorrecto, intenta de nuevo' : 'Ingresa tu PIN'}
         </div>
       </div>
@@ -60,7 +60,7 @@ export default function AppLock({ pinHash, onUnlock }) {
             <button
               type="button"
               onClick={wipeAndReset}
-              style={{ flex: 1, padding: 10, borderRadius: 12, background: 'var(--accent)', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none' }}
+              style={{ flex: 1, padding: 10, borderRadius: 12, background: 'var(--danger)', color: 'white', fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none' }}
             >
               Sí, borrar datos
             </button>

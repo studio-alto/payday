@@ -10,6 +10,11 @@
      use this darker variant anywhere the accent color is the text color itself. */
   --accent-text: #c1391c;
   --accent-soft-bg: #fdece6;
+  /* Kept distinct from --accent so a real warning (overdue, error, destructive
+     action) never reads as just more brand-colored UI. */
+  --danger: #e5484d;
+  --danger-text: #c0262b;
+  --danger-soft-bg: #fbe4e4;
 }
 
 [data-theme='oscuro'] {
@@ -23,6 +28,9 @@
      regular accent color, so no darkening needed here. */
   --accent-text: #ff5a36;
   --accent-soft-bg: #2b1c16;
+  --danger: #ff6b6b;
+  --danger-text: #ff6b6b;
+  --danger-soft-bg: #3a1c1c;
 }
 
 :root {

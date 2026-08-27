@@ -136,7 +136,7 @@ export default function Metas({ data, setData }) {
                     lineHeight: 1,
                     fontWeight: 700,
                     cursor: 'pointer',
-                    color: 'var(--accent-text)',
+                    color: 'var(--danger-text)',
                     background: 'var(--input-bg)',
                     flexShrink: 0,
                   }}

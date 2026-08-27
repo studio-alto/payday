@@ -300,7 +300,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
             {ratesStatus === 'loading' ? 'Actualizando…' : 'Actualizar ahora'}
           </button>
         </div>
-        <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: -8 }}>
+        <div style={{ fontSize: 11, color: ratesStatus === 'error' ? 'var(--danger-text)' : 'var(--text-secondary)', marginTop: -8 }}>
           {ratesStatus === 'error'
             ? 'No se pudo conectar. Revisa tu internet e intenta de nuevo.'
             : user.ratesUpdatedAt
@@ -417,7 +417,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
             <button type="button" onClick={startPinChange} style={actionRowStyle}>
               Cambiar PIN
             </button>
-            <button type="button" onClick={startPinDisable} style={{ ...actionRowStyle, color: 'var(--accent-text)' }}>
+            <button type="button" onClick={startPinDisable} style={{ ...actionRowStyle, color: 'var(--danger-text)' }}>
               Desactivar bloqueo
             </button>
           </>
@@ -427,7 +427,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
       {pinFlow && (
         <BottomSheet onClose={closePinFlow}>
           <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)', textAlign: 'center' }}>{pinPhaseLabel}</div>
-          {pinFlow.error && <div style={{ fontSize: 12, color: 'var(--accent-text)', textAlign: 'center' }}>{pinFlow.error}</div>}
+          {pinFlow.error && <div style={{ fontSize: 12, color: 'var(--danger-text)', textAlign: 'center' }}>{pinFlow.error}</div>}
           <PinPad onComplete={handlePinDigits} resetSignal={pinResetSignal} />
         </BottomSheet>
       )}
@@ -466,7 +466,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
             >
               {emailStatus === 'loading' ? 'Enviando…' : 'Enviar ahora'}
             </button>
-            <div style={{ fontSize: 11, color: emailStatus === 'error' ? 'var(--accent-text)' : 'var(--text-secondary)', marginTop: -4 }}>
+            <div style={{ fontSize: 11, color: emailStatus === 'error' ? 'var(--danger-text)' : 'var(--text-secondary)', marginTop: -4 }}>
               {emailStatus === 'sent'
                 ? 'Enviado. Te llega como texto en el correo — para restaurar, cópialo y usa "Pegar para restaurar" abajo.'
                 : emailStatus === 'error'
@@ -507,7 +507,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
             )}
           </>
         )}
-        <button type="button" onClick={() => setResetConfirmOpen(true)} style={{ ...actionRowStyle, color: 'var(--accent-text)' }}>
+        <button type="button" onClick={() => setResetConfirmOpen(true)} style={{ ...actionRowStyle, color: 'var(--danger-text)' }}>
           Limpiar todo
         </button>
 
@@ -521,7 +521,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
               <button
                 type="button"
                 onClick={confirmReset}
-                style={{ flex: 1, padding: 10, borderRadius: 12, background: 'var(--accent)', color: 'white', textAlign: 'center', fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none' }}
+                style={{ flex: 1, padding: 10, borderRadius: 12, background: 'var(--danger)', color: 'white', textAlign: 'center', fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none' }}
               >
                 Sí, borrar
               </button>

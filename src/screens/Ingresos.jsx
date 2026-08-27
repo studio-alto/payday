@@ -63,7 +63,7 @@ function IncomeRow({ inc, currency, isLast, onEdit, confirmDeleteId, setConfirmD
               lineHeight: 1,
               fontWeight: 700,
               cursor: 'pointer',
-              color: 'var(--accent-text)',
+              color: 'var(--danger-text)',
               background: 'var(--input-bg)',
               flexShrink: 0,
             }}

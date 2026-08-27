@@ -181,8 +181,8 @@ export default function Dashboard({ data, setData, onNavigate }) {
       </FixedHeader>
 
       {urgentItems.length > 0 && (
-        <div style={{ ...cardStyle, background: 'var(--accent-soft-bg)', display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-text)', letterSpacing: '0.06em' }}>PARA ESTAR PENDIENTE</div>
+        <div style={{ ...cardStyle, background: 'var(--danger-soft-bg)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--danger-text)', letterSpacing: '0.06em' }}>PARA ESTAR PENDIENTE</div>
           {urgentItems.slice(0, 3).map((it) => (
             <div key={it.id} style={{ fontSize: 13, color: 'var(--text)' }}>
               <b>{it.name}</b> {dueSoonLabel(it.daysLeft)}
@@ -295,7 +295,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
                 <div style={labelStyle}>GASTOS FIJOS</div>
                 <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)', marginTop: 3 }}>{fmt(totalGastos, user.currency)}</div>
                 {totalMonth > 0 && (
-                  <div style={{ fontSize: 11, fontWeight: 700, color: gastosPct > budgetNecesidades ? 'var(--accent)' : 'var(--text-secondary)', marginTop: 2 }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: gastosPct > budgetNecesidades ? 'var(--danger-text)' : 'var(--text-secondary)', marginTop: 2 }}>
                     {gastosPct}% de lo ganado · sugerido {budgetNecesidades}%
                   </div>
                 )}

@@ -555,7 +555,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
               )}
             </div>
           )}
-          {overAllocated && <div style={{ fontSize: 12, color: 'var(--accent-text)' }}>La suma no puede superar lo ganado.</div>}
+          {overAllocated && <div style={{ fontSize: 12, color: 'var(--danger-text)' }}>La suma no puede superar lo ganado.</div>}
           <div style={{ display: 'flex', gap: 10 }}>
             <button type="button" onClick={() => setStep(2)} style={{ ...secondaryButtonStyle, flex: 1 }}>
               Atrás

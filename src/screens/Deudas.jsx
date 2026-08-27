@@ -419,7 +419,7 @@ export default function Deudas({ data, setData }) {
                     lineHeight: 1,
                     fontWeight: 700,
                     cursor: 'pointer',
-                    color: 'var(--accent-text)',
+                    color: 'var(--danger-text)',
                     background: 'var(--input-bg)',
                     flexShrink: 0,
                   }}
@@ -435,7 +435,7 @@ export default function Deudas({ data, setData }) {
             <div style={{ fontWeight: 800, fontSize: 22, color: 'var(--text)', marginTop: 4 }}>{fmt(c.balance, currency)}</div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
               Próximo pago: {formatShortDate(c.nextPayment)}
-              {isOverdue && <span style={{ color: 'var(--accent-text)', fontWeight: 700 }}> · Vencido</span>}
+              {isOverdue && <span style={{ color: 'var(--danger-text)', fontWeight: 700 }}> · Vencido</span>}
             </div>
             <div style={{ height: 7, background: 'var(--divider)', borderRadius: 6, overflow: 'hidden', marginTop: 10 }}>
               <div style={{ height: '100%', width: `${pct}%`, background: 'var(--accent)', borderRadius: 6, transition: 'width 0.5s ease' }} />
@@ -580,7 +580,7 @@ export default function Deudas({ data, setData }) {
                         lineHeight: 1,
                         fontWeight: 700,
                         cursor: 'pointer',
-                        color: 'var(--accent-text)',
+                        color: 'var(--danger-text)',
                         background: 'var(--input-bg)',
                         flexShrink: 0,
                       }}
