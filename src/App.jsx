@@ -112,7 +112,7 @@ export default function App() {
       data-theme={data.user.theme}
       style={{
         width: '100%',
-        minHeight: '100%',
+        minHeight: '100vh',
         background: 'var(--page-bg)',
         display: 'flex',
         justifyContent: 'center',

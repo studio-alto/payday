@@ -46,6 +46,7 @@ function isValidBackup(parsed) {
 export default function Ajustes({ data, setData, canInstall, isInstalled, onInstall }) {
   const { user } = data;
   const dark = user.theme === 'oscuro';
+  const [section, setSection] = useState('general');
   const budgetTotal = (user.budgetNecesidades ?? 50) + (user.budgetDeseos ?? 30) + (user.budgetAhorro ?? 20);
   const avgRecentIncome = averageRecentIncome(data.incomes);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
@@ -233,10 +234,43 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 'var(--header-h, 88px)' }}>
       <FixedHeader>
-        <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', letterSpacing: '-0.02em' }}>Ajustes</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', letterSpacing: '-0.02em' }}>Ajustes</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            {[
+              { key: 'general', label: 'General' },
+              { key: 'finanzas', label: 'Finanzas' },
+              { key: 'seguridad', label: 'Seguridad' },
+              { key: 'datos', label: 'Datos' },
+            ].map((s) => {
+              const active = section === s.key;
+              return (
+                <button
+                  key={s.key}
+                  type="button"
+                  onClick={() => setSection(s.key)}
+                  style={{
+                    flex: 1,
+                    padding: '9px 0',
+                    borderRadius: 20,
+                    textAlign: 'center',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    cursor: 'pointer',
+                    background: active ? 'var(--text)' : 'var(--input-bg)',
+                    color: active ? 'var(--page-bg)' : 'var(--text)',
+                    border: 'none',
+                  }}
+                >
+                  {s.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </FixedHeader>
 
-      {(canInstall || isInstalled) && (
+      {section === 'general' && (canInstall || isInstalled) && (
         <>
           <div style={labelStyle}>APP</div>
           <div style={cardStyle}>
@@ -251,6 +285,45 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
         </>
       )}
 
+      {section === 'general' && (
+        <>
+          <div style={labelStyle}>APARIENCIA</div>
+          <div style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 700 }}>Tema oscuro</div>
+            <button
+              type="button"
+              onClick={toggleTheme}
+              aria-label="Alternar tema oscuro"
+              style={{
+                width: 46,
+                height: 27,
+                borderRadius: 20,
+                background: dark ? 'var(--accent)' : '#E5E5E5',
+                position: 'relative',
+                cursor: 'pointer',
+                border: 'none',
+                padding: 0,
+              }}
+            >
+              <div
+                style={{
+                  width: 21,
+                  height: 21,
+                  borderRadius: '50%',
+                  background: 'white',
+                  position: 'absolute',
+                  top: 3,
+                  left: dark ? 22 : 3,
+                  transition: 'left 0.2s ease',
+                }}
+              />
+            </button>
+          </div>
+        </>
+      )}
+
+      {section === 'finanzas' && (
+      <>
       <div style={labelStyle}>FINANZAS</div>
       <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div>
@@ -365,40 +438,11 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
           Se usa como sugerencia al registrar un ingreso y como referencia en el Dashboard — no limita lo que realmente hagas.
         </div>
       </div>
+      </>
+      )}
 
-      <div style={labelStyle}>APARIENCIA</div>
-      <div style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 700 }}>Tema oscuro</div>
-        <button
-          type="button"
-          onClick={toggleTheme}
-          aria-label="Alternar tema oscuro"
-          style={{
-            width: 46,
-            height: 27,
-            borderRadius: 20,
-            background: dark ? 'var(--accent)' : '#E5E5E5',
-            position: 'relative',
-            cursor: 'pointer',
-            border: 'none',
-            padding: 0,
-          }}
-        >
-          <div
-            style={{
-              width: 21,
-              height: 21,
-              borderRadius: '50%',
-              background: 'white',
-              position: 'absolute',
-              top: 3,
-              left: dark ? 22 : 3,
-              transition: 'left 0.2s ease',
-            }}
-          />
-        </button>
-      </div>
-
+      {section === 'seguridad' && (
+      <>
       <div style={labelStyle}>SEGURIDAD</div>
       <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 10 }}>
         {!user.appLockPin ? (
@@ -423,6 +467,8 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
           </>
         )}
       </div>
+      </>
+      )}
 
       {pinFlow && (
         <BottomSheet onClose={closePinFlow}>
@@ -432,6 +478,8 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
         </BottomSheet>
       )}
 
+      {section === 'datos' && (
+      <>
       <div style={labelStyle}>DATOS</div>
       <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 10 }}>
         <button type="button" onClick={exportCsv} style={actionRowStyle}>
@@ -536,6 +584,8 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
           </div>
         )}
       </div>
+      </>
+      )}
     </div>
   );
 }
