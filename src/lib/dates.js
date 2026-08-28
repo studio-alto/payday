@@ -36,6 +36,12 @@ export function isSameMonth(dateStr, ref = new Date()) {
   return d.getFullYear() === ref.getFullYear() && d.getMonth() === ref.getMonth();
 }
 
+// True when dateStr falls within the last `days` days (today included, future dates excluded).
+export function isWithinDays(dateStr, days, today = todayISO()) {
+  const diff = (new Date(today + 'T00:00:00') - new Date(dateStr + 'T00:00:00')) / 86400000;
+  return diff >= 0 && diff < days;
+}
+
 export function formatShortDate(dateStr) {
   return new Date(dateStr + 'T00:00:00').toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
 }

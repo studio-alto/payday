@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { fmt } from '../lib/format';
-import { dayTypeLabel, formatShortDate, isSameMonth } from '../lib/dates';
+import { dayTypeLabel, formatShortDate, isSameMonth, isWithinDays } from '../lib/dates';
 import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import InlineConfirm from '../components/InlineConfirm';
 import PencilIcon from '../components/PencilIcon';
@@ -8,6 +8,11 @@ import FixedHeader from '../components/FixedHeader';
 import { reverseIncomeEffects } from '../lib/debt';
 
 const MONTH_LABELS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+const TIME_FILTERS = [
+  { key: 'mes', label: 'Este mes' },
+  { key: '30dias', label: 'Últimos 30 días' },
+  { key: 'todo', label: 'Todo' },
+];
 
 function IncomeRow({ inc, currency, isLast, onEdit, confirmDeleteId, setConfirmDeleteId, confirmDelete }) {
   return (
@@ -85,6 +90,7 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [selectedJob, setSelectedJob] = useState(null);
   const [searchText, setSearchText] = useState('');
+  const [timeFilter, setTimeFilter] = useState('mes');
   const [year, setYear] = useState(new Date().getFullYear());
   const [expandedMonths, setExpandedMonths] = useState(() => new Set([new Date().getMonth()]));
 
@@ -106,9 +112,11 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
     return true;
   });
 
-  const totalMonthFiltered = incomes
-    .filter((i) => isSameMonth(i.date) && i.estado !== 'proyectado' && (!selectedJob || i.name.trim() === selectedJob))
-    .reduce((a, i) => a + i.amount, 0);
+  // "Este mes" and "Últimos 30 días" render as a flat list — no clicking through an
+  // accordion for the common case of checking recent income. "Todo" is the one mode
+  // that hands you the year+month browser, for digging through older history.
+  const flatIncomes = filteredIncomes.filter((i) => (timeFilter === 'mes' ? isSameMonth(i.date) : isWithinDays(i.date, 30)));
+  const flatTotal = flatIncomes.filter((i) => i.estado !== 'proyectado').reduce((a, i) => a + i.amount, 0);
 
   const monthGroups = MONTH_LABELS.map((label, m) => {
     const items = filteredIncomes.filter((i) => {
@@ -142,50 +150,53 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 'var(--header-h, 230px)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 'var(--header-h, 150px)' }}>
       <FixedHeader>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button
-            type="button"
-            aria-label="Volver"
-            onClick={() => onNavigate('dashboard')}
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: '50%',
-              background: 'var(--card-bg)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-            }}
-          >
-            <div style={{ width: 9, height: 9, borderLeft: '2px solid var(--text)', borderBottom: '2px solid var(--text)', transform: 'rotate(45deg)', marginLeft: 3 }} />
-          </button>
-          <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', letterSpacing: '-0.02em' }}>Todos los ingresos</div>
-        </div>
-
-        {jobNames.length > 0 && (
-          <div style={{ display: 'flex', gap: 8, overflowX: 'auto' }}>
-            <button type="button" onClick={() => setSelectedJob(null)} style={jobChipStyle(!selectedJob)}>
-              Todos
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button
+              type="button"
+              aria-label="Volver"
+              onClick={() => onNavigate('dashboard')}
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: '50%',
+                background: 'var(--card-bg)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+              }}
+            >
+              <div style={{ width: 9, height: 9, borderLeft: '2px solid var(--text)', borderBottom: '2px solid var(--text)', transform: 'rotate(45deg)', marginLeft: 3 }} />
             </button>
-            {jobNames.map((job) => (
-              <button key={job} type="button" onClick={() => setSelectedJob(job)} style={jobChipStyle(selectedJob === job)}>
-                {job}
+            <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', letterSpacing: '-0.02em' }}>Todos los ingresos</div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 8 }}>
+            {TIME_FILTERS.map((f) => (
+              <button
+                key={f.key}
+                type="button"
+                onClick={() => setTimeFilter(f.key)}
+                style={{
+                  flex: 1,
+                  padding: '9px 0',
+                  borderRadius: 20,
+                  textAlign: 'center',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  background: timeFilter === f.key ? 'var(--text)' : 'var(--input-bg)',
+                  color: timeFilter === f.key ? 'var(--page-bg)' : 'var(--text)',
+                  border: 'none',
+                }}
+              >
+                {f.label}
               </button>
             ))}
           </div>
-        )}
-
-        <div style={cardStyle}>
-          <div style={labelStyle}>TOTAL ESTE MES</div>
-          {selectedJob && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{selectedJob}</div>}
-          <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', marginTop: 6, letterSpacing: '-0.02em' }}>
-            {fmt(totalMonthFiltered, currency)}
-          </div>
-        </div>
         </div>
       </FixedHeader>
 
@@ -197,70 +208,116 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
         style={textInputStyle()}
       />
 
-      <div style={cardStyle}>
-        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, marginBottom: 4 }}>
-          <button type="button" onClick={() => setYear((y) => y - 1)} aria-label="Año anterior" style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 700, fontSize: 14 }}>
-            ‹
+      {jobNames.length > 0 && (
+        <div style={{ display: 'flex', gap: 8, overflowX: 'auto' }}>
+          <button type="button" onClick={() => setSelectedJob(null)} style={jobChipStyle(!selectedJob)}>
+            Todos
           </button>
-          <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{year}</div>
-          <button type="button" onClick={() => setYear((y) => y + 1)} aria-label="Año siguiente" style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 700, fontSize: 14 }}>
-            ›
-          </button>
+          {jobNames.map((job) => (
+            <button key={job} type="button" onClick={() => setSelectedJob(job)} style={jobChipStyle(selectedJob === job)}>
+              {job}
+            </button>
+          ))}
         </div>
-        <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-secondary)', marginBottom: 8 }}>
-          Total {year}: <span style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(yearTotal, currency)}</span>
-        </div>
+      )}
 
-        {monthGroups.map((mo) => {
-          const expanded = search ? mo.items.length > 0 : expandedMonths.has(mo.month);
-          const hasItems = mo.items.length > 0;
-          return (
-            <div key={mo.month} style={{ borderTop: '1px solid var(--divider)' }}>
-              <button
-                type="button"
-                onClick={() => toggleMonth(mo.month)}
-                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '12px 0', cursor: 'pointer' }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div
-                    style={{
-                      fontSize: 12,
-                      color: 'var(--text-secondary)',
-                      transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
-                      transition: 'transform 0.2s ease',
-                    }}
-                  >
-                    ›
+      {timeFilter !== 'todo' && (
+        <>
+          <div style={cardStyle}>
+            <div style={labelStyle}>{timeFilter === 'mes' ? 'TOTAL ESTE MES' : 'TOTAL ÚLTIMOS 30 DÍAS'}</div>
+            {selectedJob && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{selectedJob}</div>}
+            <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', marginTop: 6, letterSpacing: '-0.02em' }}>{fmt(flatTotal, currency)}</div>
+          </div>
+
+          <div style={cardStyle}>
+            {flatIncomes.length > 0 ? (
+              flatIncomes.map((inc, idx) => (
+                <IncomeRow
+                  key={inc.id}
+                  inc={inc}
+                  currency={currency}
+                  isLast={idx === flatIncomes.length - 1}
+                  onEdit={onEdit}
+                  confirmDeleteId={confirmDeleteId}
+                  setConfirmDeleteId={setConfirmDeleteId}
+                  confirmDelete={confirmDelete}
+                />
+              ))
+            ) : (
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                {timeFilter === 'mes' ? 'Sin ingresos este mes.' : 'Sin ingresos en los últimos 30 días.'}
+              </div>
+            )}
+          </div>
+        </>
+      )}
+
+      {timeFilter === 'todo' && (
+        <div style={cardStyle}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, marginBottom: 4 }}>
+            <button type="button" onClick={() => setYear((y) => y - 1)} aria-label="Año anterior" style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 700, fontSize: 14 }}>
+              ‹
+            </button>
+            <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{year}</div>
+            <button type="button" onClick={() => setYear((y) => y + 1)} aria-label="Año siguiente" style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 700, fontSize: 14 }}>
+              ›
+            </button>
+          </div>
+          <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-secondary)', marginBottom: 8 }}>
+            Total {year}: <span style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(yearTotal, currency)}</span>
+          </div>
+
+          {monthGroups.map((mo) => {
+            const expanded = search ? mo.items.length > 0 : expandedMonths.has(mo.month);
+            const hasItems = mo.items.length > 0;
+            return (
+              <div key={mo.month} style={{ borderTop: '1px solid var(--divider)' }}>
+                <button
+                  type="button"
+                  onClick={() => toggleMonth(mo.month)}
+                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '12px 0', cursor: 'pointer' }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: 'var(--text-secondary)',
+                        transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
+                        transition: 'transform 0.2s ease',
+                      }}
+                    >
+                      ›
+                    </div>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: hasItems ? 'var(--text)' : 'var(--text-secondary)' }}>{mo.label}</div>
                   </div>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: hasItems ? 'var(--text)' : 'var(--text-secondary)' }}>{mo.label}</div>
-                </div>
-                <div style={{ fontWeight: 700, fontSize: 13, color: hasItems ? 'var(--text)' : 'var(--text-secondary)' }}>{fmt(mo.total, currency)}</div>
-              </button>
+                  <div style={{ fontWeight: 700, fontSize: 13, color: hasItems ? 'var(--text)' : 'var(--text-secondary)' }}>{fmt(mo.total, currency)}</div>
+                </button>
 
-              {expanded && (
-                <div style={{ paddingBottom: 8 }}>
-                  {hasItems ? (
-                    mo.items.map((inc, idx) => (
-                      <IncomeRow
-                        key={inc.id}
-                        inc={inc}
-                        currency={currency}
-                        isLast={idx === mo.items.length - 1}
-                        onEdit={onEdit}
-                        confirmDeleteId={confirmDeleteId}
-                        setConfirmDeleteId={setConfirmDeleteId}
-                        confirmDelete={confirmDelete}
-                      />
-                    ))
-                  ) : (
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)', paddingBottom: 8 }}>Sin ingresos este mes.</div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+                {expanded && (
+                  <div style={{ paddingBottom: 8 }}>
+                    {hasItems ? (
+                      mo.items.map((inc, idx) => (
+                        <IncomeRow
+                          key={inc.id}
+                          inc={inc}
+                          currency={currency}
+                          isLast={idx === mo.items.length - 1}
+                          onEdit={onEdit}
+                          confirmDeleteId={confirmDeleteId}
+                          setConfirmDeleteId={setConfirmDeleteId}
+                          confirmDelete={confirmDelete}
+                        />
+                      ))
+                    ) : (
+                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', paddingBottom: 8 }}>Sin ingresos este mes.</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

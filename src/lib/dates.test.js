@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { daysInMonth, remainingDaysInMonth, isSameMonth, daysUntilPayday } from './dates';
+import { daysInMonth, remainingDaysInMonth, isSameMonth, daysUntilPayday, isWithinDays } from './dates';
 
 describe('daysInMonth', () => {
   it('handles a leap February', () => {
@@ -52,5 +52,23 @@ describe('daysUntilPayday', () => {
   it('clamps a payday beyond the month length to the last day of the month', () => {
     // April has 30 days, so payDayOfMonth=31 clamps to April 30
     expect(daysUntilPayday(31, new Date(2026, 3, 15))).toBe(15);
+  });
+});
+
+describe('isWithinDays', () => {
+  it('includes today', () => {
+    expect(isWithinDays('2026-08-27', 30, '2026-08-27')).toBe(true);
+  });
+
+  it('includes a date right at the edge of the window', () => {
+    expect(isWithinDays('2026-07-29', 30, '2026-08-27')).toBe(true); // exactly 29 days ago
+  });
+
+  it('excludes a date just outside the window', () => {
+    expect(isWithinDays('2026-07-28', 30, '2026-08-27')).toBe(false); // 30 days ago
+  });
+
+  it('excludes a future date', () => {
+    expect(isWithinDays('2026-09-01', 30, '2026-08-27')).toBe(false);
   });
 });
