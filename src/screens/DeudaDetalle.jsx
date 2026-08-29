@@ -72,6 +72,8 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
   };
 
   const scenarioCardStyle = { background: 'var(--input-bg)', borderRadius: 16, padding: 14, flex: 1, display: 'flex', flexDirection: 'column', gap: 4 };
+  const heroTileStyle = { ...cardStyle, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minWidth: 0 };
+  const statTileStyle = { ...cardStyle, flex: 1, minWidth: 0 };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 'var(--header-h, 100px)' }}>
@@ -92,42 +94,44 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
         </div>
       </FixedHeader>
 
-      {/* Donut de progreso */}
-      <div style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: 20 }}>
-        <div style={{ width: 96, height: 96, borderRadius: '50%', background: donut, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-          <div style={{ width: 74, height: 74, borderRadius: '50%', background: 'var(--card-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--text)' }}>{pct}%</div>
+      {/* Hero: dona de progreso + costo mensual del interés, lado a lado */}
+      <div style={{ display: 'flex', gap: 12 }}>
+        <div style={heroTileStyle}>
+          <div style={labelStyle}>% PAGADO</div>
+          <div style={{ width: 128, height: 128, borderRadius: '50%', background: donut, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 10 }}>
+            <div style={{ width: 98, height: 98, borderRadius: '50%', background: 'var(--card-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', letterSpacing: '-0.02em' }}>{pct}%</div>
+            </div>
           </div>
         </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0, flex: 1 }}>
-          <div>
-            <div style={labelStyle}>SALDO PENDIENTE</div>
-            <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--text)' }}>{fmt(card.balance, currency)}</div>
+
+        {card.interestRate > 0 && (
+          <div style={{ ...heroTileStyle, background: 'var(--danger)' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.85)', letterSpacing: '0.06em' }}>TE CUESTA CADA MES</div>
+            <div style={{ fontWeight: 800, fontSize: 26, color: 'white', marginTop: 10, letterSpacing: '-0.02em' }}>{fmt(interestCost, currency)}</div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 4, fontWeight: 700 }}>en intereses</div>
           </div>
-          <div>
-            <div style={labelStyle}>ABONADO EN TOTAL</div>
-            <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--accent-text)' }}>{fmt(paidToDate, currency)}</div>
-          </div>
+        )}
+      </div>
+
+      {/* Saldo y abonado, en tarjetas secundarias */}
+      <div style={{ display: 'flex', gap: 12 }}>
+        <div style={statTileStyle}>
+          <div style={labelStyle}>SALDO PENDIENTE</div>
+          <div style={{ fontWeight: 800, fontSize: 20, color: 'var(--text)', marginTop: 6, letterSpacing: '-0.02em' }}>{fmt(card.balance, currency)}</div>
+        </div>
+        <div style={statTileStyle}>
+          <div style={labelStyle}>ABONADO EN TOTAL</div>
+          <div style={{ fontWeight: 800, fontSize: 20, color: 'var(--accent-text)', marginTop: 6, letterSpacing: '-0.02em' }}>{fmt(paidToDate, currency)}</div>
         </div>
       </div>
+
       <ExplainerNote>
-        Este círculo muestra qué tanto de esta deuda ya pagaste ({pct}%). Entre más lleno, más cerca estás de terminarla.
+        El círculo muestra qué tanto de esta deuda ya pagaste ({pct}%) — entre más lleno, más cerca estás de terminarla.
+        {card.interestRate > 0 &&
+          ` Lo rojo es lo que te cuesta cada mes solo por tenerla — no reduce lo que debes, es dinero extra que pagas por no haberla saldado todavía.`}
         {months !== null && ` Llevas ${months === 0 ? 'menos de un mes' : months === 1 ? '1 mes' : `${months} meses`} con esta deuda.`}
       </ExplainerNote>
-
-      {/* Costo mensual del interés */}
-      {card.interestRate > 0 && (
-        <div style={cardStyle}>
-          <div style={labelStyle}>LO QUE TE CUESTA CADA MES</div>
-          <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--danger-text)', marginTop: 6, letterSpacing: '-0.02em' }}>
-            {fmt(interestCost, currency)} <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)' }}>en intereses</span>
-          </div>
-          <ExplainerNote>
-            Con un saldo de {fmt(card.balance, currency)} a {card.interestRate}% E.A., esto es lo que se suma a tu deuda cada mes solo por
-            tenerla — no reduce lo que debes, es dinero extra que pagas por no haberla saldado todavía.
-          </ExplainerNote>
-        </div>
-      )}
 
       {/* Comparación de escenarios */}
       <div style={cardStyle}>
@@ -143,7 +147,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
               <div style={{ fontSize: 12, color: 'var(--danger-text)', marginTop: 4 }}>El mínimo no alcanza a cubrir el interés — nunca se paga sola.</div>
             ) : (
               <>
-                <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--text)', marginTop: 4 }}>{fmt(baseline.totalInterest, currency)}</div>
+                <div style={{ fontWeight: 800, fontSize: 20, color: 'var(--text)', marginTop: 4, letterSpacing: '-0.01em' }}>{fmt(baseline.totalInterest, currency)}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>en intereses · {formatMonthsLabel(baseline.monthsToPayoff)}</div>
               </>
             )}
@@ -154,7 +158,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
               <div style={{ fontSize: 12, color: 'var(--danger-text)', marginTop: 4 }}>Ese extra tampoco alcanza a cubrir el interés.</div>
             ) : (
               <>
-                <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--text)', marginTop: 4 }}>{fmt(withExtra.totalInterest, currency)}</div>
+                <div style={{ fontWeight: 800, fontSize: 20, color: 'var(--text)', marginTop: 4, letterSpacing: '-0.01em' }}>{fmt(withExtra.totalInterest, currency)}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>en intereses · {formatMonthsLabel(withExtra.monthsToPayoff)}</div>
               </>
             )}
