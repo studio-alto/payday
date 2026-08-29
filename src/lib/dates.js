@@ -57,6 +57,15 @@ export function formatFullDate(dateStr) {
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 }
 
+// Whole months elapsed from a start date to now (or a given ref date) — used to show
+// "llevas X meses con esta deuda" once the person records when they took it on.
+export function monthsSince(startDateStr, ref = new Date()) {
+  const start = new Date(startDateStr + 'T00:00:00');
+  let months = (ref.getFullYear() - start.getFullYear()) * 12 + (ref.getMonth() - start.getMonth());
+  if (ref.getDate() < start.getDate()) months -= 1;
+  return Math.max(0, months);
+}
+
 export function daysInMonth(date = new Date()) {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
 }

@@ -1,5 +1,24 @@
 import { describe, it, expect } from 'vitest';
-import { daysInMonth, remainingDaysInMonth, isSameMonth, daysUntilPayday, isWithinDays, isoOffset } from './dates';
+import { daysInMonth, remainingDaysInMonth, isSameMonth, daysUntilPayday, isWithinDays, isoOffset, monthsSince } from './dates';
+
+describe('monthsSince', () => {
+  it('is 0 for a start date less than a month ago', () => {
+    expect(monthsSince('2026-08-10', new Date(2026, 7, 29))).toBe(0);
+  });
+
+  it('counts whole months, not rounding up until the day-of-month is reached', () => {
+    expect(monthsSince('2026-06-15', new Date(2026, 7, 10))).toBe(1); // not yet the 15th
+    expect(monthsSince('2026-06-15', new Date(2026, 7, 15))).toBe(2);
+  });
+
+  it('counts across a year boundary', () => {
+    expect(monthsSince('2025-01-01', new Date(2026, 7, 1))).toBe(19);
+  });
+
+  it('never goes negative for a future start date', () => {
+    expect(monthsSince('2026-12-01', new Date(2026, 7, 1))).toBe(0);
+  });
+});
 
 describe('isoOffset', () => {
   it('uses the local calendar day, not the UTC one — stays "today" late in the evening in a UTC-behind timezone', () => {

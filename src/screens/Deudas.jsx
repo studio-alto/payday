@@ -13,15 +13,24 @@ import { sortDebtsByPriority, simulatePayoffPlan, formatMonthsLabel, monthlyPaid
 const TIPOS = ['Tarjeta de crédito', 'Préstamo', 'Otro'];
 const CATEGORIAS = ['Suscripción', 'Servicios', 'Transporte', 'Vivienda', 'Tarjeta de crédito', 'Otro'];
 
+// Keeps digits and at most one decimal point (up to 2 decimal places) — interest rates
+// like "2.5% E.A." need the point; plain digit-stripping was silently eating it.
+function sanitizeDecimal(raw) {
+  const cleaned = raw.replace(/[^\d.]/g, '');
+  const [whole, ...rest] = cleaned.split('.');
+  if (rest.length === 0) return whole.slice(0, 3);
+  return `${whole.slice(0, 3)}.${rest.join('').slice(0, 2)}`;
+}
+
 function emptyForm() {
-  return { tipo: 'Tarjeta de crédito', name: '', balance: '', nextPayment: '', minPayment: '', interestRate: '' };
+  return { tipo: 'Tarjeta de crédito', name: '', balance: '', nextPayment: '', minPayment: '', interestRate: '', startDate: '' };
 }
 
 function emptyExpenseForm() {
   return { name: '', categoria: 'Suscripción', amount: '', dueDay: '', medioPago: 'efectivo' };
 }
 
-export default function Deudas({ data, setData }) {
+export default function Deudas({ data, setData, onViewDetail }) {
   const { cards, expenses } = data;
   const { currency } = data.user;
   const debtMethod = data.user.debtMethod || 'bola_nieve';
@@ -128,6 +137,7 @@ export default function Deudas({ data, setData }) {
       nextPayment: c.nextPayment,
       minPayment: String(c.minPayment),
       interestRate: c.interestRate ? String(c.interestRate) : '',
+      startDate: c.startDate || '',
     });
     setModalOpen(true);
   };
@@ -150,6 +160,7 @@ export default function Deudas({ data, setData }) {
                   minPayment: Number(form.minPayment) || 0,
                   interestRate: Number(form.interestRate) || 0,
                   tipo: form.tipo,
+                  startDate: form.startDate || null,
                 }
               : c,
           ),
@@ -167,6 +178,7 @@ export default function Deudas({ data, setData }) {
             minPayment: Number(form.minPayment) || 0,
             interestRate: Number(form.interestRate) || 0,
             tipo: form.tipo,
+            startDate: form.startDate || null,
             history: [],
           },
         ],
@@ -457,23 +469,40 @@ export default function Deudas({ data, setData }) {
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
               Abonado: {fmt(paidToDate, currency)} · {pct}%
             </div>
-            <button
-              type="button"
-              onClick={() => openPayModal(c.id)}
-              style={{
-                padding: '9px 16px',
-                borderRadius: 20,
-                background: 'var(--text)',
-                color: 'var(--page-bg)',
-                fontWeight: 700,
-                fontSize: 12,
-                cursor: 'pointer',
-                display: 'inline-block',
-                marginTop: 10,
-              }}
-            >
-              Registrar pago
-            </button>
+            <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+              <button
+                type="button"
+                onClick={() => openPayModal(c.id)}
+                style={{
+                  padding: '9px 16px',
+                  borderRadius: 20,
+                  background: 'var(--text)',
+                  color: 'var(--page-bg)',
+                  fontWeight: 700,
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  border: 'none',
+                }}
+              >
+                Registrar pago
+              </button>
+              <button
+                type="button"
+                onClick={() => onViewDetail(c.id)}
+                style={{
+                  padding: '9px 16px',
+                  borderRadius: 20,
+                  background: 'var(--input-bg)',
+                  color: 'var(--text)',
+                  fontWeight: 700,
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  border: 'none',
+                }}
+              >
+                Ver detalle
+              </button>
+            </div>
 
             {c.history.length > 0 && (
               <button
@@ -549,10 +578,16 @@ export default function Deudas({ data, setData }) {
             type="text"
             inputMode="numeric"
             value={form.interestRate}
-            onChange={(e) => setForm((f) => ({ ...f, interestRate: e.target.value.replace(/\D/g, '').slice(0, 3) }))}
+            onChange={(e) => setForm((f) => ({ ...f, interestRate: sanitizeDecimal(e.target.value) }))}
             placeholder="Tasa de interés % E.A. (opcional)"
             style={textInputStyle()}
           />
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 700 }}>
+              ¿CUÁNDO LA ADQUIRISTE? (OPCIONAL — PARA SABER CUÁNTOS MESES LLEVAS)
+            </div>
+            <input type="date" value={form.startDate} onChange={setField('startDate')} style={textInputStyle()} />
+          </div>
           <button type="button" onClick={saveCard} style={{ ...primaryButtonStyle(), height: 50, borderRadius: 25 }}>
             Guardar
           </button>
