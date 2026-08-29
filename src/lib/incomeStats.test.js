@@ -1,5 +1,33 @@
 import { describe, it, expect } from 'vitest';
-import { averageRecentIncome, monthlyBreakdown } from './incomeStats';
+import { averageRecentIncome, monthlyBreakdown, getPendingConfirmations } from './incomeStats';
+
+describe('getPendingConfirmations', () => {
+  const confirmed = { id: 'c1', date: '2026-08-29', estado: 'confirmado' };
+
+  it('ignores confirmed incomes regardless of date', () => {
+    expect(getPendingConfirmations([confirmed], new Date(2026, 7, 30, 20))).toEqual([]);
+  });
+
+  it('always flags a projected income from a previous day, any time of day', () => {
+    const overdue = { id: 'p1', date: '2026-08-28', estado: 'proyectado' };
+    expect(getPendingConfirmations([overdue], new Date(2026, 7, 29, 9))).toEqual([overdue]);
+  });
+
+  it('does not flag a projected income dated today before 6pm', () => {
+    const today = { id: 'p2', date: '2026-08-29', estado: 'proyectado' };
+    expect(getPendingConfirmations([today], new Date(2026, 7, 29, 17, 59))).toEqual([]);
+  });
+
+  it('flags a projected income dated today once it is 6pm or later', () => {
+    const today = { id: 'p3', date: '2026-08-29', estado: 'proyectado' };
+    expect(getPendingConfirmations([today], new Date(2026, 7, 29, 18, 0))).toEqual([today]);
+  });
+
+  it('does not flag a projected income dated in the future', () => {
+    const future = { id: 'p4', date: '2026-08-30', estado: 'proyectado' };
+    expect(getPendingConfirmations([future], new Date(2026, 7, 29, 20))).toEqual([]);
+  });
+});
 
 describe('averageRecentIncome', () => {
   it('returns 0 with no incomes', () => {

@@ -1,3 +1,18 @@
+import { isoOffset } from './dates';
+
+// Projected incomes worth nagging the person to confirm: any still-planned income whose
+// date already passed (clearly overdue), plus today's once it's evening — giving the
+// day a chance to actually happen before asking "did this come in?".
+export function getPendingConfirmations(incomes, now = new Date()) {
+  const today = isoOffset(0, now);
+  return incomes.filter((i) => {
+    if (i.estado !== 'proyectado') return false;
+    if (i.date < today) return true;
+    if (i.date === today) return now.getHours() >= 18;
+    return false;
+  });
+}
+
 // Rolling average of the person's recent confirmed income — used instead of a fixed
 // "base pay" setting, since gig/variable income rarely repeats the same amount.
 export function averageRecentIncome(incomes, count = 10) {

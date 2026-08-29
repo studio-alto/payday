@@ -1,7 +1,8 @@
 import { fmt } from '../lib/format';
 import { WEEKDAY_LETTERS, dayTypeLabel, daysUntilPayday, formatShortDate, isSameMonth, last7Days, remainingDaysInMonth, todayISO } from '../lib/dates';
 import { cardStyle, labelStyle } from '../lib/styles';
-import { averageRecentIncome } from '../lib/incomeStats';
+import { averageRecentIncome, getPendingConfirmations } from '../lib/incomeStats';
+import { applyIncomeEffects } from '../lib/debt';
 import FixedHeader from '../components/FixedHeader';
 
 export default function Dashboard({ data, setData, onNavigate }) {
@@ -87,6 +88,15 @@ export default function Dashboard({ data, setData, onNavigate }) {
     .filter((c) => c.daysLeft <= 3);
 
   const urgentItems = [...urgentDebts, ...urgentExpenses].sort((a, b) => a.daysLeft - b.daysLeft);
+
+  const pendingConfirmations = getPendingConfirmations(incomes);
+  const confirmIncome = (income) => {
+    setData((s) => {
+      const applied = applyIncomeEffects(income, s.goals, s.cards, s.user.debtMethod || 'bola_nieve');
+      const updatedIncome = { ...income, estado: 'confirmado', distribution: { ...income.distribution, debtAllocations: applied.debtAllocations } };
+      return { ...s, incomes: s.incomes.map((i) => (i.id === income.id ? updatedIncome : i)), goals: applied.goals, cards: applied.cards };
+    });
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 'var(--header-h, 150px)' }}>
@@ -190,6 +200,52 @@ export default function Dashboard({ data, setData, onNavigate }) {
           ))}
           {urgentItems.length > 3 && (
             <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>+{urgentItems.length - 3} más</div>
+          )}
+        </div>
+      )}
+
+      {pendingConfirmations.length > 0 && (
+        <div style={{ ...cardStyle, background: 'var(--accent-soft-bg)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-text)', letterSpacing: '0.06em' }}>
+            {pendingConfirmations.length === 1 ? '1 INGRESO POR CONFIRMAR' : `${pendingConfirmations.length} INGRESOS POR CONFIRMAR`}
+          </div>
+          {pendingConfirmations.slice(0, 3).map((inc) => (
+            <div key={inc.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {inc.name || dayTypeLabel(inc.type)}
+                </div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                  {formatShortDate(inc.date)} · {fmt(inc.amount, user.currency)}
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => confirmIncome(inc)}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: 16,
+                  background: 'var(--text)',
+                  color: 'var(--page-bg)',
+                  fontWeight: 700,
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  border: 'none',
+                  flexShrink: 0,
+                }}
+              >
+                Confirmar
+              </button>
+            </div>
+          ))}
+          {pendingConfirmations.length > 3 && (
+            <button
+              type="button"
+              onClick={() => onNavigate('ingresos')}
+              style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer', textAlign: 'left' }}
+            >
+              +{pendingConfirmations.length - 3} más — ver todos
+            </button>
           )}
         </div>
       )}
