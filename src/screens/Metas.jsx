@@ -8,6 +8,7 @@ import BottomSheet from '../components/BottomSheet';
 import InlineConfirm from '../components/InlineConfirm';
 import NumberInput from '../components/NumberInput';
 import PencilIcon from '../components/PencilIcon';
+import PlusIcon from '../components/PlusIcon';
 import FixedHeader from '../components/FixedHeader';
 import SwipeActions from '../components/SwipeActions';
 
@@ -96,7 +97,28 @@ export default function Metas({ data, setData }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 'var(--header-h, 88px)' }}>
       <FixedHeader>
-        <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', letterSpacing: '-0.02em' }}>Metas</div>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', letterSpacing: '-0.02em' }}>Metas</div>
+          <button
+            type="button"
+            onClick={openNewModal}
+            aria-label="Nueva meta"
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: '50%',
+              background: 'var(--text)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              border: 'none',
+              flexShrink: 0,
+            }}
+          >
+            <PlusIcon color="var(--page-bg)" />
+          </button>
+        </div>
       </FixedHeader>
 
       {goals.map((g) => {
@@ -236,10 +258,6 @@ export default function Metas({ data, setData }) {
           </SwipeActions>
         );
       })}
-
-      <button type="button" onClick={openNewModal} style={primaryButtonStyle()}>
-        + Nueva meta
-      </button>
 
       {modalOpen && (
         <BottomSheet onClose={closeModal}>

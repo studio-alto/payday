@@ -7,6 +7,7 @@ import BottomSheet from '../components/BottomSheet';
 import InlineConfirm from '../components/InlineConfirm';
 import NumberInput from '../components/NumberInput';
 import PencilIcon from '../components/PencilIcon';
+import PlusIcon from '../components/PlusIcon';
 import FixedHeader from '../components/FixedHeader';
 import SwipeActions from '../components/SwipeActions';
 import { sortDebtsByPriority, simulatePayoffPlan, formatMonthsLabel, monthlyPaidTotals, METHODS } from '../lib/debt';
@@ -309,7 +310,28 @@ export default function Deudas({ data, setData, onViewDetail }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 'var(--header-h, 88px)' }}>
       <FixedHeader>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', letterSpacing: '-0.02em' }}>Deudas</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', letterSpacing: '-0.02em' }}>Deudas</div>
+            <button
+              type="button"
+              onClick={section === 'deudas' ? openNewModal : openNewExpenseModal}
+              aria-label={section === 'deudas' ? 'Nueva deuda' : 'Nuevo gasto'}
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: '50%',
+                background: 'var(--text)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                border: 'none',
+                flexShrink: 0,
+              }}
+            >
+              <PlusIcon color="var(--page-bg)" />
+            </button>
+          </div>
           <div style={{ display: 'flex', gap: 8 }}>
             {[
               { key: 'deudas', label: 'Deudas' },
@@ -589,12 +611,6 @@ export default function Deudas({ data, setData, onViewDetail }) {
         );
       })}
 
-      {section === 'deudas' && (
-        <button type="button" onClick={openNewModal} style={primaryButtonStyle()}>
-          + Nueva deuda
-        </button>
-      )}
-
       {modalOpen && (
         <BottomSheet onClose={closeModal}>
           <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{editingCardId ? 'Editar deuda' : 'Nueva deuda'}</div>
@@ -801,10 +817,6 @@ export default function Deudas({ data, setData, onViewDetail }) {
               </SwipeActions>
             );
           })}
-
-          <button type="button" onClick={openNewExpenseModal} style={primaryButtonStyle()}>
-            + Nuevo gasto
-          </button>
 
           {expenseModalOpen && (
             <BottomSheet onClose={closeExpenseModal}>
