@@ -19,7 +19,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
   const card = cards.find((c) => c.id === cardId);
 
   const [payModalOpen, setPayModalOpen] = useState(false);
-  const [payForm, setPayForm] = useState({ amount: '', note: '' });
+  const [payForm, setPayForm] = useState({ amount: '', note: '', date: '' });
   const [extraText, setExtraText] = useState('');
 
   if (!card) {
@@ -55,8 +55,9 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
   const extraRescuesFromStuck = extra > 0 && baseline.stuck && !withExtra.stuck;
 
   const today = todayISO();
+  const mostRecentPayment = card.history.length > 0 ? [...card.history].sort((a, b) => b.date.localeCompare(a.date))[0] : null;
   const openPayModal = () => {
-    setPayForm({ amount: '', note: '' });
+    setPayForm({ amount: '', note: '', date: today });
     setPayModalOpen(true);
   };
   const confirmPay = () => {
@@ -65,7 +66,9 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
     setData((s) => ({
       ...s,
       cards: s.cards.map((c) =>
-        c.id === card.id ? { ...c, balance: Math.max(0, c.balance - amount), history: [...c.history, { date: today, amount, note: payForm.note }] } : c,
+        c.id === card.id
+          ? { ...c, balance: Math.max(0, c.balance - amount), history: [...c.history, { date: payForm.date || today, amount, note: payForm.note }] }
+          : c,
       ),
     }));
     setPayModalOpen(false);
@@ -236,8 +239,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
           <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 8 }}>Todavía no has registrado abonos a esta deuda.</div>
         ) : (
           <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 8 }}>
-            El más reciente: {formatShortDate(card.history[card.history.length - 1].date)} ·{' '}
-            {fmt(card.history[card.history.length - 1].amount, currency)}
+            El más reciente: {formatShortDate(mostRecentPayment.date)} · {fmt(mostRecentPayment.amount, currency)}
           </div>
         )}
         <button
@@ -269,6 +271,16 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
             placeholder="Monto a pagar"
             style={textInputStyle()}
           />
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 700 }}>FECHA DEL ABONO</div>
+            <input
+              type="date"
+              value={payForm.date}
+              max={today}
+              onChange={(e) => setPayForm((f) => ({ ...f, date: e.target.value }))}
+              style={textInputStyle()}
+            />
+          </div>
           <input
             type="text"
             value={payForm.note}

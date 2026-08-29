@@ -214,7 +214,7 @@ export default function Deudas({ data, setData, onViewDetail }) {
 
   const openPayModal = (id) => {
     setPayingCardId(id);
-    setPayForm({ amount: '', note: '' });
+    setPayForm({ amount: '', note: '', date: today });
     setPayModalOpen(true);
   };
   const closePayModal = () => setPayModalOpen(false);
@@ -225,7 +225,7 @@ export default function Deudas({ data, setData, onViewDetail }) {
       ...s,
       cards: s.cards.map((c) =>
         c.id === payingCardId
-          ? { ...c, balance: Math.max(0, c.balance - amount), history: [...c.history, { date: today, amount, note: payForm.note }] }
+          ? { ...c, balance: Math.max(0, c.balance - amount), history: [...c.history, { date: payForm.date || today, amount, note: payForm.note }] }
           : c,
       ),
     }));
@@ -530,7 +530,7 @@ export default function Deudas({ data, setData, onViewDetail }) {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 8 }}>
                 {[...c.history]
                   .map((h, i) => ({ ...h, i }))
-                  .reverse()
+                  .sort((a, b) => b.date.localeCompare(a.date))
                   .map((h) => (
                     <div key={h.i}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, background: 'var(--input-bg)', borderRadius: 10, padding: '8px 10px' }}>
@@ -615,6 +615,16 @@ export default function Deudas({ data, setData, onViewDetail }) {
             placeholder="Monto a pagar"
             style={textInputStyle()}
           />
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 700 }}>FECHA DEL ABONO</div>
+            <input
+              type="date"
+              value={payForm.date}
+              max={today}
+              onChange={(e) => setPayForm((f) => ({ ...f, date: e.target.value }))}
+              style={textInputStyle()}
+            />
+          </div>
           <input
             type="text"
             value={payForm.note}
