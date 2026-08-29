@@ -9,6 +9,7 @@ import InlineConfirm from '../components/InlineConfirm';
 import NumberInput from '../components/NumberInput';
 import PencilIcon from '../components/PencilIcon';
 import FixedHeader from '../components/FixedHeader';
+import SwipeActions from '../components/SwipeActions';
 
 const GOAL_PRESETS = ['Fondo de emergencia', 'Viaje', 'Laptop', 'Curso', 'Otra'];
 
@@ -106,68 +107,28 @@ export default function Metas({ data, setData }) {
         const bg = isOverdue ? 'var(--danger)' : 'var(--card-bg)';
         const fg = isOverdue ? 'white' : 'var(--text)';
         const fgSoft = isOverdue ? 'rgba(255,255,255,0.85)' : 'var(--text-secondary)';
-        const chipBg = isOverdue ? 'rgba(255,255,255,0.25)' : 'var(--input-bg)';
         const ringColor = isOverdue ? 'white' : 'var(--accent)';
         const ringTrack = isOverdue ? 'rgba(255,255,255,0.3)' : 'var(--divider)';
         const donut = `conic-gradient(${ringColor} ${pct}%, ${ringTrack} ${pct}% 100%)`;
 
         return (
-          <div key={g.id} style={{ ...cardStyle, background: bg }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ minWidth: 0 }}>
-                {isOverdue && (
-                  <div style={{ fontSize: 10, fontWeight: 700, color: fgSoft, letterSpacing: '0.06em', marginBottom: 2 }}>FECHA VENCIDA</div>
-                )}
-                {completed && !isOverdue && (
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent-text)', letterSpacing: '0.06em', marginBottom: 2 }}>
-                    ✓ COMPLETADA
-                  </div>
-                )}
-                <div style={{ fontWeight: 700, fontSize: 15, color: fg }}>{g.name}</div>
+          <SwipeActions
+            key={g.id}
+            actions={[
+              { label: 'Editar', bg: 'var(--text)', color: 'var(--page-bg)', icon: <PencilIcon color="var(--page-bg)" accent="var(--page-bg)" />, onClick: () => openEditModal(g) },
+              { label: 'Eliminar', bg: 'var(--danger)', icon: <span style={{ fontSize: 20, fontWeight: 700 }}>×</span>, onClick: () => askDelete(g.id) },
+            ]}
+          >
+          <div style={{ ...cardStyle, background: bg }}>
+            {isOverdue && (
+              <div style={{ fontSize: 10, fontWeight: 700, color: fgSoft, letterSpacing: '0.06em', marginBottom: 2 }}>FECHA VENCIDA</div>
+            )}
+            {completed && !isOverdue && (
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent-text)', letterSpacing: '0.06em', marginBottom: 2 }}>
+                ✓ COMPLETADA
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                <button
-                  type="button"
-                  onClick={() => openEditModal(g)}
-                  aria-label="Editar"
-                  style={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    background: chipBg,
-                    flexShrink: 0,
-                  }}
-                >
-                  <PencilIcon color={fg} accent={isOverdue ? 'white' : 'var(--accent)'} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => askDelete(g.id)}
-                  aria-label="Eliminar"
-                  style={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 16,
-                    lineHeight: 1,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    color: isOverdue ? 'white' : 'var(--danger-text)',
-                    background: chipBg,
-                    flexShrink: 0,
-                  }}
-                >
-                  ×
-                </button>
-              </div>
-            </div>
+            )}
+            <div style={{ fontWeight: 700, fontSize: 15, color: fg }}>{g.name}</div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 12 }}>
               <div style={{ width: 88, height: 88, borderRadius: '50%', background: donut, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -272,6 +233,7 @@ export default function Metas({ data, setData }) {
               />
             )}
           </div>
+          </SwipeActions>
         );
       })}
 

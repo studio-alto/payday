@@ -5,6 +5,7 @@ import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import InlineConfirm from '../components/InlineConfirm';
 import PencilIcon from '../components/PencilIcon';
 import FixedHeader from '../components/FixedHeader';
+import SwipeActions from '../components/SwipeActions';
 import { reverseIncomeEffects } from '../lib/debt';
 
 const MONTH_LABELS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
@@ -16,8 +17,14 @@ const TIME_FILTERS = [
 
 function IncomeRow({ inc, currency, isLast, onEdit, confirmDeleteId, setConfirmDeleteId, confirmDelete }) {
   return (
-    <div style={{ padding: '11px 0', borderBottom: isLast ? 'none' : '1px solid var(--divider)' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+    <SwipeActions
+      borderRadius={0}
+      actions={[
+        { label: 'Editar', bg: 'var(--text)', color: 'var(--page-bg)', icon: <PencilIcon color="var(--page-bg)" accent="var(--page-bg)" />, onClick: () => onEdit(inc) },
+        { label: 'Eliminar', bg: 'var(--danger)', icon: <span style={{ fontSize: 20, fontWeight: 700 }}>×</span>, onClick: () => setConfirmDeleteId(inc.id) },
+      ]}
+    >
+      <div style={{ padding: '11px 0', borderBottom: isLast ? 'none' : '1px solid var(--divider)', background: 'var(--card-bg)' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -34,53 +41,11 @@ function IncomeRow({ inc, currency, isLast, onEdit, confirmDeleteId, setConfirmD
             {formatShortDate(inc.date)} · {dayTypeLabel(inc.type)}
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-          <button
-            type="button"
-            onClick={() => onEdit(inc)}
-            aria-label="Editar"
-            style={{
-              width: 26,
-              height: 26,
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              background: 'var(--input-bg)',
-              flexShrink: 0,
-            }}
-          >
-            <PencilIcon />
-          </button>
-          <button
-            type="button"
-            onClick={() => setConfirmDeleteId(inc.id)}
-            aria-label="Eliminar"
-            style={{
-              width: 26,
-              height: 26,
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: 16,
-              lineHeight: 1,
-              fontWeight: 700,
-              cursor: 'pointer',
-              color: 'var(--danger-text)',
-              background: 'var(--input-bg)',
-              flexShrink: 0,
-            }}
-          >
-            ×
-          </button>
-        </div>
+        {confirmDeleteId === inc.id && (
+          <InlineConfirm message="¿Eliminar este ingreso?" onConfirm={() => confirmDelete(inc.id)} onCancel={() => setConfirmDeleteId(null)} />
+        )}
       </div>
-      {confirmDeleteId === inc.id && (
-        <InlineConfirm message="¿Eliminar este ingreso?" onConfirm={() => confirmDelete(inc.id)} onCancel={() => setConfirmDeleteId(null)} />
-      )}
-    </div>
+    </SwipeActions>
   );
 }
 

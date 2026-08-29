@@ -8,6 +8,7 @@ import InlineConfirm from '../components/InlineConfirm';
 import NumberInput from '../components/NumberInput';
 import PencilIcon from '../components/PencilIcon';
 import FixedHeader from '../components/FixedHeader';
+import SwipeActions from '../components/SwipeActions';
 import { sortDebtsByPriority, simulatePayoffPlan, formatMonthsLabel, monthlyPaidTotals, METHODS } from '../lib/debt';
 
 const TIPOS = ['Tarjeta de crédito', 'Préstamo', 'Otro'];
@@ -461,68 +462,31 @@ export default function Deudas({ data, setData, onViewDetail }) {
         const isOverdue = c.nextPayment < today && c.balance > 0;
 
         return (
-          <div key={c.id} style={cardStyle}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>{c.name}</div>
-                {c.id === priorityId && (
-                  <div
-                    style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      color: 'white',
-                      background: 'var(--accent)',
-                      padding: '3px 8px',
-                      borderRadius: 10,
-                      letterSpacing: '0.03em',
-                    }}
-                  >
-                    PRIORIDAD
-                  </div>
-                )}
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                <button
-                  type="button"
-                  onClick={() => openEditModal(c)}
-                  aria-label="Editar"
+          <SwipeActions
+            key={c.id}
+            actions={[
+              { label: 'Editar', bg: 'var(--text)', color: 'var(--page-bg)', icon: <PencilIcon color="var(--page-bg)" accent="var(--page-bg)" />, onClick: () => openEditModal(c) },
+              { label: 'Eliminar', bg: 'var(--danger)', icon: <span style={{ fontSize: 20, fontWeight: 700 }}>×</span>, onClick: () => askDelete(c.id) },
+            ]}
+          >
+          <div style={cardStyle}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+              <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>{c.name}</div>
+              {c.id === priorityId && (
+                <div
                   style={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    background: 'var(--input-bg)',
-                    flexShrink: 0,
-                  }}
-                >
-                  <PencilIcon />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => askDelete(c.id)}
-                  aria-label="Eliminar"
-                  style={{
-                    width: 26,
-                    height: 26,
-                    borderRadius: '50%',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 16,
-                    lineHeight: 1,
+                    fontSize: 10,
                     fontWeight: 700,
-                    cursor: 'pointer',
-                    color: 'var(--danger-text)',
-                    background: 'var(--input-bg)',
-                    flexShrink: 0,
+                    color: 'white',
+                    background: 'var(--accent)',
+                    padding: '3px 8px',
+                    borderRadius: 10,
+                    letterSpacing: '0.03em',
                   }}
                 >
-                  ×
-                </button>
-              </div>
+                  PRIORIDAD
+                </div>
+              )}
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700, marginTop: 2 }}>
               {c.tipo || 'Tarjeta de crédito'}
@@ -621,6 +585,7 @@ export default function Deudas({ data, setData, onViewDetail }) {
               <InlineConfirm message="¿Eliminar esta deuda?" onConfirm={() => confirmDelete(c.id)} onCancel={cancelDelete} />
             )}
           </div>
+          </SwipeActions>
         );
       })}
 
@@ -775,62 +740,23 @@ export default function Deudas({ data, setData, onViewDetail }) {
             const chipBg = highlighted ? 'rgba(255,255,255,0.25)' : 'var(--input-bg)';
 
             return (
-              <div key={e.id} style={{ ...cardStyle, padding: 16, background: bg }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
-                  <div style={{ minWidth: 0 }}>
-                    {highlighted && (
-                      <div style={{ fontSize: 10, fontWeight: 700, color: fgSoft, letterSpacing: '0.06em', marginBottom: 2 }}>
-                        {e.isOverdue ? 'VENCIDO' : 'PRÓXIMO A VENCER'}
-                      </div>
-                    )}
-                    <div style={{ fontWeight: 700, fontSize: 15, color: fg }}>{e.name}</div>
-                    <div style={{ fontSize: 11, color: fgSoft, fontWeight: 700, marginTop: 2 }}>
-                      {e.categoria}
-                      {linkedCard && ` · ${linkedCard.name}${linkedCard.interestRate > 0 ? ` · ${linkedCard.interestRate}% E.A.` : ''}`}
-                    </div>
+              <SwipeActions
+                key={e.id}
+                actions={[
+                  { label: 'Editar', bg: 'var(--text)', color: 'var(--page-bg)', icon: <PencilIcon color="var(--page-bg)" accent="var(--page-bg)" />, onClick: () => openEditExpenseModal(e) },
+                  { label: 'Eliminar', bg: 'var(--danger)', icon: <span style={{ fontSize: 20, fontWeight: 700 }}>×</span>, onClick: () => askDeleteExpense(e.id) },
+                ]}
+              >
+              <div style={{ ...cardStyle, padding: 16, background: bg }}>
+                {highlighted && (
+                  <div style={{ fontSize: 10, fontWeight: 700, color: fgSoft, letterSpacing: '0.06em', marginBottom: 2 }}>
+                    {e.isOverdue ? 'VENCIDO' : 'PRÓXIMO A VENCER'}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                    <button
-                      type="button"
-                      onClick={() => openEditExpenseModal(e)}
-                      aria-label="Editar"
-                      style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        cursor: 'pointer',
-                        background: chipBg,
-                        flexShrink: 0,
-                      }}
-                    >
-                      <PencilIcon color={fg} accent={highlighted ? 'white' : 'var(--accent)'} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => askDeleteExpense(e.id)}
-                      aria-label="Eliminar"
-                      style={{
-                        width: 24,
-                        height: 24,
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        fontSize: 15,
-                        lineHeight: 1,
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        color: highlighted ? 'white' : 'var(--danger-text)',
-                        background: chipBg,
-                        flexShrink: 0,
-                      }}
-                    >
-                      ×
-                    </button>
-                  </div>
+                )}
+                <div style={{ fontWeight: 700, fontSize: 15, color: fg }}>{e.name}</div>
+                <div style={{ fontSize: 11, color: fgSoft, fontWeight: 700, marginTop: 2 }}>
+                  {e.categoria}
+                  {linkedCard && ` · ${linkedCard.name}${linkedCard.interestRate > 0 ? ` · ${linkedCard.interestRate}% E.A.` : ''}`}
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 10, gap: 10 }}>
@@ -872,6 +798,7 @@ export default function Deudas({ data, setData, onViewDetail }) {
                   <InlineConfirm message="¿Eliminar este gasto?" onConfirm={() => confirmDeleteExpense(e.id)} onCancel={cancelDeleteExpense} />
                 )}
               </div>
+              </SwipeActions>
             );
           })}
 
