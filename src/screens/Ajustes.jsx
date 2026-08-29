@@ -451,6 +451,13 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
               Pide un PIN de 4 dígitos cada vez que abres la app, para que nadie más vea tus datos si toma tu teléfono
               desbloqueado.
             </div>
+            <div style={{ fontSize: 12, color: 'var(--danger-text)', background: 'var(--danger-soft-bg)', padding: 10, borderRadius: 12 }}>
+              Si olvidas el PIN, la única forma de volver a entrar es borrar todos tus datos — no hay recuperación. Te
+              recomendamos hacer un respaldo antes de activarlo.
+            </div>
+            <button type="button" onClick={shareBackup} style={actionRowStyle}>
+              Hacer respaldo ahora
+            </button>
             <button type="button" onClick={startPinSetup} style={{ ...actionRowStyle, background: 'var(--accent)', color: 'white' }}>
               Activar bloqueo con PIN
             </button>

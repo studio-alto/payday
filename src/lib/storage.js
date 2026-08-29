@@ -17,23 +17,41 @@ function seedData() {
 }
 
 function loadInitial() {
+  let raw;
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      const user = parsed.user || seedData().user;
-      return {
-        user: { ...user, onboarded: user.onboarded ?? true },
-        incomes: parsed.incomes || [],
-        goals: parsed.goals || [],
-        cards: parsed.cards || [],
-        expenses: parsed.expenses || [],
-      };
-    }
+    raw = localStorage.getItem(STORAGE_KEY);
   } catch {
-    // corrupted localStorage — fall back to seed data below
+    return seedData(); // storage unavailable entirely (e.g. private browsing)
   }
-  return seedData();
+  if (!raw) return seedData();
+
+  try {
+    const parsed = JSON.parse(raw);
+    const user = parsed.user || seedData().user;
+    return {
+      user: { ...user, onboarded: user.onboarded ?? true },
+      incomes: parsed.incomes || [],
+      goals: parsed.goals || [],
+      cards: parsed.cards || [],
+      expenses: parsed.expenses || [],
+    };
+  } catch {
+    // Corrupted JSON — preserve the raw string under a separate key before falling
+    // back to an empty app, so it isn't silently overwritten and gone for good the
+    // moment this session saves again. Still recoverable by hand even though the
+    // app itself can't parse it.
+    try {
+      localStorage.setItem(`${STORAGE_KEY}-corrupted-${Date.now()}`, raw);
+    } catch {
+      // best-effort only
+    }
+    if (typeof window !== 'undefined' && window.alert) {
+      window.alert(
+        'No se pudieron leer tus datos guardados — puede que se hayan dañado. Se guardó una copia del archivo original por si se puede recuperar más adelante. La app va a iniciar vacía.',
+      );
+    }
+    return seedData();
+  }
 }
 
 export function useLocalData() {
