@@ -100,12 +100,32 @@ export default function Metas({ data, setData }) {
 
       {goals.map((g) => {
         const pct = Math.min(100, Math.round((g.current / g.target) * 100));
+        const completed = g.current >= g.target;
         const projection = computeSavingsProjection(g.target - g.current, g.fechaObjetivo);
+        const isOverdue = projection?.overdue === true;
+        const bg = isOverdue ? 'var(--danger)' : 'var(--card-bg)';
+        const fg = isOverdue ? 'white' : 'var(--text)';
+        const fgSoft = isOverdue ? 'rgba(255,255,255,0.85)' : 'var(--text-secondary)';
+        const chipBg = isOverdue ? 'rgba(255,255,255,0.25)' : 'var(--input-bg)';
+        const ringColor = isOverdue ? 'white' : 'var(--accent)';
+        const ringTrack = isOverdue ? 'rgba(255,255,255,0.3)' : 'var(--divider)';
+        const donut = `conic-gradient(${ringColor} ${pct}%, ${ringTrack} ${pct}% 100%)`;
+
         return (
-          <div key={g.id} style={cardStyle}>
+          <div key={g.id} style={{ ...cardStyle, background: bg }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-              <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>{g.name}</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+              <div style={{ minWidth: 0 }}>
+                {isOverdue && (
+                  <div style={{ fontSize: 10, fontWeight: 700, color: fgSoft, letterSpacing: '0.06em', marginBottom: 2 }}>FECHA VENCIDA</div>
+                )}
+                {completed && !isOverdue && (
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent-text)', letterSpacing: '0.06em', marginBottom: 2 }}>
+                    ✓ COMPLETADA
+                  </div>
+                )}
+                <div style={{ fontWeight: 700, fontSize: 15, color: fg }}>{g.name}</div>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                 <button
                   type="button"
                   onClick={() => openEditModal(g)}
@@ -118,11 +138,11 @@ export default function Metas({ data, setData }) {
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: 'pointer',
-                    background: 'var(--input-bg)',
+                    background: chipBg,
                     flexShrink: 0,
                   }}
                 >
-                  <PencilIcon />
+                  <PencilIcon color={fg} accent={isOverdue ? 'white' : 'var(--accent)'} />
                 </button>
                 <button
                   type="button"
@@ -139,8 +159,8 @@ export default function Metas({ data, setData }) {
                     lineHeight: 1,
                     fontWeight: 700,
                     cursor: 'pointer',
-                    color: 'var(--danger-text)',
-                    background: 'var(--input-bg)',
+                    color: isOverdue ? 'white' : 'var(--danger-text)',
+                    background: chipBg,
                     flexShrink: 0,
                   }}
                 >
@@ -148,35 +168,52 @@ export default function Metas({ data, setData }) {
                 </button>
               </div>
             </div>
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
-              {fmt(g.current, currency)} de {fmt(g.target, currency)}
-            </div>
-            <div style={{ height: 8, background: 'var(--divider)', borderRadius: 6, overflow: 'hidden', marginTop: 10 }}>
-              <div style={{ height: '100%', width: `${pct}%`, background: 'var(--text)', borderRadius: 6, transition: 'width 0.5s ease' }} />
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{pct}%</div>
-              <button
-                type="button"
-                onClick={() => startAdd(g.id)}
-                style={{
-                  padding: '8px 16px',
-                  borderRadius: 20,
-                  background: 'var(--text)',
-                  color: 'var(--page-bg)',
-                  fontWeight: 700,
-                  fontSize: 12,
-                  cursor: 'pointer',
-                }}
-              >
-                + Agregar
-              </button>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 12 }}>
+              <div style={{ width: 88, height: 88, borderRadius: '50%', background: donut, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <div style={{ width: 68, height: 68, borderRadius: '50%', background: isOverdue ? bg : 'var(--card-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ fontWeight: 800, fontSize: 15, color: fg }}>{pct}%</div>
+                </div>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 11, color: fgSoft, fontWeight: 700 }}>AHORRADO</div>
+                <div style={{ fontWeight: 800, fontSize: 20, color: fg, letterSpacing: '-0.02em' }}>{fmt(g.current, currency)}</div>
+                <div style={{ fontSize: 11, color: fgSoft, marginTop: 2 }}>de {fmt(g.target, currency)}</div>
+              </div>
             </div>
 
+            <button
+              type="button"
+              onClick={() => startAdd(g.id)}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 20,
+                background: isOverdue ? 'white' : 'var(--text)',
+                color: isOverdue ? bg : 'var(--page-bg)',
+                fontWeight: 700,
+                fontSize: 12,
+                cursor: 'pointer',
+                border: 'none',
+                marginTop: 12,
+              }}
+            >
+              + Agregar
+            </button>
+
             {projection && (
-              <div style={{ marginTop: 10, padding: 12, borderRadius: 14, background: 'var(--accent-soft-bg)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div
+                style={{
+                  marginTop: 10,
+                  padding: 12,
+                  borderRadius: 14,
+                  background: isOverdue ? 'rgba(255,255,255,0.18)' : 'var(--accent-soft-bg)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 6,
+                }}
+              >
                 {projection.overdue ? (
-                  <div style={{ fontSize: 12, color: 'var(--danger-text)', fontWeight: 700 }}>
+                  <div style={{ fontSize: 12, color: 'white', fontWeight: 700 }}>
                     La fecha objetivo ({formatFullDate(g.fechaObjetivo)}) ya pasó — edita la meta para ponerle una nueva fecha.
                   </div>
                 ) : (
@@ -202,7 +239,7 @@ export default function Metas({ data, setData }) {
             )}
 
             {addingToGoalId === g.id && (
-              <div style={{ marginTop: 10, padding: 12, borderRadius: 14, background: 'var(--input-bg)', display: 'flex', gap: 8 }}>
+              <div style={{ marginTop: 10, padding: 12, borderRadius: 14, background: isOverdue ? 'rgba(255,255,255,0.18)' : 'var(--input-bg)', display: 'flex', gap: 8 }}>
                 <NumberInput
                   autoFocus
                   value={addAmount}
@@ -213,14 +250,14 @@ export default function Metas({ data, setData }) {
                 <button
                   type="button"
                   onClick={() => confirmAdd(g.id)}
-                  style={{ padding: '0 16px', borderRadius: 14, background: 'var(--text)', color: 'var(--page-bg)', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+                  style={{ padding: '0 16px', borderRadius: 14, background: isOverdue ? 'white' : 'var(--text)', color: isOverdue ? bg : 'var(--page-bg)', fontWeight: 700, fontSize: 13, cursor: 'pointer', border: 'none' }}
                 >
                   Listo
                 </button>
                 <button
                   type="button"
                   onClick={cancelAdd}
-                  style={{ padding: '0 12px', borderRadius: 14, color: 'var(--text-secondary)', fontWeight: 700, fontSize: 13, cursor: 'pointer' }}
+                  style={{ padding: '0 12px', borderRadius: 14, color: fgSoft, fontWeight: 700, fontSize: 13, cursor: 'pointer', border: 'none', background: 'none' }}
                 >
                   Cancelar
                 </button>
