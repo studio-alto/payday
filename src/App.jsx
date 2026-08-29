@@ -15,6 +15,7 @@ import Dashboard from './screens/Dashboard';
 const Registrar = lazy(() => import('./screens/Registrar'));
 const Metas = lazy(() => import('./screens/Metas'));
 const Deudas = lazy(() => import('./screens/Deudas'));
+const DeudaDetalle = lazy(() => import('./screens/DeudaDetalle'));
 const Ingresos = lazy(() => import('./screens/Ingresos'));
 const Ajustes = lazy(() => import('./screens/Ajustes'));
 
@@ -22,6 +23,7 @@ export default function App() {
   const [data, setData] = useLocalData();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [editingIncome, setEditingIncome] = useState(null);
+  const [viewingDebtId, setViewingDebtId] = useState(null);
   const [splashFading, setSplashFading] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [installPrompt, setInstallPrompt] = useState(null);
@@ -43,14 +45,20 @@ export default function App() {
     return () => document.removeEventListener('visibilitychange', onVisibility);
   }, [data.user.appLockPin]);
 
-  // Plain navigation always resets to "create" mode; only startEditIncome opens the form pre-filled.
+  // Plain navigation always resets to "create"/list mode; only startEditIncome and
+  // viewDebtDetail open a screen pre-loaded with something specific.
   const navigate = (tab) => {
     setEditingIncome(null);
+    setViewingDebtId(null);
     setActiveTab(tab);
   };
   const startEditIncome = (income) => {
     setEditingIncome(income);
     setActiveTab('registrar');
+  };
+  const viewDebtDetail = (cardId) => {
+    setViewingDebtId(cardId);
+    setActiveTab('deuda-detalle');
   };
 
   useEffect(() => {
@@ -134,7 +142,8 @@ export default function App() {
             <Registrar data={data} setData={setData} onNavigate={navigate} editingIncome={editingIncome} onDoneEditing={() => setEditingIncome(null)} />
           )}
           {activeTab === 'metas' && <Metas data={data} setData={setData} />}
-          {activeTab === 'tarjetas' && <Deudas data={data} setData={setData} />}
+          {activeTab === 'tarjetas' && <Deudas data={data} setData={setData} onViewDetail={viewDebtDetail} />}
+          {activeTab === 'deuda-detalle' && <DeudaDetalle data={data} setData={setData} cardId={viewingDebtId} onNavigate={navigate} />}
           {activeTab === 'ingresos' && <Ingresos data={data} setData={setData} onNavigate={navigate} onEdit={startEditIncome} />}
           {activeTab === 'config' && (
             <Ajustes data={data} setData={setData} canInstall={!!installPrompt} isInstalled={isInstalled} onInstall={requestInstall} />

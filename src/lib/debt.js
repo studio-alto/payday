@@ -100,6 +100,36 @@ export function simulatePayoffPlan(cards, method, extraMonthly) {
   };
 }
 
+// Interest accruing on the balance right now, per month, at the card's rate — a concrete
+// "carrying this debt costs you about $X every month" figure, independent of any plan.
+export function monthlyInterestCost(card) {
+  if (!(card.balance > 0) || !(card.interestRate > 0)) return 0;
+  const monthlyRate = Math.pow(1 + card.interestRate / 100, 1 / 12) - 1;
+  return Math.round(card.balance * monthlyRate);
+}
+
+// Simulates one card being paid off in isolation — same monthly-compounding mechanics as
+// simulatePayoffPlan (interest accrues, then the minimum payment, then any extra), but
+// tracks how much of everything paid ends up being interest instead of just the payoff month.
+export function simulateCardPayoff(card, extraMonthly = 0) {
+  if (!(card.balance > 0)) return { monthsToPayoff: 0, totalInterest: 0, stuck: false };
+  const MAX_MONTHS = 360;
+  const monthlyRate = card.interestRate > 0 ? Math.pow(1 + card.interestRate / 100, 1 / 12) - 1 : 0;
+  let balance = card.balance;
+  let month = 0;
+  let totalInterest = 0;
+  while (balance > 0.01 && month < MAX_MONTHS) {
+    month++;
+    const interest = balance * monthlyRate;
+    balance += interest;
+    totalInterest += interest;
+    balance -= Math.min(card.minPayment || 0, balance);
+    balance -= Math.min(extraMonthly, balance);
+  }
+  const stuck = balance > 0.01;
+  return { monthsToPayoff: stuck ? null : month, totalInterest: Math.round(totalInterest), stuck };
+}
+
 export function formatMonthsLabel(months) {
   if (months === 0) return 'Ya no tienes deudas';
   const years = Math.floor(months / 12);

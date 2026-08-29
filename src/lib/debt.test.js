@@ -3,6 +3,8 @@ import {
   sortDebtsByPriority,
   computeDebtWaterfall,
   simulatePayoffPlan,
+  simulateCardPayoff,
+  monthlyInterestCost,
   formatMonthsLabel,
   monthlyPaidTotals,
   reverseIncomeEffects,
@@ -98,6 +100,53 @@ describe('simulatePayoffPlan', () => {
     const small = plan.perCard.find((c) => c.id === 'small');
     const big = plan.perCard.find((c) => c.id === 'big');
     expect(small.payoffMonth).toBeLessThan(big.payoffMonth);
+  });
+});
+
+describe('monthlyInterestCost', () => {
+  it('is 0 with no balance', () => {
+    expect(monthlyInterestCost({ balance: 0, interestRate: 24 })).toBe(0);
+  });
+
+  it('is 0 with no interest rate', () => {
+    expect(monthlyInterestCost({ balance: 1000000, interestRate: 0 })).toBe(0);
+  });
+
+  it('computes the monthly interest on the current balance from the E.A. rate', () => {
+    const card = { balance: 1000000, interestRate: 24 };
+    const expected = Math.round(1000000 * (Math.pow(1.24, 1 / 12) - 1));
+    expect(monthlyInterestCost(card)).toBe(expected);
+  });
+});
+
+describe('simulateCardPayoff', () => {
+  it('is instantly paid off with no balance', () => {
+    expect(simulateCardPayoff({ balance: 0, interestRate: 20, minPayment: 100 })).toEqual({ monthsToPayoff: 0, totalInterest: 0, stuck: false });
+  });
+
+  it('with no interest, total interest is 0 and months = balance / minPayment', () => {
+    const result = simulateCardPayoff({ balance: 1000, interestRate: 0, minPayment: 100 });
+    expect(result).toEqual({ monthsToPayoff: 10, totalInterest: 0, stuck: false });
+  });
+
+  it('accrues interest when a rate is set, taking at least as long as with no interest', () => {
+    const noInterest = simulateCardPayoff({ balance: 1000, interestRate: 0, minPayment: 100 });
+    const withInterest = simulateCardPayoff({ balance: 1000, interestRate: 30, minPayment: 100 });
+    expect(withInterest.totalInterest).toBeGreaterThan(0);
+    expect(withInterest.monthsToPayoff).toBeGreaterThanOrEqual(noInterest.monthsToPayoff);
+  });
+
+  it('gets stuck when the minimum payment never covers the accruing interest', () => {
+    const result = simulateCardPayoff({ balance: 1000, interestRate: 1000, minPayment: 1 });
+    expect(result.stuck).toBe(true);
+    expect(result.monthsToPayoff).toBeNull();
+  });
+
+  it('extra monthly payments reduce total interest paid and time to pay off', () => {
+    const base = simulateCardPayoff({ balance: 1000, interestRate: 30, minPayment: 100 }, 0);
+    const withExtra = simulateCardPayoff({ balance: 1000, interestRate: 30, minPayment: 100 }, 200);
+    expect(withExtra.totalInterest).toBeLessThan(base.totalInterest);
+    expect(withExtra.monthsToPayoff).toBeLessThan(base.monthsToPayoff);
   });
 });
 
