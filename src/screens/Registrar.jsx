@@ -122,7 +122,10 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
       let goals = s.goals;
       let cards = s.cards;
 
-      if (isEditing) {
+      // A still-projected income never had its ahorro/debt effects applied in the first
+      // place (see below), so there's nothing to reverse — doing it anyway would
+      // subtract a phantom amount from whatever goal it's linked to.
+      if (isEditing && editingIncome.estado !== 'proyectado') {
         const reversed = reverseIncomeEffects(editingIncome, goals, cards);
         goals = reversed.goals;
         cards = reversed.cards;
