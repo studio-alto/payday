@@ -775,24 +775,28 @@ export default function Deudas({ data, setData, onViewDetail }) {
             const chipBg = highlighted ? 'rgba(255,255,255,0.25)' : 'var(--input-bg)';
 
             return (
-              <div key={e.id} style={{ ...cardStyle, background: bg }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div key={e.id} style={{ ...cardStyle, padding: 16, background: bg }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
                   <div style={{ minWidth: 0 }}>
                     {highlighted && (
-                      <div style={{ fontSize: 10, fontWeight: 700, color: fgSoft, letterSpacing: '0.06em', marginBottom: 3 }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: fgSoft, letterSpacing: '0.06em', marginBottom: 2 }}>
                         {e.isOverdue ? 'VENCIDO' : 'PRÓXIMO A VENCER'}
                       </div>
                     )}
                     <div style={{ fontWeight: 700, fontSize: 15, color: fg }}>{e.name}</div>
+                    <div style={{ fontSize: 11, color: fgSoft, fontWeight: 700, marginTop: 2 }}>
+                      {e.categoria}
+                      {linkedCard && ` · ${linkedCard.name}${linkedCard.interestRate > 0 ? ` · ${linkedCard.interestRate}% E.A.` : ''}`}
+                    </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                     <button
                       type="button"
                       onClick={() => openEditExpenseModal(e)}
                       aria-label="Editar"
                       style={{
-                        width: 26,
-                        height: 26,
+                        width: 24,
+                        height: 24,
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
@@ -809,13 +813,13 @@ export default function Deudas({ data, setData, onViewDetail }) {
                       onClick={() => askDeleteExpense(e.id)}
                       aria-label="Eliminar"
                       style={{
-                        width: 26,
-                        height: 26,
+                        width: 24,
+                        height: 24,
                         borderRadius: '50%',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        fontSize: 16,
+                        fontSize: 15,
                         lineHeight: 1,
                         fontWeight: 700,
                         cursor: 'pointer',
@@ -828,25 +832,25 @@ export default function Deudas({ data, setData, onViewDetail }) {
                     </button>
                   </div>
                 </div>
-                <div style={{ fontSize: 11, color: fgSoft, fontWeight: 700, marginTop: 6 }}>
-                  {e.categoria}
-                  {linkedCard && ` · ${linkedCard.name}${linkedCard.interestRate > 0 ? ` · ${linkedCard.interestRate}% E.A.` : ''}`}
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 10, gap: 10 }}>
+                  <div style={{ fontWeight: 800, fontSize: 20, color: fg, letterSpacing: '-0.02em' }}>{fmt(e.amount, currency)}</div>
+                  <div style={{ fontSize: 11, color: fgSoft, fontWeight: highlighted ? 700 : 400, textAlign: 'right', flexShrink: 0 }}>
+                    <div>Vence día {e.dueDay} · {daysLeft === 0 ? 'hoy' : daysLeft === 1 ? 'en 1 día' : `en ${daysLeft} días`}</div>
+                    {e.paidThisMonth && <div style={{ color: highlighted ? 'white' : 'var(--accent-text)', fontWeight: 700 }}>Pagado este mes</div>}
+                  </div>
                 </div>
-                <div style={{ fontWeight: 800, fontSize: 24, color: fg, marginTop: 6, letterSpacing: '-0.02em' }}>{fmt(e.amount, currency)}</div>
-                <div style={{ fontSize: 11, color: fgSoft, marginTop: 4, fontWeight: highlighted ? 700 : 400 }}>
-                  Vence día {e.dueDay} · {daysLeft === 0 ? 'hoy' : daysLeft === 1 ? 'en 1 día' : `en ${daysLeft} días`}
-                  {e.paidThisMonth && <span style={{ color: highlighted ? 'white' : 'var(--accent-text)', fontWeight: 700 }}> · Pagado este mes</span>}
-                </div>
+
                 <button
                   type="button"
                   onClick={() => (e.paidThisMonth ? askUndoExpensePaid(e.id) : markExpensePaid(e.id))}
                   style={{
-                    padding: '9px 16px',
-                    borderRadius: 20,
+                    padding: '7px 14px',
+                    borderRadius: 18,
                     background: e.paidThisMonth ? chipBg : highlighted ? 'white' : 'var(--text)',
                     color: e.paidThisMonth ? fg : highlighted ? bg : 'var(--page-bg)',
                     fontWeight: 700,
-                    fontSize: 12,
+                    fontSize: 11,
                     cursor: 'pointer',
                     display: 'inline-block',
                     marginTop: 10,
