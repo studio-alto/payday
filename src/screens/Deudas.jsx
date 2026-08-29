@@ -166,6 +166,24 @@ export default function Deudas({ data, setData, onViewDetail }) {
     }));
   };
 
+  const [confirmUndoPaidId, setConfirmUndoPaidId] = useState(null);
+  const askUndoExpensePaid = (id) => setConfirmUndoPaidId(id);
+  const cancelUndoExpensePaid = () => setConfirmUndoPaidId(null);
+  // Removes this month's "marcado como pagado" entry — for when it was tapped by
+  // mistake. Only touches the most recent entry dated this month, not the whole history.
+  const undoExpensePaid = (id) => {
+    setData((s) => ({
+      ...s,
+      expenses: s.expenses.map((e) => {
+        if (e.id !== id) return e;
+        const lastIndexThisMonth = e.history.map((h) => isSameMonth(h.date)).lastIndexOf(true);
+        if (lastIndexThisMonth === -1) return e;
+        return { ...e, history: e.history.filter((_, i) => i !== lastIndexThisMonth) };
+      }),
+    }));
+    setConfirmUndoPaidId(null);
+  };
+
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCardId, setEditingCardId] = useState(null);
   const [form, setForm] = useState(emptyForm());
@@ -821,23 +839,30 @@ export default function Deudas({ data, setData, onViewDetail }) {
                 </div>
                 <button
                   type="button"
-                  onClick={() => markExpensePaid(e.id)}
-                  disabled={e.paidThisMonth}
+                  onClick={() => (e.paidThisMonth ? askUndoExpensePaid(e.id) : markExpensePaid(e.id))}
                   style={{
                     padding: '9px 16px',
                     borderRadius: 20,
                     background: e.paidThisMonth ? chipBg : highlighted ? 'white' : 'var(--text)',
-                    color: e.paidThisMonth ? fgSoft : highlighted ? bg : 'var(--page-bg)',
+                    color: e.paidThisMonth ? fg : highlighted ? bg : 'var(--page-bg)',
                     fontWeight: 700,
                     fontSize: 12,
-                    cursor: e.paidThisMonth ? 'default' : 'pointer',
+                    cursor: 'pointer',
                     display: 'inline-block',
                     marginTop: 10,
                     border: 'none',
                   }}
                 >
-                  {e.paidThisMonth ? 'Ya pagado este mes' : 'Marcar como pagado'}
+                  {e.paidThisMonth ? 'Pagado este mes · Deshacer' : 'Marcar como pagado'}
                 </button>
+
+                {confirmUndoPaidId === e.id && (
+                  <InlineConfirm
+                    message="¿Deshacer? Volverá a aparecer como pendiente de pago."
+                    onConfirm={() => undoExpensePaid(e.id)}
+                    onCancel={cancelUndoExpensePaid}
+                  />
+                )}
 
                 {confirmDeleteExpenseId === e.id && (
                   <InlineConfirm message="¿Eliminar este gasto?" onConfirm={() => confirmDeleteExpense(e.id)} onCancel={cancelDeleteExpense} />
