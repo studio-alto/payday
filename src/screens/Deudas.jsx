@@ -576,7 +576,7 @@ export default function Deudas({ data, setData, onViewDetail }) {
           <NumberInput value={form.minPayment} onChange={setField('minPayment')} placeholder="Pago mínimo (opcional)" style={textInputStyle()} />
           <input
             type="text"
-            inputMode="numeric"
+            inputMode="decimal"
             value={form.interestRate}
             onChange={(e) => setForm((f) => ({ ...f, interestRate: sanitizeDecimal(e.target.value) }))}
             placeholder="Tasa de interés % E.A. (opcional)"
