@@ -22,6 +22,39 @@ function sanitizeDecimal(raw) {
   return `${whole.slice(0, 3)}.${rest.join('').slice(0, 2)}`;
 }
 
+// Concentric progress rings (Apple Watch-style), one per metric — outer to inner.
+// Each ring is drawn as a track circle plus a colored arc circle rotated to start at
+// 12 o'clock, exactly like the reference image Natalia shared.
+function ActivityRings({ rings, size = 116, strokeWidth = 11, gap = 5 }) {
+  const center = size / 2;
+  return (
+    <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)', flexShrink: 0 }}>
+      {rings.map((r, i) => {
+        const radius = center - strokeWidth / 2 - i * (strokeWidth + gap);
+        const circumference = 2 * Math.PI * radius;
+        const pct = Math.min(100, Math.max(0, r.pct));
+        return (
+          <g key={i}>
+            <circle cx={center} cy={center} r={radius} fill="none" stroke="var(--divider)" strokeWidth={strokeWidth} />
+            <circle
+              cx={center}
+              cy={center}
+              r={radius}
+              fill="none"
+              stroke={r.color}
+              strokeWidth={strokeWidth}
+              strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={circumference * (1 - pct / 100)}
+              style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+            />
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
 function emptyForm() {
   return { tipo: 'Tarjeta de crédito', name: '', balance: '', nextPayment: '', minPayment: '', interestRate: '', startDate: '' };
 }
@@ -67,6 +100,13 @@ export default function Deudas({ data, setData, onViewDetail }) {
   const paidCount = expensesWithStatus.filter((e) => e.paidThisMonth).length;
   const pendingCount = expenses.length - paidCount;
   const paidPct = expenses.length > 0 ? Math.round((paidCount / expenses.length) * 100) : 0;
+  // Three distinct, real readings of the same month's bills — how many are checked off,
+  // how much of the money is actually covered (a paid big bill moves this more than a
+  // paid small one), and how much of it is overdue. Not the same metric three times.
+  const paidAmount = expensesWithStatus.filter((e) => e.paidThisMonth).reduce((a, e) => a + e.amount, 0);
+  const paidAmountPct = totalExpenses > 0 ? Math.round((paidAmount / totalExpenses) * 100) : 0;
+  const overdueCount = expensesWithStatus.filter((e) => e.isOverdue).length;
+  const overduePct = expenses.length > 0 ? Math.round((overdueCount / expenses.length) * 100) : 0;
   const nextDueId = expensesWithStatus.find((e) => !e.paidThisMonth && !e.isOverdue)?.id;
 
   const [expenseModalOpen, setExpenseModalOpen] = useState(false);
@@ -675,20 +715,32 @@ export default function Deudas({ data, setData, onViewDetail }) {
                     <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700 }}>Por pagar</div>
                   </div>
                 </div>
-                <div
-                  style={{
-                    width: 104,
-                    height: 104,
-                    borderRadius: '50%',
-                    background: `conic-gradient(var(--accent) ${paidPct}%, var(--divider) ${paidPct}% 100%)`,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                  }}
-                >
-                  <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'var(--card-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--text)' }}>{paidPct}%</div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                  <div style={{ position: 'relative', width: 116, height: 116 }}>
+                    <ActivityRings
+                      rings={[
+                        { pct: paidPct, color: 'var(--accent)' },
+                        { pct: paidAmountPct, color: 'var(--text)' },
+                        { pct: overduePct, color: 'var(--danger)' },
+                      ]}
+                    />
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--text)' }}>{paidPct}%</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--accent)', flexShrink: 0 }} />
+                      <div style={{ fontSize: 10, color: 'var(--text-secondary)', fontWeight: 700 }}>{paidPct}% pagados</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--text)', flexShrink: 0 }} />
+                      <div style={{ fontSize: 10, color: 'var(--text-secondary)', fontWeight: 700 }}>{paidAmountPct}% del monto</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                      <div style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--danger)', flexShrink: 0 }} />
+                      <div style={{ fontSize: 10, color: 'var(--text-secondary)', fontWeight: 700 }}>{overduePct}% vencidos</div>
+                    </div>
                   </div>
                 </div>
               </div>
