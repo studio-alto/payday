@@ -180,6 +180,7 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
                 key={f.key}
                 type="button"
                 onClick={() => setTimeFilter(f.key)}
+                aria-pressed={timeFilter === f.key}
                 style={{
                   flex: 1,
                   padding: '9px 0',
@@ -200,26 +201,44 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
         </div>
       </FixedHeader>
 
-      <input
-        type="text"
-        value={searchText}
-        onChange={(e) => setSearchText(e.target.value)}
-        placeholder="Buscar por nombre o nota…"
-        style={textInputStyle()}
-      />
-
-      {jobNames.length > 0 && (
-        <div style={{ display: 'flex', gap: 8, overflowX: 'auto' }}>
-          <button type="button" onClick={() => setSelectedJob(null)} style={jobChipStyle(!selectedJob)}>
-            Todos
-          </button>
-          {jobNames.map((job) => (
-            <button key={job} type="button" onClick={() => setSelectedJob(job)} style={jobChipStyle(selectedJob === job)}>
-              {job}
+      <div style={cardStyle}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+          <div style={labelStyle}>FILTRAR</div>
+          {(selectedJob || searchText) && (
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedJob(null);
+                setSearchText('');
+              }}
+              style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}
+            >
+              Limpiar
             </button>
-          ))}
+          )}
         </div>
-      )}
+
+        {jobNames.length > 0 && (
+          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 10 }}>
+            <button type="button" onClick={() => setSelectedJob(null)} aria-pressed={!selectedJob} style={jobChipStyle(!selectedJob)}>
+              Todos
+            </button>
+            {jobNames.map((job) => (
+              <button key={job} type="button" onClick={() => setSelectedJob(job)} aria-pressed={selectedJob === job} style={jobChipStyle(selectedJob === job)}>
+                {job}
+              </button>
+            ))}
+          </div>
+        )}
+
+        <input
+          type="text"
+          value={searchText}
+          onChange={(e) => setSearchText(e.target.value)}
+          placeholder="Buscar por nombre o nota…"
+          style={textInputStyle()}
+        />
+      </div>
 
       {timeFilter !== 'todo' && (
         <>

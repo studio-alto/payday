@@ -313,9 +313,18 @@ export default function Dashboard({ data, setData, onNavigate }) {
       {/* Accesos directos */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div>
-            <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--text)' }}>Ingresos</div>
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>Registra y distribuye</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--text)' }}>Ingresos</div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>Registra y distribuye</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => onNavigate('ingresos')}
+              style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer', flexShrink: 0 }}
+            >
+              Ver
+            </button>
           </div>
           <button
             type="button"
