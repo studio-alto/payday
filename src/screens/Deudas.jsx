@@ -25,7 +25,7 @@ function sanitizeDecimal(raw) {
 // Concentric progress rings (Apple Watch-style), one per metric — outer to inner.
 // Each ring is drawn as a track circle plus a colored arc circle rotated to start at
 // 12 o'clock, exactly like the reference image Natalia shared.
-function ActivityRings({ rings, size = 116, strokeWidth = 11, gap = 5 }) {
+function ActivityRings({ rings, size = 128, strokeWidth = 9, gap = 4 }) {
   const center = size / 2;
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ transform: 'rotate(-90deg)', flexShrink: 0 }}>
@@ -716,7 +716,7 @@ export default function Deudas({ data, setData, onViewDetail }) {
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                  <div style={{ position: 'relative', width: 116, height: 116 }}>
+                  <div style={{ position: 'relative', width: 128, height: 128 }}>
                     <ActivityRings
                       rings={[
                         { pct: paidPct, color: 'var(--accent)' },
@@ -725,7 +725,7 @@ export default function Deudas({ data, setData, onViewDetail }) {
                       ]}
                     />
                     <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--text)' }}>{paidPct}%</div>
+                      <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text)' }}>{paidPct}%</div>
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
