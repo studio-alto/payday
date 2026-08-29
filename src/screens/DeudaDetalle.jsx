@@ -46,8 +46,13 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
   const extra = Number(extraText) || 0;
   const baseline = simulateCardPayoff(card, 0);
   const withExtra = simulateCardPayoff(card, extra);
-  const interestSaved = !baseline.stuck && !withExtra.stuck ? baseline.totalInterest - withExtra.totalInterest : null;
-  const monthsSaved = !baseline.stuck && !withExtra.stuck ? baseline.monthsToPayoff - withExtra.monthsToPayoff : null;
+  const bothResolve = !baseline.stuck && !withExtra.stuck;
+  const interestSaved = bothResolve ? baseline.totalInterest - withExtra.totalInterest : null;
+  const monthsSaved = bothResolve ? baseline.monthsToPayoff - withExtra.monthsToPayoff : null;
+  // The minimum payment alone never covers the interest (balance would grow forever),
+  // but this extra amount is enough to actually pay it off — the single most useful
+  // thing this screen can tell someone in that situation.
+  const extraRescuesFromStuck = extra > 0 && baseline.stuck && !withExtra.stuck;
 
   const today = todayISO();
   const openPayModal = () => {
@@ -182,7 +187,17 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
           <NumberInput value={extraText} onChange={(e) => setExtraText(e.target.value)} placeholder="Otro monto" style={textInputStyle()} />
         </div>
 
-        {extra > 0 && interestSaved !== null && (
+        {extraRescuesFromStuck && (
+          <div style={{ marginTop: 12, background: 'var(--accent-soft-bg)', borderRadius: 14, padding: 12 }}>
+            <div style={{ fontSize: 13, color: 'var(--text)' }}>
+              Con el mínimo solo, esta deuda <b>nunca se termina de pagar</b> — el interés crece más rápido de lo que abonas. Pero con{' '}
+              {fmt(extra, currency)} extra al mes, sí la terminarías de pagar, en{' '}
+              <span style={{ fontWeight: 800, color: 'var(--accent-text)' }}>{formatMonthsLabel(withExtra.monthsToPayoff)}</span>.
+            </div>
+          </div>
+        )}
+
+        {extra > 0 && !extraRescuesFromStuck && interestSaved !== null && (
           <div style={{ marginTop: 12, background: 'var(--accent-soft-bg)', borderRadius: 14, padding: 12 }}>
             <div style={{ fontSize: 13, color: 'var(--text)' }}>
               Abonando {fmt(extra, currency)} extra cada mes, te ahorrarías{' '}
@@ -195,6 +210,10 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
               )}
             </div>
           </div>
+        )}
+
+        {extra === 0 && (
+          <ExplainerNote>Escribe un monto arriba para comparar cómo cambia si abonas más que el mínimo.</ExplainerNote>
         )}
 
         <ExplainerNote>
