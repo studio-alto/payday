@@ -12,10 +12,16 @@ export function dayTypeLabel(key) {
 }
 
 // ISO date (YYYY-MM-DD) offset by a number of days from a base date (defaults to now).
+// Built from local year/month/day (not toISOString, which is UTC and would silently
+// roll "today" over to tomorrow every evening in any timezone behind UTC — Bogotá's
+// UTC-5 hits this from 7pm on).
 export function isoOffset(offsetDays, base = new Date()) {
   const d = new Date(base);
   d.setDate(d.getDate() + offsetDays);
-  return d.toISOString().slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 export function todayISO() {

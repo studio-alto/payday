@@ -1,5 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { daysInMonth, remainingDaysInMonth, isSameMonth, daysUntilPayday, isWithinDays } from './dates';
+import { daysInMonth, remainingDaysInMonth, isSameMonth, daysUntilPayday, isWithinDays, isoOffset } from './dates';
+
+describe('isoOffset', () => {
+  it('uses the local calendar day, not the UTC one — stays "today" late in the evening in a UTC-behind timezone', () => {
+    // 11pm local time: toISOString() on this instant would already report tomorrow
+    // in any timezone behind UTC (e.g. Bogotá, UTC-5) — isoOffset must not do that.
+    expect(isoOffset(0, new Date(2026, 7, 29, 23, 0))).toBe('2026-08-29');
+  });
+
+  it('adds the offset in local days, crossing a month boundary correctly', () => {
+    expect(isoOffset(1, new Date(2026, 7, 31, 23, 0))).toBe('2026-09-01');
+  });
+});
 
 describe('daysInMonth', () => {
   it('handles a leap February', () => {
