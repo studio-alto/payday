@@ -56,6 +56,18 @@ export default function Deudas({ data, setData, onViewDetail }) {
 
   const sortedExpenses = [...expenses].sort((a, b) => daysUntilPayday(a.dueDay) - daysUntilPayday(b.dueDay));
   const totalExpenses = expenses.reduce((a, e) => a + e.amount, 0);
+  // Precomputed once so both the "ESTE MES" summary and each card agree on the same
+  // paid/overdue read — overdue means "past this month's due day and still unpaid"
+  // (daysUntilPayday always looks forward to the *next* occurrence, so it alone can't tell us that).
+  const todayDayOfMonth = new Date(today + 'T00:00:00').getDate();
+  const expensesWithStatus = sortedExpenses.map((e) => {
+    const paidThisMonth = e.history.some((h) => isSameMonth(h.date));
+    return { ...e, paidThisMonth, isOverdue: !paidThisMonth && todayDayOfMonth > e.dueDay };
+  });
+  const paidCount = expensesWithStatus.filter((e) => e.paidThisMonth).length;
+  const pendingCount = expenses.length - paidCount;
+  const paidPct = expenses.length > 0 ? Math.round((paidCount / expenses.length) * 100) : 0;
+  const nextDueId = expensesWithStatus.find((e) => !e.paidThisMonth && !e.isOverdue)?.id;
 
   const [expenseModalOpen, setExpenseModalOpen] = useState(false);
   const [editingExpenseId, setEditingExpenseId] = useState(null);
@@ -624,20 +636,75 @@ export default function Deudas({ data, setData, onViewDetail }) {
         <>
           {expenses.length > 0 && (
             <div style={cardStyle}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em' }}>TOTAL GASTOS FIJOS AL MES</div>
-              <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', marginTop: 6 }}>{fmt(totalExpenses, currency)}</div>
+              <div
+                style={{
+                  display: 'inline-block',
+                  padding: '5px 12px',
+                  borderRadius: 14,
+                  background: 'var(--text)',
+                  color: 'var(--page-bg)',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: '0.04em',
+                }}
+              >
+                ESTE MES
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 14 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12, flex: 1, minWidth: 0 }}>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: 24, color: 'var(--text)', letterSpacing: '-0.02em' }}>{fmt(totalExpenses, currency)}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700 }}>Total en gastos fijos</div>
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--accent-text)' }}>{paidCount}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700 }}>Ya pagados</div>
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--text)' }}>{pendingCount}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700 }}>Por pagar</div>
+                  </div>
+                </div>
+                <div
+                  style={{
+                    width: 104,
+                    height: 104,
+                    borderRadius: '50%',
+                    background: `conic-gradient(var(--accent) ${paidPct}%, var(--divider) ${paidPct}% 100%)`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0,
+                  }}
+                >
+                  <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'var(--card-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--text)' }}>{paidPct}%</div>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
 
-          {sortedExpenses.map((e) => {
-            const paidThisMonth = e.history.some((h) => isSameMonth(h.date));
+          {expensesWithStatus.map((e) => {
             const daysLeft = daysUntilPayday(e.dueDay);
             const linkedCard = e.medioPago !== 'efectivo' ? cards.find((c) => c.id === e.medioPago) : null;
+            const highlighted = e.isOverdue || e.id === nextDueId;
+            const bg = e.isOverdue ? 'var(--danger)' : e.id === nextDueId ? 'var(--accent)' : 'var(--card-bg)';
+            const fg = highlighted ? 'white' : 'var(--text)';
+            const fgSoft = highlighted ? 'rgba(255,255,255,0.85)' : 'var(--text-secondary)';
+            const chipBg = highlighted ? 'rgba(255,255,255,0.25)' : 'var(--input-bg)';
 
             return (
-              <div key={e.id} style={cardStyle}>
+              <div key={e.id} style={{ ...cardStyle, background: bg }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>{e.name}</div>
+                  <div style={{ minWidth: 0 }}>
+                    {highlighted && (
+                      <div style={{ fontSize: 10, fontWeight: 700, color: fgSoft, letterSpacing: '0.06em', marginBottom: 3 }}>
+                        {e.isOverdue ? 'VENCIDO' : 'PRÓXIMO A VENCER'}
+                      </div>
+                    )}
+                    <div style={{ fontWeight: 700, fontSize: 15, color: fg }}>{e.name}</div>
+                  </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                     <button
                       type="button"
@@ -651,11 +718,11 @@ export default function Deudas({ data, setData, onViewDetail }) {
                         alignItems: 'center',
                         justifyContent: 'center',
                         cursor: 'pointer',
-                        background: 'var(--input-bg)',
+                        background: chipBg,
                         flexShrink: 0,
                       }}
                     >
-                      <PencilIcon />
+                      <PencilIcon color={fg} accent={highlighted ? 'white' : 'var(--accent)'} />
                     </button>
                     <button
                       type="button"
@@ -672,8 +739,8 @@ export default function Deudas({ data, setData, onViewDetail }) {
                         lineHeight: 1,
                         fontWeight: 700,
                         cursor: 'pointer',
-                        color: 'var(--danger-text)',
-                        background: 'var(--input-bg)',
+                        color: highlighted ? 'white' : 'var(--danger-text)',
+                        background: chipBg,
                         flexShrink: 0,
                       }}
                     >
@@ -681,33 +748,33 @@ export default function Deudas({ data, setData, onViewDetail }) {
                     </button>
                   </div>
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700, marginTop: 2 }}>
+                <div style={{ fontSize: 11, color: fgSoft, fontWeight: 700, marginTop: 6 }}>
                   {e.categoria}
                   {linkedCard && ` · ${linkedCard.name}${linkedCard.interestRate > 0 ? ` · ${linkedCard.interestRate}% E.A.` : ''}`}
                 </div>
-                <div style={{ fontWeight: 800, fontSize: 22, color: 'var(--text)', marginTop: 4 }}>{fmt(e.amount, currency)}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                <div style={{ fontWeight: 800, fontSize: 24, color: fg, marginTop: 6, letterSpacing: '-0.02em' }}>{fmt(e.amount, currency)}</div>
+                <div style={{ fontSize: 11, color: fgSoft, marginTop: 4, fontWeight: highlighted ? 700 : 400 }}>
                   Vence día {e.dueDay} · {daysLeft === 0 ? 'hoy' : daysLeft === 1 ? 'en 1 día' : `en ${daysLeft} días`}
-                  {paidThisMonth && <span style={{ color: 'var(--accent-text)', fontWeight: 700 }}> · Pagado este mes</span>}
+                  {e.paidThisMonth && <span style={{ color: highlighted ? 'white' : 'var(--accent-text)', fontWeight: 700 }}> · Pagado este mes</span>}
                 </div>
                 <button
                   type="button"
                   onClick={() => markExpensePaid(e.id)}
-                  disabled={paidThisMonth}
+                  disabled={e.paidThisMonth}
                   style={{
                     padding: '9px 16px',
                     borderRadius: 20,
-                    background: paidThisMonth ? 'var(--input-bg)' : 'var(--text)',
-                    color: paidThisMonth ? 'var(--text-secondary)' : 'var(--page-bg)',
+                    background: e.paidThisMonth ? chipBg : highlighted ? 'white' : 'var(--text)',
+                    color: e.paidThisMonth ? fgSoft : highlighted ? bg : 'var(--page-bg)',
                     fontWeight: 700,
                     fontSize: 12,
-                    cursor: paidThisMonth ? 'default' : 'pointer',
+                    cursor: e.paidThisMonth ? 'default' : 'pointer',
                     display: 'inline-block',
                     marginTop: 10,
                     border: 'none',
                   }}
                 >
-                  {paidThisMonth ? 'Ya pagado este mes' : 'Marcar como pagado'}
+                  {e.paidThisMonth ? 'Ya pagado este mes' : 'Marcar como pagado'}
                 </button>
 
                 {confirmDeleteExpenseId === e.id && (
