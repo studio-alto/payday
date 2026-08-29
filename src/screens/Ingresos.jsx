@@ -19,6 +19,7 @@ function IncomeRow({ inc, currency, isLast, onEdit, confirmDeleteId, setConfirmD
   return (
     <SwipeActions
       borderRadius={0}
+      background="var(--card-bg)"
       actions={[
         { label: 'Editar', bg: 'var(--text)', color: 'var(--page-bg)', icon: <PencilIcon color="var(--page-bg)" accent="var(--page-bg)" />, onClick: () => onEdit(inc) },
         { label: 'Eliminar', bg: 'var(--danger)', icon: <span style={{ fontSize: 20, fontWeight: 700 }}>×</span>, onClick: () => setConfirmDeleteId(inc.id) },

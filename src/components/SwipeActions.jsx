@@ -1,17 +1,20 @@
 import { useRef, useState } from 'react';
 
-const BUTTON_WIDTH = 84;
+const SLOT_WIDTH = 68;
+const BUTTON_SIZE = 44;
 
 // Swipe-left-to-reveal actions (iOS Mail/Reminders style) — wraps a card's content;
-// dragging it left uncovers one or more action buttons pinned behind it. Replaces a
-// row of always-visible icon buttons with the native gesture people already know.
-export default function SwipeActions({ children, actions, borderRadius = 24 }) {
+// dragging it left uncovers one or more floating circular action buttons pinned
+// behind it, on `background` (the surface behind the card, so it reads as depth
+// rather than a flush-cut rectangle). Replaces a row of always-visible icon buttons
+// with the native gesture people already know.
+export default function SwipeActions({ children, actions, borderRadius = 24, background = 'var(--page-bg)' }) {
   const [dragX, setDragX] = useState(0);
   const [open, setOpen] = useState(false);
   const [dragging, setDragging] = useState(false);
   const startX = useRef(null);
   const startedOpen = useRef(false);
-  const maxReveal = actions.length * BUTTON_WIDTH;
+  const maxReveal = actions.length * SLOT_WIDTH;
 
   const onPointerDown = (e) => {
     if (e.pointerType === 'mouse' && e.button !== 0) return;
@@ -40,8 +43,8 @@ export default function SwipeActions({ children, actions, borderRadius = 24 }) {
   };
 
   return (
-    <div style={{ position: 'relative', overflow: 'hidden', borderRadius }}>
-      <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, display: 'flex' }}>
+    <div style={{ position: 'relative', overflow: 'hidden', borderRadius, background }}>
+      <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, display: 'flex', alignItems: 'center', gap: 12, paddingRight: 16 }}>
         {actions.map((a, i) => (
           <button
             key={i}
@@ -52,20 +55,21 @@ export default function SwipeActions({ children, actions, borderRadius = 24 }) {
               a.onClick();
             }}
             style={{
-              width: BUTTON_WIDTH,
+              width: BUTTON_SIZE,
+              height: BUTTON_SIZE,
+              borderRadius: '50%',
               background: a.bg,
               color: a.color || 'white',
               display: 'flex',
-              flexDirection: 'column',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: 4,
               border: 'none',
               cursor: 'pointer',
+              flexShrink: 0,
+              boxShadow: '0 3px 10px rgba(0,0,0,0.16)',
             }}
           >
             {a.icon}
-            <span style={{ fontSize: 11, fontWeight: 700 }}>{a.label}</span>
           </button>
         ))}
       </div>
@@ -82,7 +86,7 @@ export default function SwipeActions({ children, actions, borderRadius = 24 }) {
         }}
         style={{
           transform: `translateX(${dragX}px)`,
-          transition: dragging ? 'none' : 'transform 0.2s ease',
+          transition: dragging ? 'none' : 'transform 0.25s cubic-bezier(0.2, 0, 0, 1)',
           touchAction: 'pan-y',
         }}
       >
