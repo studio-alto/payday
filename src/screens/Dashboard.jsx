@@ -205,17 +205,26 @@ export default function Dashboard({ data, setData, onNavigate }) {
       )}
 
       {pendingConfirmations.length > 0 && (
-        <div style={{ ...cardStyle, background: 'var(--accent-soft-bg)', display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-text)', letterSpacing: '0.06em' }}>
+        <div
+          style={{
+            ...cardStyle,
+            background: 'var(--accent)',
+            boxShadow: '0 10px 28px -6px rgba(255, 90, 54, 0.55)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 10,
+          }}
+        >
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'white', letterSpacing: '0.06em' }}>
             {pendingConfirmations.length === 1 ? '1 INGRESO POR CONFIRMAR' : `${pendingConfirmations.length} INGRESOS POR CONFIRMAR`}
           </div>
           {pendingConfirmations.slice(0, 3).map((inc) => (
             <div key={inc.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                   {inc.name || dayTypeLabel(inc.type)}
                 </div>
-                <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)' }}>
                   {formatShortDate(inc.date)} · {fmt(inc.amount, user.currency)}
                 </div>
               </div>
@@ -225,8 +234,8 @@ export default function Dashboard({ data, setData, onNavigate }) {
                 style={{
                   padding: '8px 14px',
                   borderRadius: 16,
-                  background: 'var(--text)',
-                  color: 'var(--page-bg)',
+                  background: 'white',
+                  color: 'var(--accent)',
                   fontWeight: 700,
                   fontSize: 12,
                   cursor: 'pointer',
@@ -242,7 +251,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
             <button
               type="button"
               onClick={() => onNavigate('ingresos')}
-              style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer', textAlign: 'left' }}
+              style={{ fontSize: 12, fontWeight: 700, color: 'white', cursor: 'pointer', textAlign: 'left' }}
             >
               +{pendingConfirmations.length - 3} más — ver todos
             </button>
