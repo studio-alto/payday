@@ -6,19 +6,19 @@ import { cardStyle, labelStyle, fieldLabelStyle, textInputStyle, primaryButtonSt
 import NumberInput from '../components/NumberInput';
 import FixedHeader from '../components/FixedHeader';
 import { METHODS, computeDebtWaterfall, reverseIncomeEffects, applyIncomeEffects } from '../lib/debt';
-import { averageRecentIncome } from '../lib/incomeStats';
+import { referenceIncome } from '../lib/incomeStats';
 
 const AHORRO_PCTS = [0, 0.1, 0.2, 0.3, 0.4, 0.5];
 const TARJETA_PCTS = [0, 0.1, 0.15, 0.2, 0.3, 0.4];
 const AMOUNT_PRESETS = [10000, 20000, 50000, 100000, 150000];
 
-function emptyForm(suggestedAmount, goals) {
+function emptyForm(suggestedAmount, goals, incomeMode) {
   const defaultGoal = goals.find((g) => g.current < g.target) || goals[0];
   return {
     name: '',
     amount: suggestedAmount > 0 ? String(suggestedAmount) : '',
     date: todayISO(),
-    type: 'normal',
+    type: incomeMode === 'fijo' ? 'mensual' : 'normal',
     note: '',
     ahorroMonto: '',
     tarjetaMonto: '',
@@ -43,9 +43,10 @@ function formFromIncome(income) {
 
 export default function Registrar({ data, setData, onNavigate, editingIncome, onDoneEditing }) {
   const isEditing = !!editingIncome;
+  const incomeMode = data.user.incomeMode || 'variable';
   const [step, setStep] = useState(1);
   const [form, setForm] = useState(() =>
-    isEditing ? formFromIncome(editingIncome) : emptyForm(averageRecentIncome(data.incomes), data.goals),
+    isEditing ? formFromIncome(editingIncome) : emptyForm(referenceIncome(data.incomes, incomeMode), data.goals, incomeMode),
   );
   const [ahorroPctText, setAhorroPctText] = useState('');
   const [tarjetaPctText, setTarjetaPctText] = useState('');
@@ -181,7 +182,9 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
 
       {step === 1 && (
         <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>¿Cuánto ganaste?</div>
+          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>
+            {incomeMode === 'fijo' ? '¿Cuál es tu ingreso este mes?' : '¿Cuánto ganaste?'}
+          </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
             <div style={{ flex: 1 }}>
               <NumberInput value={form.amount} onChange={setField('amount')} placeholder="¿Cuánto ganaste?" style={textInputStyle(true)} />
@@ -227,37 +230,39 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
               </div>
             </div>
           )}
-          <div>
-            <div style={fieldLabelStyle}>MONTOS RÁPIDOS</div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {AMOUNT_PRESETS.map((amt) => (
-                <button
-                  key={amt}
-                  type="button"
-                  onClick={() => setAmountPreset(amt)}
-                  style={{
-                    padding: '9px 14px',
-                    borderRadius: 20,
-                    fontSize: 13,
-                    fontWeight: 700,
-                    cursor: 'pointer',
-                    background: form.amount === String(amt) ? 'var(--text)' : 'var(--input-bg)',
-                    color: form.amount === String(amt) ? 'var(--page-bg)' : 'var(--text)',
-                    border: 'none',
-                  }}
-                >
-                  {fmt(amt, currency)}
-                </button>
-              ))}
+          {incomeMode !== 'fijo' && (
+            <div>
+              <div style={fieldLabelStyle}>MONTOS RÁPIDOS</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {AMOUNT_PRESETS.map((amt) => (
+                  <button
+                    key={amt}
+                    type="button"
+                    onClick={() => setAmountPreset(amt)}
+                    style={{
+                      padding: '9px 14px',
+                      borderRadius: 20,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      background: form.amount === String(amt) ? 'var(--text)' : 'var(--input-bg)',
+                      color: form.amount === String(amt) ? 'var(--page-bg)' : 'var(--text)',
+                      border: 'none',
+                    }}
+                  >
+                    {fmt(amt, currency)}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
           <div>
             <div style={fieldLabelStyle}>NOMBRE DEL INGRESO</div>
             <input
               type="text"
               value={form.name}
               onChange={setField('name')}
-              placeholder="Ej: Turno restaurante, Domingo obra"
+              placeholder={incomeMode === 'fijo' ? 'Ej: Salario de agosto' : 'Ej: Turno restaurante, Domingo obra'}
               style={textInputStyle()}
             />
             {existingNames.length > 0 && (
@@ -331,33 +336,35 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
               />
             </div>
           </button>
-          <div>
-            <div style={fieldLabelStyle}>TIPO DE DÍA</div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {DAY_TYPES.map((dt) => {
-                const active = form.type === dt.key;
-                return (
-                  <button
-                    key={dt.key}
-                    type="button"
-                    onClick={() => setType(dt.key)}
-                    style={{
-                      padding: '9px 14px',
-                      borderRadius: 20,
-                      fontSize: 13,
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      background: active ? 'var(--text)' : 'var(--input-bg)',
-                      color: active ? 'var(--page-bg)' : 'var(--text)',
-                      border: 'none',
-                    }}
-                  >
-                    {dt.label}
-                  </button>
-                );
-              })}
+          {incomeMode !== 'fijo' && (
+            <div>
+              <div style={fieldLabelStyle}>TIPO DE DÍA</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {DAY_TYPES.filter((dt) => dt.key !== 'mensual').map((dt) => {
+                  const active = form.type === dt.key;
+                  return (
+                    <button
+                      key={dt.key}
+                      type="button"
+                      onClick={() => setType(dt.key)}
+                      style={{
+                        padding: '9px 14px',
+                        borderRadius: 20,
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        background: active ? 'var(--text)' : 'var(--input-bg)',
+                        color: active ? 'var(--page-bg)' : 'var(--text)',
+                        border: 'none',
+                      }}
+                    >
+                      {dt.label}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
+          )}
           <div>
             <div style={fieldLabelStyle}>NOTA (OPCIONAL)</div>
             <textarea

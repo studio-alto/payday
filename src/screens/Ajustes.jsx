@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { todayISO, formatFullDate } from '../lib/dates';
 import { buildSummaryCsv } from '../lib/exportCsv';
-import { averageRecentIncome } from '../lib/incomeStats';
+import { referenceIncome } from '../lib/incomeStats';
 import { fetchLiveExchangeRates } from '../lib/exchangeRates';
 import { fmt } from '../lib/format';
 import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
@@ -48,7 +48,9 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
   const dark = user.theme === 'oscuro';
   const [section, setSection] = useState('general');
   const budgetTotal = (user.budgetNecesidades ?? 50) + (user.budgetDeseos ?? 30) + (user.budgetAhorro ?? 20);
-  const avgRecentIncome = averageRecentIncome(data.incomes);
+  const incomeMode = user.incomeMode || 'variable';
+  const setIncomeMode = (mode) => setData((s) => ({ ...s, user: { ...s.user, incomeMode: mode } }));
+  const avgRecentIncome = referenceIncome(data.incomes, incomeMode);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [ratesStatus, setRatesStatus] = useState('idle');
   const fileInputRef = useRef(null);
@@ -327,13 +329,63 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
       <div style={labelStyle}>FINANZAS</div>
       <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div>
-          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>PROMEDIO DE TUS ÚLTIMOS INGRESOS</div>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>TIPO DE INGRESO</div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button
+              type="button"
+              onClick={() => setIncomeMode('variable')}
+              style={{
+                flex: 1,
+                padding: '9px 0',
+                borderRadius: 14,
+                textAlign: 'center',
+                fontWeight: 700,
+                fontSize: 13,
+                cursor: 'pointer',
+                background: incomeMode === 'variable' ? 'var(--text)' : 'var(--input-bg)',
+                color: incomeMode === 'variable' ? 'var(--page-bg)' : 'var(--text)',
+                border: 'none',
+              }}
+            >
+              Variable (día a día)
+            </button>
+            <button
+              type="button"
+              onClick={() => setIncomeMode('fijo')}
+              style={{
+                flex: 1,
+                padding: '9px 0',
+                borderRadius: 14,
+                textAlign: 'center',
+                fontWeight: 700,
+                fontSize: 13,
+                cursor: 'pointer',
+                background: incomeMode === 'fijo' ? 'var(--text)' : 'var(--input-bg)',
+                color: incomeMode === 'fijo' ? 'var(--page-bg)' : 'var(--text)',
+                border: 'none',
+              }}
+            >
+              Fijo (mensual)
+            </button>
+          </div>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
+            {incomeMode === 'fijo'
+              ? 'Para cuando recibes un sueldo fijo una vez al mes, en vez de ingresos variables día a día.'
+              : 'Para pagos que varían — turnos, domingos, festivos, etc.'}
+          </div>
+        </div>
+        <div>
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>
+            {incomeMode === 'fijo' ? 'TU INGRESO MENSUAL' : 'PROMEDIO DE TUS ÚLTIMOS INGRESOS'}
+          </div>
           <div style={{ ...textInputStyle(), padding: 12, borderRadius: 12, color: avgRecentIncome > 0 ? 'var(--text)' : 'var(--text-secondary)' }}>
             {avgRecentIncome > 0 ? fmt(avgRecentIncome, user.currency) : 'Aún no tienes ingresos registrados'}
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
-            Se calcula solo, del promedio de tus últimos 10 ingresos — no lo escribes tú, porque tu pago varía día a día. Se
-            usa para sugerir el monto al registrar y para proyectar tu mes en el Dashboard.
+            {incomeMode === 'fijo'
+              ? 'Es el último ingreso que registraste — se actualiza solo cuando registras el del mes siguiente.'
+              : 'Se calcula solo, del promedio de tus últimos 10 ingresos — no lo escribes tú, porque tu pago varía día a día.'}{' '}
+            Se usa para sugerir el monto al registrar y para proyectar tu mes en el Dashboard.
           </div>
         </div>
         <div>

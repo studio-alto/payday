@@ -5,6 +5,7 @@ export const DAY_TYPES = [
   { key: 'finSemana', label: 'Fin de semana' },
   { key: 'festivo', label: 'Festivo' },
   { key: 'medio', label: 'Medio turno' },
+  { key: 'mensual', label: 'Mensual' },
 ];
 
 export function dayTypeLabel(key) {

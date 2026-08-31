@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { averageRecentIncome, monthlyBreakdown, getPendingConfirmations } from './incomeStats';
+import { averageRecentIncome, monthlyBreakdown, getPendingConfirmations, referenceIncome } from './incomeStats';
 
 describe('getPendingConfirmations', () => {
   const confirmed = { id: 'c1', date: '2026-08-29', estado: 'confirmado' };
@@ -61,6 +61,26 @@ describe('averageRecentIncome', () => {
     ];
     // (10 + 11 + 11) / 3 = 10.666... -> 11
     expect(averageRecentIncome(incomes)).toBe(11);
+  });
+});
+
+describe('referenceIncome', () => {
+  const incomes = [
+    { date: '2026-06-01', amount: 1000000 },
+    { date: '2026-07-01', amount: 1200000 },
+    { date: '2026-08-01', amount: 1300000, estado: 'proyectado' },
+  ];
+
+  it('defaults to the rolling average (variable mode)', () => {
+    expect(referenceIncome(incomes)).toBe(averageRecentIncome(incomes));
+  });
+
+  it('uses the most recent confirmed entry in fixed mode, skipping proyectado', () => {
+    expect(referenceIncome(incomes, 'fijo')).toBe(1200000);
+  });
+
+  it('returns 0 in fixed mode with no confirmed incomes', () => {
+    expect(referenceIncome([], 'fijo')).toBe(0);
   });
 });
 

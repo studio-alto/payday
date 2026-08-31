@@ -71,7 +71,10 @@ export default function Dashboard({ data, setData, onNavigate }) {
   const setCurrency = (currency) => setData((s) => ({ ...s, user: { ...s.user, currency } }));
 
   const avgDailyIncome = averageRecentIncome(incomes);
-  const projectedTotal = avgDailyIncome > 0 ? totalMonth + avgDailyIncome * remainingDaysInMonth() : null;
+  // Projecting "avg daily x remaining days" only makes sense for variable/gig
+  // income — a fixed monthly salary doesn't grow by more days passing, so the
+  // month total is already whatever's been registered.
+  const projectedTotal = user.incomeMode !== 'fijo' && avgDailyIncome > 0 ? totalMonth + avgDailyIncome * remainingDaysInMonth() : null;
   const paydayDays = daysUntilPayday(user.payDayOfMonth);
   const paydayLabel = paydayDays === 0 ? 'Hoy' : paydayDays === 1 ? 'En 1 día' : `En ${paydayDays} días`;
 

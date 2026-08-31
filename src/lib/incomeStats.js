@@ -24,6 +24,18 @@ export function averageRecentIncome(incomes, count = 10) {
   return Math.round(confirmed.reduce((a, i) => a + i.amount, 0) / confirmed.length);
 }
 
+// The reference income figure shown while registering/reviewing income — an
+// average of recent entries for variable/gig income, or the most recent
+// confirmed entry for a fixed monthly salary (averaging past months doesn't
+// make sense the same way, especially once the salary changes).
+export function referenceIncome(incomes, mode = 'variable') {
+  if (mode === 'fijo') {
+    const confirmed = [...incomes].filter((i) => i.estado !== 'proyectado').sort((a, b) => b.date.localeCompare(a.date));
+    return confirmed[0]?.amount || 0;
+  }
+  return averageRecentIncome(incomes);
+}
+
 // Per-month totals (ganado, ahorro, deudas) for a given year, January through December.
 export function monthlyBreakdown(incomes, year) {
   const months = Array.from({ length: 12 }, (_, i) => ({ month: i, ganado: 0, ahorro: 0, deudas: 0 }));
