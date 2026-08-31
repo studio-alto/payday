@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { fmt } from '../lib/format';
 import { dayTypeLabel, formatShortDate, isSameMonth, isWithinDays, todayISO } from '../lib/dates';
 import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
@@ -81,6 +81,14 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
     }
   };
   const toggleSelectedDay = (dateStr) => setSelectedDay((d) => (d === dateStr ? null : dateStr));
+
+  // Selecting a day (or switching filters) can shrink the list a lot — without
+  // this, a scroll position that made sense for the longer list leaves the
+  // viewport looking at empty space past the new, shorter content, with the
+  // floating nav appearing to sit in the middle of things.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [timeFilter, month, year, selectedDay]);
 
   const jobNames = [...new Set(incomes.map((i) => i.name.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 
