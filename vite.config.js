@@ -7,7 +7,8 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
+      injectRegister: false,
       includeAssets: ['icon-192.png', 'icon-512.png'],
       manifest: {
         name: 'Payday',

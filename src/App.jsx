@@ -7,6 +7,7 @@ import Splash from './components/Splash';
 import Welcome from './components/Welcome';
 import AppLock from './components/AppLock';
 import BottomNav from './components/BottomNav';
+import UpdateToast from './components/UpdateToast';
 // Dashboard loads eagerly since it's the very first screen shown; every other
 // screen is only fetched the moment the person actually navigates to it, so the
 // initial bundle doesn't carry code (charts, forms, the debt simulator) for
@@ -134,6 +135,7 @@ export default function App() {
       {showSplash && <Splash fading={splashFading} />}
       {!showSplash && !data.user.onboarded && <Welcome onFinish={finishOnboarding} />}
       {locked && data.user.appLockPin && <AppLock pinHash={data.user.appLockPin} onUnlock={() => setLocked(false)} />}
+      <UpdateToast />
 
       <div className="app-scroll" style={{ width: '100%', maxWidth: 640, padding: '0 20px var(--nav-clearance) 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <Suspense fallback={<div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>Cargando…</div>}>
