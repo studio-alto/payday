@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { fmt } from '../lib/format';
-import { dayTypeLabel, formatShortDate, isSameMonth, isWithinDays } from '../lib/dates';
+import { dayTypeLabel, formatShortDate, isSameMonth, isWithinDays, todayISO } from '../lib/dates';
 import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import InlineConfirm from '../components/InlineConfirm';
 import PencilIcon from '../components/PencilIcon';
 import FixedHeader from '../components/FixedHeader';
 import SwipeActions from '../components/SwipeActions';
+import MonthCalendar from '../components/MonthCalendar';
 import { reverseIncomeEffects } from '../lib/debt';
 
 const MONTH_LABELS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
@@ -51,22 +52,31 @@ function IncomeRow({ inc, currency, isLast, onEdit, confirmDeleteId, setConfirmD
 }
 
 export default function Ingresos({ data, setData, onNavigate, onEdit }) {
-  const { incomes } = data;
+  const { incomes, expenses } = data;
   const { currency } = data.user;
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [selectedJob, setSelectedJob] = useState(null);
   const [searchText, setSearchText] = useState('');
   const [timeFilter, setTimeFilter] = useState('mes');
   const [year, setYear] = useState(new Date().getFullYear());
-  const [expandedMonths, setExpandedMonths] = useState(() => new Set([new Date().getMonth()]));
+  const [month, setMonth] = useState(new Date().getMonth());
 
-  const toggleMonth = (m) =>
-    setExpandedMonths((prev) => {
-      const next = new Set(prev);
-      if (next.has(m)) next.delete(m);
-      else next.add(m);
-      return next;
-    });
+  const goPrevMonth = () => {
+    if (month === 0) {
+      setMonth(11);
+      setYear((y) => y - 1);
+    } else {
+      setMonth((m) => m - 1);
+    }
+  };
+  const goNextMonth = () => {
+    if (month === 11) {
+      setMonth(0);
+      setYear((y) => y + 1);
+    } else {
+      setMonth((m) => m + 1);
+    }
+  };
 
   const jobNames = [...new Set(incomes.map((i) => i.name.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 
@@ -84,14 +94,25 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
   const flatIncomes = filteredIncomes.filter((i) => (timeFilter === 'mes' ? isSameMonth(i.date) : isWithinDays(i.date, 30)));
   const flatTotal = flatIncomes.filter((i) => i.estado !== 'proyectado').reduce((a, i) => a + i.amount, 0);
 
-  const monthGroups = MONTH_LABELS.map((label, m) => {
-    const items = filteredIncomes.filter((i) => {
-      const d = new Date(i.date + 'T00:00:00');
-      return d.getFullYear() === year && d.getMonth() === m;
-    });
-    return { month: m, label, items, total: items.reduce((a, i) => a + i.amount, 0) };
+  // "Todo" renders a real calendar for the selected month: at-a-glance dots for
+  // which days had income or an expense payment, plus both totals below —
+  // easier to scan than clicking through 12 collapsed months one by one.
+  const calIncomes = filteredIncomes.filter((i) => {
+    const d = new Date(i.date + 'T00:00:00');
+    return d.getFullYear() === year && d.getMonth() === month;
   });
-  const yearTotal = monthGroups.reduce((a, mo) => a + mo.total, 0);
+  const calIncomeTotal = calIncomes.filter((i) => i.estado !== 'proyectado').reduce((a, i) => a + i.amount, 0);
+
+  const calExpensePayments = (expenses || []).flatMap((e) =>
+    e.history.filter((h) => {
+      const d = new Date(h.date + 'T00:00:00');
+      return d.getFullYear() === year && d.getMonth() === month;
+    }),
+  );
+  const calExpenseTotal = calExpensePayments.reduce((a, h) => a + h.amount, 0);
+
+  const incomeDaySet = new Set(calIncomes.map((i) => i.date));
+  const expenseDaySet = new Set(calExpensePayments.map((h) => h.date));
 
   const jobChipStyle = (active) => ({
     padding: '9px 14px',
@@ -239,68 +260,49 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
 
       {timeFilter === 'todo' && (
         <div style={cardStyle}>
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, marginBottom: 4 }}>
-            <button type="button" onClick={() => setYear((y) => y - 1)} aria-label="Año anterior" style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 700, fontSize: 14 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, marginBottom: 12 }}>
+            <button type="button" onClick={goPrevMonth} aria-label="Mes anterior" style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 700, fontSize: 14 }}>
               ‹
             </button>
-            <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{year}</div>
-            <button type="button" onClick={() => setYear((y) => y + 1)} aria-label="Año siguiente" style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 700, fontSize: 14 }}>
+            <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>
+              {MONTH_LABELS[month]} {year}
+            </div>
+            <button type="button" onClick={goNextMonth} aria-label="Mes siguiente" style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 700, fontSize: 14 }}>
               ›
             </button>
           </div>
-          <div style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-secondary)', marginBottom: 8 }}>
-            Total {year}: <span style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(yearTotal, currency)}</span>
+
+          <MonthCalendar year={year} month={month} incomeDays={incomeDaySet} expenseDays={expenseDaySet} today={todayISO()} />
+
+          <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
+            <div style={{ flex: 1, background: 'var(--input-bg)', borderRadius: 14, padding: 12 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.03em' }}>TOTAL INGRESOS</div>
+              <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)', marginTop: 3 }}>{fmt(calIncomeTotal, currency)}</div>
+            </div>
+            <div style={{ flex: 1, background: 'var(--input-bg)', borderRadius: 14, padding: 12 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.03em' }}>TOTAL GASTOS</div>
+              <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)', marginTop: 3 }}>{fmt(calExpenseTotal, currency)}</div>
+            </div>
           </div>
 
-          {monthGroups.map((mo) => {
-            const expanded = search ? mo.items.length > 0 : expandedMonths.has(mo.month);
-            const hasItems = mo.items.length > 0;
-            return (
-              <div key={mo.month} style={{ borderTop: '1px solid var(--divider)' }}>
-                <button
-                  type="button"
-                  onClick={() => toggleMonth(mo.month)}
-                  style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', padding: '12px 0', cursor: 'pointer' }}
-                >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div
-                      style={{
-                        fontSize: 12,
-                        color: 'var(--text-secondary)',
-                        transform: expanded ? 'rotate(90deg)' : 'rotate(0deg)',
-                        transition: 'transform 0.2s ease',
-                      }}
-                    >
-                      ›
-                    </div>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: hasItems ? 'var(--text)' : 'var(--text-secondary)' }}>{mo.label}</div>
-                  </div>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: hasItems ? 'var(--text)' : 'var(--text-secondary)' }}>{fmt(mo.total, currency)}</div>
-                </button>
-
-                {expanded && (
-                  <div style={{ paddingBottom: 8 }}>
-                    {hasItems ? (
-                      mo.items.map((inc, idx) => (
-                        <IncomeRow
-                          key={inc.id}
-                          inc={inc}
-                          currency={currency}
-                          isLast={idx === mo.items.length - 1}
-                          onEdit={onEdit}
-                          confirmDeleteId={confirmDeleteId}
-                          setConfirmDeleteId={setConfirmDeleteId}
-                          confirmDelete={confirmDelete}
-                        />
-                      ))
-                    ) : (
-                      <div style={{ fontSize: 12, color: 'var(--text-secondary)', paddingBottom: 8 }}>Sin ingresos este mes.</div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+          <div style={{ marginTop: 14 }}>
+            {calIncomes.length > 0 ? (
+              calIncomes.map((inc, idx) => (
+                <IncomeRow
+                  key={inc.id}
+                  inc={inc}
+                  currency={currency}
+                  isLast={idx === calIncomes.length - 1}
+                  onEdit={onEdit}
+                  confirmDeleteId={confirmDeleteId}
+                  setConfirmDeleteId={setConfirmDeleteId}
+                  confirmDelete={confirmDelete}
+                />
+              ))
+            ) : (
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Sin ingresos este mes.</div>
+            )}
+          </div>
         </div>
       )}
     </div>
