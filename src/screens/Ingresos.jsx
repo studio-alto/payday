@@ -60,8 +60,10 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
   const [timeFilter, setTimeFilter] = useState('mes');
   const [year, setYear] = useState(new Date().getFullYear());
   const [month, setMonth] = useState(new Date().getMonth());
+  const [selectedDay, setSelectedDay] = useState(null);
 
   const goPrevMonth = () => {
+    setSelectedDay(null);
     if (month === 0) {
       setMonth(11);
       setYear((y) => y - 1);
@@ -70,6 +72,7 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
     }
   };
   const goNextMonth = () => {
+    setSelectedDay(null);
     if (month === 11) {
       setMonth(0);
       setYear((y) => y + 1);
@@ -77,6 +80,7 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
       setMonth((m) => m + 1);
     }
   };
+  const toggleSelectedDay = (dateStr) => setSelectedDay((d) => (d === dateStr ? null : dateStr));
 
   const jobNames = [...new Set(incomes.map((i) => i.name.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 
@@ -104,15 +108,22 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
   const calIncomeTotal = calIncomes.filter((i) => i.estado !== 'proyectado').reduce((a, i) => a + i.amount, 0);
 
   const calExpensePayments = (expenses || []).flatMap((e) =>
-    e.history.filter((h) => {
-      const d = new Date(h.date + 'T00:00:00');
-      return d.getFullYear() === year && d.getMonth() === month;
-    }),
+    e.history
+      .filter((h) => {
+        const d = new Date(h.date + 'T00:00:00');
+        return d.getFullYear() === year && d.getMonth() === month;
+      })
+      .map((h) => ({ ...h, name: e.name })),
   );
   const calExpenseTotal = calExpensePayments.reduce((a, h) => a + h.amount, 0);
 
   const incomeDaySet = new Set(calIncomes.map((i) => i.date));
   const expenseDaySet = new Set(calExpensePayments.map((h) => h.date));
+
+  // When a day is tapped on the calendar, narrow the list below to just that
+  // day's income and expense payments instead of the whole month.
+  const dayIncomes = selectedDay ? calIncomes.filter((i) => i.date === selectedDay) : calIncomes;
+  const dayExpensePayments = selectedDay ? calExpensePayments.filter((h) => h.date === selectedDay) : calExpensePayments;
 
   const jobChipStyle = (active) => ({
     padding: '9px 14px',
@@ -272,7 +283,15 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
             </button>
           </div>
 
-          <MonthCalendar year={year} month={month} incomeDays={incomeDaySet} expenseDays={expenseDaySet} today={todayISO()} />
+          <MonthCalendar
+            year={year}
+            month={month}
+            incomeDays={incomeDaySet}
+            expenseDays={expenseDaySet}
+            today={todayISO()}
+            selectedDay={selectedDay}
+            onSelectDay={toggleSelectedDay}
+          />
 
           <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
             <div style={{ flex: 1, background: 'var(--input-bg)', borderRadius: 14, padding: 12 }}>
@@ -286,22 +305,47 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
           </div>
 
           <div style={{ marginTop: 14 }}>
-            {calIncomes.length > 0 ? (
-              calIncomes.map((inc, idx) => (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <div style={labelStyle}>{selectedDay ? formatShortDate(selectedDay).toUpperCase() : 'TODO EL MES'}</div>
+              {selectedDay && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedDay(null)}
+                  style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}
+                >
+                  Ver todo el mes
+                </button>
+              )}
+            </div>
+
+            {dayExpensePayments.map((h, idx) => (
+              <div
+                key={`${h.name}-${idx}`}
+                style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 0', borderBottom: '1px solid var(--divider)' }}
+              >
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{h.name}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--danger-text)' }}>-{fmt(h.amount, currency)}</div>
+              </div>
+            ))}
+
+            {dayIncomes.length > 0 ? (
+              dayIncomes.map((inc, idx) => (
                 <IncomeRow
                   key={inc.id}
                   inc={inc}
                   currency={currency}
-                  isLast={idx === calIncomes.length - 1}
+                  isLast={idx === dayIncomes.length - 1}
                   onEdit={onEdit}
                   confirmDeleteId={confirmDeleteId}
                   setConfirmDeleteId={setConfirmDeleteId}
                   confirmDelete={confirmDelete}
                 />
               ))
-            ) : (
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Sin ingresos este mes.</div>
-            )}
+            ) : dayExpensePayments.length === 0 ? (
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                {selectedDay ? 'Sin ingresos ni gastos este día.' : 'Sin ingresos este mes.'}
+              </div>
+            ) : null}
           </div>
         </div>
       )}
