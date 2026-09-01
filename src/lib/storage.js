@@ -13,6 +13,7 @@ function seedData() {
     goals: [],
     cards: [],
     expenses: [],
+    gastosVariables: [],
   };
 }
 
@@ -34,6 +35,7 @@ function loadInitial() {
       goals: parsed.goals || [],
       cards: parsed.cards || [],
       expenses: parsed.expenses || [],
+      gastosVariables: parsed.gastosVariables || [],
     };
   } catch {
     // Corrupted JSON — preserve the raw string under a separate key before falling

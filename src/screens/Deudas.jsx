@@ -11,6 +11,7 @@ import PlusIcon from '../components/PlusIcon';
 import FixedHeader from '../components/FixedHeader';
 import SwipeActions from '../components/SwipeActions';
 import { sortDebtsByPriority, simulatePayoffPlan, formatMonthsLabel, monthlyPaidTotals, METHODS } from '../lib/debt';
+import { VARIABLE_CATEGORIES, monthlyCategoryTotals } from '../lib/variableExpenses';
 
 const TIPOS = ['Tarjeta de crédito', 'Préstamo', 'Otro'];
 const CATEGORIAS = ['Suscripción', 'Servicios', 'Transporte', 'Vivienda', 'Tarjeta de crédito', 'Otro'];
@@ -65,11 +66,19 @@ function emptyExpenseForm() {
   return { name: '', categoria: 'Suscripción', amount: '', dueDay: '', medioPago: 'efectivo' };
 }
 
+function emptyVariableForm(today) {
+  return { name: '', categoria: VARIABLE_CATEGORIES[0], amount: '', date: today };
+}
+
 export default function Deudas({ data, setData, onViewDetail }) {
   const { cards, expenses } = data;
+  const gastosVariables = data.gastosVariables || [];
   const { currency } = data.user;
   const debtMethod = data.user.debtMethod || 'bola_nieve';
   const today = todayISO();
+  const todayDate = new Date(today + 'T00:00:00');
+  const currentYear = todayDate.getFullYear();
+  const currentMonth = todayDate.getMonth();
 
   const [section, setSection] = useState('deudas');
 
@@ -306,6 +315,74 @@ export default function Deudas({ data, setData, onViewDetail }) {
     setDeleteHistoryTarget(null);
   };
 
+  // Budget-vs-actual per category, for the current calendar month only — matches
+  // how the rest of the app (gastos fijos, deudas) always reasons in "this month" terms.
+  const categoryTotals = monthlyCategoryTotals(gastosVariables, VARIABLE_CATEGORIES, currentYear, currentMonth);
+  const totalVariableMonth = categoryTotals.reduce((a, c) => a + c.total, 0);
+  const thisMonthVariables = [...gastosVariables]
+    .filter((g) => {
+      const d = new Date(g.date + 'T00:00:00');
+      return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+    })
+    .sort((a, b) => b.date.localeCompare(a.date));
+
+  const setPresupuestoCategoria = (categoria, value) => {
+    setData((s) => ({
+      ...s,
+      user: { ...s.user, presupuestoVariable: { ...s.user.presupuestoVariable, [categoria]: Number(value) || 0 } },
+    }));
+  };
+
+  const [variableModalOpen, setVariableModalOpen] = useState(false);
+  const [editingVariableId, setEditingVariableId] = useState(null);
+  const [variableForm, setVariableForm] = useState(emptyVariableForm(today));
+  const [confirmDeleteVariableId, setConfirmDeleteVariableId] = useState(null);
+
+  const openNewVariableModal = () => {
+    setEditingVariableId(null);
+    setVariableForm(emptyVariableForm(today));
+    setVariableModalOpen(true);
+  };
+  const openEditVariableModal = (g) => {
+    setEditingVariableId(g.id);
+    setVariableForm({ name: g.name || '', categoria: g.categoria, amount: String(g.amount), date: g.date });
+    setVariableModalOpen(true);
+  };
+  const closeVariableModal = () => setVariableModalOpen(false);
+  const setVariableField = (key) => (e) => setVariableForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const saveVariable = () => {
+    if (!variableForm.amount) return;
+    setData((s) => {
+      const list = s.gastosVariables || [];
+      if (editingVariableId) {
+        return {
+          ...s,
+          gastosVariables: list.map((g) =>
+            g.id === editingVariableId
+              ? { ...g, name: variableForm.name, categoria: variableForm.categoria, amount: Number(variableForm.amount), date: variableForm.date || today }
+              : g,
+          ),
+        };
+      }
+      return {
+        ...s,
+        gastosVariables: [
+          ...list,
+          { id: uid(), name: variableForm.name, categoria: variableForm.categoria, amount: Number(variableForm.amount), date: variableForm.date || today },
+        ],
+      };
+    });
+    setVariableModalOpen(false);
+  };
+
+  const askDeleteVariable = (id) => setConfirmDeleteVariableId(id);
+  const cancelDeleteVariable = () => setConfirmDeleteVariableId(null);
+  const confirmDeleteVariable = (id) => {
+    setData((s) => ({ ...s, gastosVariables: (s.gastosVariables || []).filter((g) => g.id !== id) }));
+    setConfirmDeleteVariableId(null);
+  };
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 'var(--header-h, 88px)' }}>
       <FixedHeader>
@@ -314,8 +391,8 @@ export default function Deudas({ data, setData, onViewDetail }) {
             <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', letterSpacing: '-0.02em' }}>Deudas</div>
             <button
               type="button"
-              onClick={section === 'deudas' ? openNewModal : openNewExpenseModal}
-              aria-label={section === 'deudas' ? 'Nueva deuda' : 'Nuevo gasto'}
+              onClick={section === 'deudas' ? openNewModal : section === 'gastos' ? openNewExpenseModal : openNewVariableModal}
+              aria-label={section === 'deudas' ? 'Nueva deuda' : section === 'gastos' ? 'Nuevo gasto' : 'Nuevo gasto variable'}
               style={{
                 width: 40,
                 height: 40,
@@ -336,6 +413,7 @@ export default function Deudas({ data, setData, onViewDetail }) {
             {[
               { key: 'deudas', label: 'Deudas' },
               { key: 'gastos', label: 'Gastos fijos' },
+              { key: 'variables', label: 'Variables' },
             ].map((s) => {
               const active = section === s.key;
               return (
@@ -853,6 +931,109 @@ export default function Deudas({ data, setData, onViewDetail }) {
                 ))}
               </select>
               <button type="button" onClick={saveExpense} style={{ ...primaryButtonStyle(), height: 50, borderRadius: 25 }}>
+                Guardar
+              </button>
+            </BottomSheet>
+          )}
+        </>
+      )}
+
+      {section === 'variables' && (
+        <>
+          <div style={cardStyle}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em' }}>GASTADO ESTE MES</div>
+            <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', marginTop: 4, letterSpacing: '-0.02em' }}>{fmt(totalVariableMonth, currency)}</div>
+          </div>
+
+          <div style={cardStyle}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em', marginBottom: 4 }}>
+              PRESUPUESTO POR CATEGORÍA (ESTE MES)
+            </div>
+            {categoryTotals.map(({ categoria, total }) => {
+              const budget = Number(data.user.presupuestoVariable?.[categoria]) || 0;
+              const pct = budget > 0 ? Math.min(100, Math.round((total / budget) * 100)) : 0;
+              const overBudget = budget > 0 && total > budget;
+              const diff = budget - total;
+              return (
+                <div key={categoria} style={{ padding: '12px 0', borderTop: '1px solid var(--divider)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)' }}>{categoria}</div>
+                    <div style={{ fontWeight: 800, fontSize: 14, color: overBudget ? 'var(--danger-text)' : 'var(--text)' }}>{fmt(total, currency)}</div>
+                  </div>
+                  {budget > 0 && (
+                    <div style={{ height: 5, background: 'var(--divider)', borderRadius: 6, overflow: 'hidden', marginTop: 8 }}>
+                      <div style={{ height: '100%', width: `${pct}%`, background: overBudget ? 'var(--danger)' : 'var(--accent)', borderRadius: 6, transition: 'width 0.5s ease' }} />
+                    </div>
+                  )}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Presupuesto:</div>
+                      <NumberInput
+                        value={data.user.presupuestoVariable?.[categoria] ?? ''}
+                        onChange={(e) => setPresupuestoCategoria(categoria, e.target.value)}
+                        placeholder="0"
+                        style={{ width: 84, padding: '5px 8px', borderRadius: 8, border: 'none', background: 'var(--input-bg)', color: 'var(--text)', fontSize: 12, fontWeight: 700 }}
+                      />
+                    </div>
+                    {budget > 0 && (
+                      <div style={{ fontSize: 11, fontWeight: 700, color: overBudget ? 'var(--danger-text)' : 'var(--text-secondary)' }}>
+                        {overBudget ? `Excedido por ${fmt(-diff, currency)}` : `Quedan ${fmt(diff, currency)}`}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          <div style={cardStyle}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em', marginBottom: 4 }}>ESTE MES</div>
+            {thisMonthVariables.length === 0 ? (
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', paddingTop: 8 }}>Sin gastos variables registrados este mes.</div>
+            ) : (
+              thisMonthVariables.map((g) => (
+                <SwipeActions
+                  key={g.id}
+                  borderRadius={0}
+                  background="var(--card-bg)"
+                  actions={[
+                    { label: 'Editar', bg: 'var(--text)', color: 'var(--page-bg)', icon: <PencilIcon color="var(--page-bg)" accent="var(--page-bg)" />, onClick: () => openEditVariableModal(g) },
+                    { label: 'Eliminar', bg: 'var(--danger)', icon: <span style={{ fontSize: 20, fontWeight: 700 }}>×</span>, onClick: () => askDeleteVariable(g.id) },
+                  ]}
+                >
+                  <div style={{ padding: '11px 0', borderTop: '1px solid var(--divider)', background: 'var(--card-bg)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{g.name || g.categoria}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                          {g.categoria} · {formatShortDate(g.date)}
+                        </div>
+                      </div>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)', flexShrink: 0 }}>{fmt(g.amount, currency)}</div>
+                    </div>
+                    {confirmDeleteVariableId === g.id && (
+                      <InlineConfirm message="¿Eliminar este gasto?" onConfirm={() => confirmDeleteVariable(g.id)} onCancel={cancelDeleteVariable} />
+                    )}
+                  </div>
+                </SwipeActions>
+              ))
+            )}
+          </div>
+
+          {variableModalOpen && (
+            <BottomSheet onClose={closeVariableModal}>
+              <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{editingVariableId ? 'Editar gasto' : 'Nuevo gasto variable'}</div>
+              <select value={variableForm.categoria} onChange={setVariableField('categoria')} style={textInputStyle()}>
+                {VARIABLE_CATEGORIES.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <input type="text" value={variableForm.name} onChange={setVariableField('name')} placeholder="Nombre (opcional, ej: Carne, Cine)" style={textInputStyle()} />
+              <NumberInput value={variableForm.amount} onChange={setVariableField('amount')} placeholder="Monto" style={textInputStyle()} />
+              <input type="date" value={variableForm.date} max={today} onChange={setVariableField('date')} style={textInputStyle()} />
+              <button type="button" onClick={saveVariable} style={{ ...primaryButtonStyle(), height: 50, borderRadius: 25 }}>
                 Guardar
               </button>
             </BottomSheet>

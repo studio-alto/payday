@@ -16,7 +16,15 @@ export async function sendBackupEmail(data, toEmail) {
   if (!emailBackupConfigured) {
     throw new Error('EmailJS no está configurado todavía (faltan las variables VITE_EMAILJS_*).');
   }
-  const payload = { user: data.user, incomes: data.incomes, goals: data.goals, cards: data.cards, expenses: data.expenses, exportedAt: todayISO() };
+  const payload = {
+    user: data.user,
+    incomes: data.incomes,
+    goals: data.goals,
+    cards: data.cards,
+    expenses: data.expenses,
+    gastosVariables: data.gastosVariables,
+    exportedAt: todayISO(),
+  };
   const json = JSON.stringify(payload, null, 2);
 
   await emailjs.send(

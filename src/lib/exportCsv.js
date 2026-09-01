@@ -12,7 +12,7 @@ function csvRow(values) {
 
 // One CSV file with a section per data type (Excel/Numbers/Sheets read this natively;
 // the leading BOM keeps accented characters from garbling when opened in Excel).
-export function buildSummaryCsv({ incomes, goals, cards, expenses }) {
+export function buildSummaryCsv({ incomes, goals, cards, expenses, gastosVariables }) {
   let csv = '﻿';
   csv += csvRow([`Resumen Payday`, formatFullDate(todayISO())]);
   csv += '\r\n';
@@ -51,6 +51,15 @@ export function buildSummaryCsv({ incomes, goals, cards, expenses }) {
   expenses.forEach((e) => {
     csv += csvRow([e.name, e.categoria, e.amount, e.dueDay]);
   });
+
+  if (gastosVariables && gastosVariables.length > 0) {
+    csv += '\r\n';
+    csv += csvRow(['GASTOS VARIABLES']);
+    csv += csvRow(['Nombre', 'Categoría', 'Fecha', 'Monto']);
+    gastosVariables.forEach((g) => {
+      csv += csvRow([g.name || g.categoria, g.categoria, formatFullDate(g.date), g.amount]);
+    });
+  }
 
   return csv;
 }

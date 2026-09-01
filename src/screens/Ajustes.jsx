@@ -17,7 +17,7 @@ import PinPad from '../components/PinPad';
 // with a different schema) — those would otherwise crash later on a missing field.
 function isValidBackup(parsed) {
   if (!parsed || typeof parsed !== 'object') return false;
-  for (const key of ['incomes', 'goals', 'cards', 'expenses']) {
+  for (const key of ['incomes', 'goals', 'cards', 'expenses', 'gastosVariables']) {
     if (parsed[key] !== undefined && !Array.isArray(parsed[key])) return false;
   }
   if (Array.isArray(parsed.incomes)) {
@@ -120,7 +120,15 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
   };
 
   const exportData = () => {
-    const payload = { user: data.user, incomes: data.incomes, goals: data.goals, cards: data.cards, expenses: data.expenses, exportedAt: todayISO() };
+    const payload = {
+      user: data.user,
+      incomes: data.incomes,
+      goals: data.goals,
+      cards: data.cards,
+      expenses: data.expenses,
+      gastosVariables: data.gastosVariables,
+      exportedAt: todayISO(),
+    };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -131,7 +139,15 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
   };
 
   const shareBackup = async () => {
-    const payload = { user: data.user, incomes: data.incomes, goals: data.goals, cards: data.cards, expenses: data.expenses, exportedAt: todayISO() };
+    const payload = {
+      user: data.user,
+      incomes: data.incomes,
+      goals: data.goals,
+      cards: data.cards,
+      expenses: data.expenses,
+      gastosVariables: data.gastosVariables,
+      exportedAt: todayISO(),
+    };
     const file = new File([JSON.stringify(payload, null, 2)], `payday-datos-${todayISO()}.json`, { type: 'application/json' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
@@ -174,6 +190,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
       goals: parsed.goals || [],
       cards: parsed.cards || [],
       expenses: parsed.expenses || [],
+      gastosVariables: parsed.gastosVariables || [],
     }));
   };
 
@@ -216,7 +233,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
   };
 
   const confirmReset = () => {
-    setData((s) => ({ ...s, incomes: [], goals: [], cards: [], expenses: [] }));
+    setData((s) => ({ ...s, incomes: [], goals: [], cards: [], expenses: [], gastosVariables: [] }));
     setResetConfirmOpen(false);
   };
 
