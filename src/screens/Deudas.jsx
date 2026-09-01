@@ -22,7 +22,7 @@ const CATEGORIAS = ['Suscripción', 'Servicios', 'Transporte', 'Vivienda', 'Tarj
 // Qualitative palette for the category donut — cycles if there are more tracked
 // categories than colors. Distinct enough from each other and from --divider/--card-bg
 // in both themes since these are chart fills, not text.
-const CATEGORY_CHART_COLORS = ['#ff5a36', '#4f6df5', '#2f9e6f', '#e8b74e', '#c95792', '#5aa9e6', '#9b6bd9', '#d97b4f'];
+const CATEGORY_CHART_COLORS = ['#7bd6dc', '#00c45b', '#476bff', '#f2c200', '#ff7500', '#f03d0e', '#939598', '#ff578b', '#ba5aed'];
 
 function categoryDonutGradient(slices) {
   let cumulative = 0;
