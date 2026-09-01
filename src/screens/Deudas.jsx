@@ -19,6 +19,21 @@ import { VARIABLE_CATEGORIES, monthlyCategoryTotals, monthlyVariableTotals } fro
 const TIPOS = ['Tarjeta de crédito', 'Préstamo', 'Otro'];
 const CATEGORIAS = ['Suscripción', 'Servicios', 'Transporte', 'Vivienda', 'Tarjeta de crédito', 'Otro'];
 
+// Qualitative palette for the category donut — cycles if there are more tracked
+// categories than colors. Distinct enough from each other and from --divider/--card-bg
+// in both themes since these are chart fills, not text.
+const CATEGORY_CHART_COLORS = ['#ff5a36', '#4f6df5', '#2f9e6f', '#e8b74e', '#c95792', '#5aa9e6', '#9b6bd9', '#d97b4f'];
+
+function categoryDonutGradient(slices) {
+  let cumulative = 0;
+  const stops = slices.map(({ pct }, i) => {
+    const start = cumulative;
+    cumulative += pct;
+    return `${CATEGORY_CHART_COLORS[i % CATEGORY_CHART_COLORS.length]} ${start}% ${cumulative}%`;
+  });
+  return `conic-gradient(${stops.join(', ')})`;
+}
+
 // Keeps digits and at most one decimal point (up to 2 decimal places) — interest rates
 // like "2.5% E.A." need the point; plain digit-stripping was silently eating it.
 function sanitizeDecimal(raw) {
@@ -1073,31 +1088,41 @@ export default function Deudas({ data, setData, onViewDetail }) {
             )}
           </div>
 
-          {categoryTotals.some((c) => c.total > 0) && (
-            <div style={cardStyle}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em', marginBottom: 10 }}>
-                GASTO POR CATEGORÍA (ESTE MES)
-              </div>
-              {[...categoryTotals]
-                .filter((c) => c.total > 0)
-                .sort((a, b) => b.total - a.total)
-                .map(({ categoria, total }) => {
-                  const max = Math.max(...categoryTotals.map((c) => c.total), 1);
-                  const pct = Math.round((total / max) * 100);
-                  return (
-                    <div key={categoria} style={{ marginTop: 10 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
-                        <span style={{ color: 'var(--text-secondary)' }}>{categoria}</span>
-                        <span style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(total, currency)}</span>
+          {categoryTotals.some((c) => c.total > 0) && (() => {
+            const spent = [...categoryTotals].filter((c) => c.total > 0).sort((a, b) => b.total - a.total);
+            const totalSpent = spent.reduce((a, c) => a + c.total, 0);
+            const slices = spent.map((c) => ({ ...c, pct: totalSpent > 0 ? (c.total / totalSpent) * 100 : 0 }));
+            const donut = categoryDonutGradient(slices);
+            return (
+              <div style={cardStyle}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em', marginBottom: 14 }}>
+                  GASTO POR CATEGORÍA (ESTE MES)
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                  <div style={{ width: 140, height: 140, borderRadius: '50%', background: donut, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: 96, height: 96, borderRadius: '50%', background: 'var(--card-bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.04em' }}>TOTAL</div>
+                      <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text)', letterSpacing: '-0.02em' }}>{fmt(totalSpent, currency)}</div>
+                    </div>
+                  </div>
+                </div>
+                <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {slices.map(({ categoria, total, pct }, i) => (
+                    <div key={categoria} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                        <div style={{ width: 10, height: 10, borderRadius: '50%', background: CATEGORY_CHART_COLORS[i % CATEGORY_CHART_COLORS.length], flexShrink: 0 }} />
+                        <span style={{ fontSize: 12, color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{categoria}</span>
                       </div>
-                      <div style={{ height: 8, background: 'var(--divider)', borderRadius: 6, overflow: 'hidden', marginTop: 4 }}>
-                        <div style={{ height: '100%', width: `${pct}%`, background: 'var(--accent)', borderRadius: 6, transition: 'width 0.5s ease' }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)' }}>{Math.round(pct)}%</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>{fmt(total, currency)}</span>
                       </div>
                     </div>
-                  );
-                })}
-            </div>
-          )}
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           <div style={cardStyle}>
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em', marginBottom: 4 }}>ESTE MES</div>
