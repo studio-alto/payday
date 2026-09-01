@@ -38,7 +38,7 @@
   color-scheme: light;
   /* Reserves room for the floating bottom nav plus the iPhone home-indicator
      safe area, so the last card in a scrollable screen is never hidden behind it. */
-  --nav-clearance: calc(110px + env(safe-area-inset-bottom, 0px));
+  --nav-clearance: calc(116px + env(safe-area-inset-bottom, 0px));
   --nav-offset: calc(20px + env(safe-area-inset-bottom, 0px));
 }
 

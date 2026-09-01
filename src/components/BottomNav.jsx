@@ -5,27 +5,43 @@ function navColors(activeTab, key) {
   return {
     bg: active ? 'var(--text)' : 'var(--input-bg)',
     color: active ? 'var(--page-bg)' : 'var(--text)',
+    label: active ? 'var(--text)' : 'var(--text-secondary)',
   };
 }
 
-function NavButton({ bg, onClick, children, label }) {
+function NavButton({ bg, onClick, children, label, labelColor }) {
   return (
     <button
       type="button"
       aria-label={label}
       onClick={onClick}
       style={{
-        width: 52,
-        height: 52,
-        borderRadius: '50%',
-        background: bg,
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
+        gap: 3,
+        background: 'none',
+        border: 'none',
         cursor: 'pointer',
+        flex: 1,
+        height: '100%',
       }}
     >
-      {children}
+      <div
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: '50%',
+          background: bg,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        {children}
+      </div>
+      <div style={{ fontSize: 9, fontWeight: 700, color: labelColor, letterSpacing: '0.02em' }}>{label}</div>
     </button>
   );
 }
@@ -44,9 +60,9 @@ export default function BottomNav({ activeTab, onChange }) {
         transform: 'translateX(-50%)',
         bottom: 'var(--nav-offset)',
         width: 'min(calc(100% - 40px), 400px)',
-        height: 70,
+        height: 76,
         background: 'var(--card-bg)',
-        borderRadius: 35,
+        borderRadius: 26,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-around',
@@ -56,25 +72,25 @@ export default function BottomNav({ activeTab, onChange }) {
         boxSizing: 'border-box',
       }}
     >
-      <NavButton label="Inicio" bg={dashboard.bg} onClick={() => onChange('dashboard')}>
-        <div style={{ width: 16, height: 16, borderRadius: 4, background: dashboard.color }} />
+      <NavButton label="Inicio" labelColor={dashboard.label} bg={dashboard.bg} onClick={() => onChange('dashboard')}>
+        <div style={{ width: 14, height: 14, borderRadius: 4, background: dashboard.color }} />
       </NavButton>
 
-      <NavButton label="Registrar" bg={registrar.bg} onClick={() => onChange('registrar')}>
-        <div style={{ width: 18, height: 18, borderRadius: '50%', border: `2px solid ${registrar.color}`, position: 'relative' }}>
-          <div style={{ position: 'absolute', top: '50%', left: 3, right: 3, height: 2, background: registrar.color, transform: 'translateY(-50%)' }} />
-          <div style={{ position: 'absolute', left: '50%', top: 3, bottom: 3, width: 2, background: registrar.color, transform: 'translateX(-50%)' }} />
+      <NavButton label="Registrar" labelColor={registrar.label} bg={registrar.bg} onClick={() => onChange('registrar')}>
+        <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${registrar.color}`, position: 'relative' }}>
+          <div style={{ position: 'absolute', top: '50%', left: 2, right: 2, height: 2, background: registrar.color, transform: 'translateY(-50%)' }} />
+          <div style={{ position: 'absolute', left: '50%', top: 2, bottom: 2, width: 2, background: registrar.color, transform: 'translateX(-50%)' }} />
         </div>
       </NavButton>
 
-      <NavButton label="Metas" bg={metas.bg} onClick={() => onChange('metas')}>
-        <div style={{ width: 18, height: 18, borderRadius: '50%', border: `2px solid ${metas.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ width: 7, height: 7, borderRadius: '50%', background: metas.color }} />
+      <NavButton label="Metas" labelColor={metas.label} bg={metas.bg} onClick={() => onChange('metas')}>
+        <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${metas.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ width: 6, height: 6, borderRadius: '50%', background: metas.color }} />
         </div>
       </NavButton>
 
-      <NavButton label="Deudas" bg={tarjetas.bg} onClick={() => onChange('tarjetas')}>
-        <div style={{ width: 20, height: 14, borderRadius: 4, border: `2px solid ${tarjetas.color}`, position: 'relative' }}>
+      <NavButton label="Deudas" labelColor={tarjetas.label} bg={tarjetas.bg} onClick={() => onChange('tarjetas')}>
+        <div style={{ width: 18, height: 12, borderRadius: 4, border: `2px solid ${tarjetas.color}`, position: 'relative' }}>
           <div style={{ position: 'absolute', top: 2, left: 0, right: 0, height: 3, background: tarjetas.color }} />
         </div>
       </NavButton>

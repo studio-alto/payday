@@ -22,6 +22,31 @@ export default function BottomSheet({ onClose, children }) {
           gap: 12,
         }}
       >
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Cerrar"
+          style={{
+            position: 'absolute',
+            top: 18,
+            right: 18,
+            width: 30,
+            height: 30,
+            borderRadius: '50%',
+            background: 'var(--input-bg)',
+            color: 'var(--text)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 15,
+            fontWeight: 700,
+            border: 'none',
+            cursor: 'pointer',
+            lineHeight: 1,
+          }}
+        >
+          ×
+        </button>
         {children}
       </div>
     </>

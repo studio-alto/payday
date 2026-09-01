@@ -263,7 +263,11 @@ export default function Dashboard({ data, setData, onNavigate }) {
       )}
 
       {/* Ganado este mes */}
-      <div style={{ ...cardStyle, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'center' }}>
+      <button
+        type="button"
+        onClick={() => onNavigate('ingresos')}
+        style={{ ...cardStyle, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'center', border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%' }}
+      >
         <div>
           <div style={labelStyle}>GANADO ESTE MES</div>
           <div style={{ fontWeight: 800, fontSize: 32, color: 'var(--text)', marginTop: 6, letterSpacing: '-0.02em' }}>
@@ -281,7 +285,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
             </div>
           ))}
         </div>
-      </div>
+      </button>
 
       {user.metaIngresoMensual > 0 && (
         <div style={cardStyle}>
@@ -347,19 +351,19 @@ export default function Dashboard({ data, setData, onNavigate }) {
         </div>
 
         <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 10, minWidth: 0 }}>
-          <div>
+          <button type="button" onClick={() => onNavigate('metas')} style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}>
             <div style={labelStyle}>AHORRO</div>
             <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)', marginTop: 3 }}>{fmt(totalAhorro, user.currency)}</div>
-          </div>
+          </button>
           <div style={{ height: 1, background: 'var(--divider)' }} />
-          <div>
+          <button type="button" onClick={() => onNavigate('tarjetas')} style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}>
             <div style={labelStyle}>DEUDAS</div>
             <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)', marginTop: 3 }}>{fmt(totalDeuda, user.currency)}</div>
-          </div>
+          </button>
           {totalGastos > 0 && (
             <>
               <div style={{ height: 1, background: 'var(--divider)' }} />
-              <div>
+              <button type="button" onClick={() => onNavigate('tarjetas')} style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}>
                 <div style={labelStyle}>GASTOS FIJOS</div>
                 <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)', marginTop: 3 }}>{fmt(totalGastos, user.currency)}</div>
                 {totalMonth > 0 && (
@@ -367,7 +371,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
                     {gastosPct}% de lo ganado · sugerido {budgetNecesidades}%
                   </div>
                 )}
-              </div>
+              </button>
             </>
           )}
           <div style={{ height: 1, background: 'var(--divider)' }} />
