@@ -4,6 +4,7 @@ import { formatShortDate, monthsSince, todayISO } from '../lib/dates';
 import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import { monthlyInterestCost, simulateCardPayoff, formatMonthsLabel } from '../lib/debt';
 import NumberInput from '../components/NumberInput';
+import DateField from '../components/DateField';
 import BottomSheet from '../components/BottomSheet';
 import FixedHeader from '../components/FixedHeader';
 
@@ -273,8 +274,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
           />
           <div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 700 }}>FECHA DEL ABONO</div>
-            <input
-              type="date"
+            <DateField
               value={payForm.date}
               max={today}
               onChange={(e) => setPayForm((f) => ({ ...f, date: e.target.value }))}

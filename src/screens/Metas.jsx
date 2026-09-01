@@ -12,6 +12,7 @@ import PencilIcon from '../components/PencilIcon';
 import PlusIcon from '../components/PlusIcon';
 import FixedHeader from '../components/FixedHeader';
 import SwipeActions from '../components/SwipeActions';
+import DateField from '../components/DateField';
 
 const GOAL_PRESETS = ['Fondo de emergencia', 'Viaje', 'Laptop', 'Curso', 'Otra'];
 
@@ -319,7 +320,7 @@ export default function Metas({ data, setData }) {
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>
               ¿PARA CUÁNDO LA QUIERES? (OPCIONAL)
             </div>
-            <input type="date" value={form.fechaObjetivo} onChange={setField('fechaObjetivo')} style={textInputStyle()} />
+            <DateField value={form.fechaObjetivo} onChange={setField('fechaObjetivo')} style={textInputStyle()} />
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
               Si la pones, te decimos cuánto ahorrar por día, semana o mes para llegar a tiempo. Si la dejas en blanco, te
               estimamos igual cuántos meses te faltan según tu ritmo de aportes.

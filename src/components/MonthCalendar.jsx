@@ -4,7 +4,7 @@ const WEEKDAY_HEADERS = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
 // payment get a danger dot (a day can show both), and today gets a filled
 // circle. Tapping a day selects it (ring outline) so the caller can filter
 // the list below to just that day.
-export default function MonthCalendar({ year, month, incomeDays, expenseDays, today, selectedDay, onSelectDay }) {
+export default function MonthCalendar({ year, month, incomeDays, expenseDays, today, selectedDay, onSelectDay, maxDate }) {
   const firstWeekday = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const cells = [...Array(firstWeekday).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
@@ -26,12 +26,24 @@ export default function MonthCalendar({ year, month, incomeDays, expenseDays, to
           const isSelected = dateStr === selectedDay;
           const hasIncome = incomeDays.has(dateStr);
           const hasExpense = expenseDays.has(dateStr);
+          const disabled = maxDate ? dateStr > maxDate : false;
           return (
             <button
               key={i}
               type="button"
+              disabled={disabled}
               onClick={() => onSelectDay(dateStr)}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, padding: '4px 0', background: 'none', border: 'none', cursor: 'pointer' }}
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                gap: 3,
+                padding: '4px 0',
+                background: 'none',
+                border: 'none',
+                cursor: disabled ? 'default' : 'pointer',
+                opacity: disabled ? 0.3 : 1,
+              }}
             >
               <div
                 style={{

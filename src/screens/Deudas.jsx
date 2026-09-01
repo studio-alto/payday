@@ -7,6 +7,7 @@ import BottomSheet from '../components/BottomSheet';
 import InlineConfirm from '../components/InlineConfirm';
 import NumberInput from '../components/NumberInput';
 import MoneyInput from '../components/MoneyInput';
+import DateField from '../components/DateField';
 import PencilIcon from '../components/PencilIcon';
 import PlusIcon from '../components/PlusIcon';
 import CategoryIcon from '../components/CategoryIcon';
@@ -735,7 +736,7 @@ export default function Deudas({ data, setData, onViewDetail }) {
           </select>
           <input type="text" value={form.name} onChange={setField('name')} placeholder="Nombre (ej: Visa Roja, Préstamo banco X)" style={textInputStyle()} />
           <NumberInput value={form.balance} onChange={setField('balance')} placeholder="Saldo pendiente" style={textInputStyle()} />
-          <input type="date" value={form.nextPayment} onChange={setField('nextPayment')} style={textInputStyle()} />
+          <DateField value={form.nextPayment} onChange={setField('nextPayment')} style={textInputStyle()} />
           <NumberInput value={form.minPayment} onChange={setField('minPayment')} placeholder="Pago mínimo (opcional)" style={textInputStyle()} />
           <input
             type="text"
@@ -749,7 +750,7 @@ export default function Deudas({ data, setData, onViewDetail }) {
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 700 }}>
               ¿CUÁNDO LA ADQUIRISTE? (OPCIONAL — PARA SABER CUÁNTOS MESES LLEVAS)
             </div>
-            <input type="date" value={form.startDate} onChange={setField('startDate')} style={textInputStyle()} />
+            <DateField value={form.startDate} onChange={setField('startDate')} style={textInputStyle()} />
           </div>
           <button type="button" onClick={saveCard} style={{ ...primaryButtonStyle(), height: 50, borderRadius: 25 }}>
             Guardar
@@ -768,8 +769,7 @@ export default function Deudas({ data, setData, onViewDetail }) {
           />
           <div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 700 }}>FECHA DEL ABONO</div>
-            <input
-              type="date"
+            <DateField
               value={payForm.date}
               max={today}
               onChange={(e) => setPayForm((f) => ({ ...f, date: e.target.value }))}
@@ -1172,7 +1172,7 @@ export default function Deudas({ data, setData, onViewDetail }) {
                 placeholder="Monto"
                 style={textInputStyle()}
               />
-              <input type="date" value={variableForm.date} max={today} onChange={setVariableField('date')} style={textInputStyle()} />
+              <DateField value={variableForm.date} max={today} onChange={setVariableField('date')} style={textInputStyle()} />
               <button type="button" onClick={saveVariable} style={{ ...primaryButtonStyle(), height: 50, borderRadius: 25 }}>
                 Guardar
               </button>

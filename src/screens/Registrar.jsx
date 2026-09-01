@@ -4,6 +4,7 @@ import { DAY_TYPES, todayISO } from '../lib/dates';
 import { uid } from '../lib/id';
 import { cardStyle, labelStyle, fieldLabelStyle, textInputStyle, primaryButtonStyle, secondaryButtonStyle } from '../lib/styles';
 import NumberInput from '../components/NumberInput';
+import DateField from '../components/DateField';
 import FixedHeader from '../components/FixedHeader';
 import { METHODS, computeDebtWaterfall, reverseIncomeEffects, applyIncomeEffects } from '../lib/debt';
 import { referenceIncome } from '../lib/incomeStats';
@@ -291,7 +292,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
           </div>
           <div>
             <div style={fieldLabelStyle}>FECHA</div>
-            <input type="date" value={form.date} max={form.esFuturo ? undefined : today} onChange={setDate} style={textInputStyle()} />
+            <DateField value={form.date} max={form.esFuturo ? undefined : today} onChange={setDate} style={textInputStyle()} />
           </div>
           <button
             type="button"
