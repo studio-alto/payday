@@ -6,6 +6,7 @@ import { cardStyle, textInputStyle, primaryButtonStyle } from '../lib/styles';
 import BottomSheet from '../components/BottomSheet';
 import InlineConfirm from '../components/InlineConfirm';
 import NumberInput from '../components/NumberInput';
+import MoneyInput from '../components/MoneyInput';
 import PencilIcon from '../components/PencilIcon';
 import PlusIcon from '../components/PlusIcon';
 import CategoryIcon from '../components/CategoryIcon';
@@ -24,15 +25,6 @@ function sanitizeDecimal(raw) {
   const [whole, ...rest] = cleaned.split('.');
   if (rest.length === 0) return whole.slice(0, 3);
   return `${whole.slice(0, 3)}.${rest.join('').slice(0, 2)}`;
-}
-
-// Same idea as sanitizeDecimal but for money amounts — no cap on the whole-number
-// part (a balance or budget can be far more than 3 digits, unlike a percentage).
-function sanitizeMoneyDecimal(raw) {
-  const cleaned = raw.replace(/[^\d.]/g, '');
-  const [whole, ...rest] = cleaned.split('.');
-  if (rest.length === 0) return whole;
-  return `${whole}.${rest.join('').slice(0, 2)}`;
 }
 
 // Concentric progress rings (Apple Watch-style), one per metric — outer to inner.
@@ -1062,11 +1054,9 @@ export default function Deudas({ data, setData, onViewDetail }) {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, gap: 8 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Presupuesto:</div>
-                        <input
-                          type="text"
-                          inputMode="decimal"
+                        <MoneyInput
                           value={data.user.presupuestoVariable?.[categoria] ?? ''}
-                          onChange={(e) => setPresupuestoCategoria(categoria, sanitizeMoneyDecimal(e.target.value))}
+                          onChange={(e) => setPresupuestoCategoria(categoria, e.target.value)}
                           placeholder="0"
                           style={{ width: 84, padding: '5px 8px', borderRadius: 8, border: 'none', background: 'var(--input-bg)', color: 'var(--text)', fontSize: 12, fontWeight: 700 }}
                         />
@@ -1176,11 +1166,9 @@ export default function Deudas({ data, setData, onViewDetail }) {
                 })}
               </div>
               <input type="text" value={variableForm.name} onChange={setVariableField('name')} placeholder="Nombre (opcional, ej: Carne, Cine)" style={textInputStyle()} />
-              <input
-                type="text"
-                inputMode="decimal"
+              <MoneyInput
                 value={variableForm.amount}
-                onChange={(e) => setVariableForm((f) => ({ ...f, amount: sanitizeMoneyDecimal(e.target.value) }))}
+                onChange={(e) => setVariableForm((f) => ({ ...f, amount: e.target.value }))}
                 placeholder="Monto"
                 style={textInputStyle()}
               />
