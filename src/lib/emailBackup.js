@@ -38,3 +38,22 @@ export async function sendBackupEmail(data, toEmail) {
     { publicKey: PUBLIC_KEY },
   );
 }
+
+// Reuses the same EmailJS template as sendBackupEmail (so no second template has
+// to be created in EmailJS) — the {{backup_json}} placeholder just holds this
+// short message + Drive link instead of the raw JSON dump.
+export async function sendReportLinkEmail(driveLink, toEmail) {
+  if (!emailBackupConfigured) {
+    throw new Error('EmailJS no está configurado todavía (faltan las variables VITE_EMAILJS_*).');
+  }
+  await emailjs.send(
+    SERVICE_ID,
+    TEMPLATE_ID,
+    {
+      to_email: toEmail,
+      fecha: formatFullDate(todayISO()),
+      backup_json: `Tu resumen de esta semana ya está en Drive: ${driveLink}`,
+    },
+    { publicKey: PUBLIC_KEY },
+  );
+}

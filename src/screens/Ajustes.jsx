@@ -5,7 +5,8 @@ import { fetchLiveExchangeRates } from '../lib/exchangeRates';
 import { fmt } from '../lib/format';
 import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import { hashPin } from '../lib/pin';
-import { sendBackupEmail, emailBackupConfigured } from '../lib/emailBackup';
+import { sendBackupEmail, sendReportLinkEmail, emailBackupConfigured } from '../lib/emailBackup';
+import { driveConfigured, uploadReportToDrive } from '../lib/googleDrive';
 import NumberInput from '../components/NumberInput';
 import FixedHeader from '../components/FixedHeader';
 import BottomSheet from '../components/BottomSheet';
@@ -189,6 +190,27 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
       setExcelStatus('idle');
     } catch {
       setExcelStatus('error');
+    }
+  };
+
+  const [driveStatus, setDriveStatus] = useState('idle'); // idle | loading | uploaded | emailed | error
+  const [driveError, setDriveError] = useState('');
+  const sendToDrive = async () => {
+    setDriveStatus('loading');
+    setDriveError('');
+    try {
+      const { buildSummaryWorkbook } = await import('../lib/exportExcel');
+      const blob = await buildSummaryWorkbook(data);
+      const link = await uploadReportToDrive(blob, `payday-resumen-${todayISO()}.xlsx`);
+      if (user.backupEmail) {
+        await sendReportLinkEmail(link, user.backupEmail);
+        setDriveStatus('emailed');
+      } else {
+        setDriveStatus('uploaded');
+      }
+    } catch (err) {
+      setDriveError(err.message || 'Algo salió mal.');
+      setDriveStatus('error');
     }
   };
 
@@ -586,6 +608,34 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
         <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: -4 }}>
           Mándalo a Drive, correo o donde prefieras guardarlo — luego se puede restaurar en la app.
         </div>
+
+        {driveConfigured && (
+          <>
+            <div style={{ height: 1, background: 'var(--divider)', margin: '4px 0' }} />
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>ENVIAR A GOOGLE DRIVE</div>
+            <button
+              type="button"
+              onClick={sendToDrive}
+              disabled={driveStatus === 'loading'}
+              style={{ ...actionRowStyle, opacity: driveStatus === 'loading' ? 0.5 : 1 }}
+            >
+              {driveStatus === 'loading'
+                ? 'Subiendo…'
+                : user.backupEmail
+                  ? 'Subir Excel a Drive y enviar el enlace por correo'
+                  : 'Subir Excel a Drive'}
+            </button>
+            <div style={{ fontSize: 11, color: driveStatus === 'error' ? 'var(--danger-text)' : 'var(--text-secondary)', marginTop: -4 }}>
+              {driveStatus === 'error'
+                ? driveError
+                : driveStatus === 'emailed'
+                  ? 'Listo — se subió a tu Drive (carpeta "Payday") y te mandamos el enlace por correo.'
+                  : driveStatus === 'uploaded'
+                    ? 'Listo — se subió a tu Drive, en una carpeta llamada "Payday".'
+                    : 'Conecta tu cuenta de Google al tocar el botón. Solo puede ver y crear archivos que suba esta app, nada más de tu Drive.'}
+            </div>
+          </>
+        )}
 
         {emailBackupConfigured && (
           <>
