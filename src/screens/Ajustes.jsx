@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
 import { todayISO, formatFullDate } from '../lib/dates';
-import { buildSummaryCsv } from '../lib/exportCsv';
 import { referenceIncome } from '../lib/incomeStats';
 import { fetchLiveExchangeRates } from '../lib/exchangeRates';
 import { fmt } from '../lib/format';
@@ -172,15 +171,25 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
     }
   };
 
-  const exportCsv = () => {
-    const csv = buildSummaryCsv(data);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `payday-resumen-${todayISO()}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const [excelStatus, setExcelStatus] = useState('idle');
+  const exportExcel = async () => {
+    setExcelStatus('loading');
+    try {
+      // ExcelJS is a heavy library (~250KB gzipped) only this one action needs —
+      // loaded on demand so it doesn't bloat the Ajustes screen's own chunk (which
+      // the PWA precaches) for every visit that never touches the export button.
+      const { buildSummaryWorkbook } = await import('../lib/exportExcel');
+      const blob = await buildSummaryWorkbook(data);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `payday-resumen-${todayISO()}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
+      setExcelStatus('idle');
+    } catch {
+      setExcelStatus('error');
+    }
   };
 
   const restoreFromParsed = (parsed) => {
@@ -558,11 +567,18 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
       <>
       <div style={labelStyle}>DATOS</div>
       <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <button type="button" onClick={exportCsv} style={actionRowStyle}>
-          Descargar resumen (Excel)
+        <button
+          type="button"
+          onClick={exportExcel}
+          disabled={excelStatus === 'loading'}
+          style={{ ...actionRowStyle, opacity: excelStatus === 'loading' ? 0.5 : 1 }}
+        >
+          {excelStatus === 'loading' ? 'Generando…' : 'Descargar resumen (Excel)'}
         </button>
-        <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: -4 }}>
-          Para leer o compartir: ingresos, metas, deudas y gastos en una tabla.
+        <div style={{ fontSize: 11, color: excelStatus === 'error' ? 'var(--danger-text)' : 'var(--text-secondary)', marginTop: -4 }}>
+          {excelStatus === 'error'
+            ? 'No se pudo generar el archivo — intenta de nuevo.'
+            : 'Un Excel con una hoja de resumen y una hoja por cada sección: ingresos, metas, deudas y gastos.'}
         </div>
         <button type="button" onClick={shareBackup} style={actionRowStyle}>
           Compartir respaldo (JSON)

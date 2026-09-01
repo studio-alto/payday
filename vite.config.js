@@ -10,6 +10,13 @@ export default defineConfig({
       registerType: 'prompt',
       injectRegister: false,
       includeAssets: ['icon-192.png', 'icon-512.png'],
+      workbox: {
+        // ExcelJS (~250KB gzipped) only backs the "Descargar resumen (Excel)"
+        // button — excluded from the offline precache so it doesn't triple the
+        // install/update download for people who never use that one action; it's
+        // fetched from the network the one time it's actually needed.
+        globIgnores: ['**/exportExcel-*.js'],
+      },
       manifest: {
         name: 'Payday',
         short_name: 'Payday',
