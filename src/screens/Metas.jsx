@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { fmt } from '../lib/format';
 import { uid } from '../lib/id';
 import { cardStyle, textInputStyle, primaryButtonStyle } from '../lib/styles';
-import { computeSavingsProjection } from '../lib/goalProjection';
-import { formatFullDate } from '../lib/dates';
+import { computeSavingsProjection, estimateMonthsToGoal } from '../lib/goalProjection';
+import { formatMonthsLabel } from '../lib/debt';
+import { formatFullDate, todayISO } from '../lib/dates';
 import BottomSheet from '../components/BottomSheet';
 import InlineConfirm from '../components/InlineConfirm';
 import NumberInput from '../components/NumberInput';
@@ -56,11 +57,21 @@ export default function Metas({ data, setData }) {
           ),
         };
       }
+      const initialCurrent = Number(form.current) || 0;
       return {
         ...s,
         goals: [
           ...s.goals,
-          { id: uid(), name: form.name, target: Number(form.target), current: Number(form.current) || 0, description: form.description, fechaObjetivo: form.fechaObjetivo || null, estado: 'activa' },
+          {
+            id: uid(),
+            name: form.name,
+            target: Number(form.target),
+            current: initialCurrent,
+            description: form.description,
+            fechaObjetivo: form.fechaObjetivo || null,
+            estado: 'activa',
+            history: initialCurrent > 0 ? [{ date: todayISO(), amount: initialCurrent }] : [],
+          },
         ],
       };
     });
@@ -90,7 +101,12 @@ export default function Metas({ data, setData }) {
   const confirmAdd = (id) => {
     const amount = Number(addAmount) || 0;
     if (amount <= 0) return;
-    setData((s) => ({ ...s, goals: s.goals.map((g) => (g.id === id ? { ...g, current: g.current + amount } : g)) }));
+    setData((s) => ({
+      ...s,
+      goals: s.goals.map((g) =>
+        g.id === id ? { ...g, current: g.current + amount, history: [...(g.history || []), { date: todayISO(), amount }] } : g,
+      ),
+    }));
     setAddingToGoalId(null);
   };
 
@@ -125,6 +141,7 @@ export default function Metas({ data, setData }) {
         const pct = Math.min(100, Math.round((g.current / g.target) * 100));
         const completed = g.current >= g.target;
         const projection = computeSavingsProjection(g.target - g.current, g.fechaObjetivo);
+        const monthsEstimate = !g.fechaObjetivo ? estimateMonthsToGoal(g.target - g.current, g.history || []) : null;
         const isOverdue = projection?.overdue === true;
         const bg = isOverdue ? 'var(--danger)' : 'var(--card-bg)';
         const fg = isOverdue ? 'white' : 'var(--text)';
@@ -221,6 +238,27 @@ export default function Metas({ data, setData }) {
               </div>
             )}
 
+            {monthsEstimate !== null && (
+              <div
+                style={{
+                  marginTop: 10,
+                  padding: 12,
+                  borderRadius: 14,
+                  background: isOverdue ? 'rgba(255,255,255,0.18)' : 'var(--accent-soft-bg)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 4,
+                }}
+              >
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.03em' }}>A ESTE RITMO</div>
+                <div style={{ fontSize: 13, color: fg }}>
+                  Te faltan aproximadamente{' '}
+                  <span style={{ fontWeight: 800, color: isOverdue ? 'white' : 'var(--accent-text)' }}>{formatMonthsLabel(monthsEstimate)}</span>{' '}
+                  para completarla, según tu ritmo de aportes.
+                </div>
+              </div>
+            )}
+
             {addingToGoalId === g.id && (
               <div style={{ marginTop: 10, padding: 12, borderRadius: 14, background: isOverdue ? 'rgba(255,255,255,0.18)' : 'var(--input-bg)', display: 'flex', gap: 8 }}>
                 <NumberInput
@@ -283,7 +321,8 @@ export default function Metas({ data, setData }) {
             </div>
             <input type="date" value={form.fechaObjetivo} onChange={setField('fechaObjetivo')} style={textInputStyle()} />
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
-              Si la pones, te decimos cuánto ahorrar por día, semana o mes para llegar a tiempo.
+              Si la pones, te decimos cuánto ahorrar por día, semana o mes para llegar a tiempo. Si la dejas en blanco, te
+              estimamos igual cuántos meses te faltan según tu ritmo de aportes.
             </div>
           </div>
           <textarea

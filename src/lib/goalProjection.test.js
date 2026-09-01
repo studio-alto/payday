@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeSavingsProjection } from './goalProjection';
+import { computeSavingsProjection, estimateMonthsToGoal } from './goalProjection';
 
 describe('computeSavingsProjection', () => {
   it('returns null when the goal is already reached', () => {
@@ -24,5 +24,32 @@ describe('computeSavingsProjection', () => {
     const result = computeSavingsProjection(500000, '2026-08-01', '2026-08-27');
     expect(result.overdue).toBe(true);
     expect(result.daily).toBeUndefined();
+  });
+});
+
+describe('estimateMonthsToGoal', () => {
+  it('returns null when the goal is already reached', () => {
+    expect(estimateMonthsToGoal(0, [{ date: '2026-06-01', amount: 10000 }], '2026-08-27')).toBeNull();
+  });
+
+  it('returns null with no contribution history yet', () => {
+    expect(estimateMonthsToGoal(500000, [], '2026-08-27')).toBeNull();
+    expect(estimateMonthsToGoal(500000, null, '2026-08-27')).toBeNull();
+  });
+
+  it('estimates months remaining from the historical monthly pace', () => {
+    // Jun, Jul, Aug (3 months incl.) totalling 300000 -> 100000/month; 500000 left -> 5 months
+    const history = [
+      { date: '2026-06-10', amount: 100000 },
+      { date: '2026-07-15', amount: 100000 },
+      { date: '2026-08-01', amount: 100000 },
+    ];
+    expect(estimateMonthsToGoal(500000, history, '2026-08-27')).toBe(5);
+  });
+
+  it('treats a single contribution this month as one month of pace', () => {
+    const history = [{ date: '2026-08-05', amount: 50000 }];
+    // Same month as `today` -> 1 month elapsed -> rate is 50000/month; 100000 left -> ceil(2) = 2
+    expect(estimateMonthsToGoal(100000, history, '2026-08-27')).toBe(2);
   });
 });

@@ -147,7 +147,11 @@ export function reverseIncomeEffects(income, goals, cards) {
   let newCards = cards;
 
   if (goalId && ahorro) {
-    newGoals = goals.map((g) => (g.id === goalId ? { ...g, current: g.current - ahorro } : g));
+    newGoals = goals.map((g) =>
+      g.id === goalId
+        ? { ...g, current: g.current - ahorro, history: (g.history || []).filter((h) => h.incomeId !== income.id) }
+        : g,
+    );
   }
   if (debtAllocations && debtAllocations.length) {
     newCards = cards.map((c) => {
@@ -165,7 +169,14 @@ export function reverseIncomeEffects(income, goals, cards) {
 export function applyIncomeEffects(income, goals, cards, debtMethod) {
   const { ahorro, tarjeta, goalId } = income.distribution;
 
-  const newGoals = goalId && ahorro > 0 ? goals.map((g) => (g.id === goalId ? { ...g, current: g.current + ahorro } : g)) : goals;
+  const newGoals =
+    goalId && ahorro > 0
+      ? goals.map((g) =>
+          g.id === goalId
+            ? { ...g, current: g.current + ahorro, history: [...(g.history || []), { date: income.date, amount: ahorro, incomeId: income.id }] }
+            : g,
+        )
+      : goals;
 
   const { allocations } = computeDebtWaterfall(cards, debtMethod, tarjeta);
   const newCards = cards.map((c) => {

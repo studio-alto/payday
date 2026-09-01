@@ -193,6 +193,7 @@ describe('applyIncomeEffects / reverseIncomeEffects round-trip', () => {
 
     const applied = applyIncomeEffects(income, goals, cards, 'bola_nieve');
     expect(applied.goals[0].current).toBe(100);
+    expect(applied.goals[0].history).toEqual([{ date: '2026-08-01', amount: 100, incomeId: 'i1' }]);
     expect(applied.cards[0].balance).toBe(300);
     expect(applied.cards[0].history).toHaveLength(1);
 
@@ -200,6 +201,7 @@ describe('applyIncomeEffects / reverseIncomeEffects round-trip', () => {
     const reversed = reverseIncomeEffects(appliedIncome, applied.goals, applied.cards);
 
     expect(reversed.goals[0].current).toBe(0);
+    expect(reversed.goals[0].history).toEqual([]);
     expect(reversed.cards[0].balance).toBe(500);
     expect(reversed.cards[0].history).toEqual([]);
   });

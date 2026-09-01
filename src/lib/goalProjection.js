@@ -12,3 +12,24 @@ export function computeSavingsProjection(remaining, targetDateISO, today = today
   const daily = remaining / days;
   return { days, overdue: false, daily, weekly: daily * 7, monthly: daily * 30 };
 }
+
+// Calendar months between two ISO dates, inclusive of the starting month —
+// same month counts as 1, so a single contribution still yields a usable rate.
+function monthsBetween(fromISO, toISO) {
+  const a = new Date(fromISO + 'T00:00:00');
+  const b = new Date(toISO + 'T00:00:00');
+  return (b.getFullYear() - a.getFullYear()) * 12 + (b.getMonth() - a.getMonth()) + 1;
+}
+
+// For a goal with no target date: how many months are left at the person's own
+// historical pace (total contributed so far ÷ months since the first one) —
+// no date to type in, same "we calculate it, you don't" spirit as the average
+// income figure. Returns null with no history yet, or once the goal is met.
+export function estimateMonthsToGoal(remaining, history, today = todayISO()) {
+  if (remaining <= 0 || !history || history.length === 0) return null;
+  const firstDate = history.reduce((min, h) => (h.date < min ? h.date : min), history[0].date);
+  const totalContributed = history.reduce((a, h) => a + h.amount, 0);
+  const monthlyRate = totalContributed / monthsBetween(firstDate, today);
+  if (monthlyRate <= 0) return null;
+  return Math.ceil(remaining / monthlyRate);
+}
