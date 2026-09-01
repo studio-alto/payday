@@ -7,7 +7,7 @@ import FixedHeader from '../components/FixedHeader';
 import ProgressRing from '../components/ProgressRing';
 
 export default function Dashboard({ data, setData, onNavigate }) {
-  const { user, incomes, goals, cards, expenses } = data;
+  const { user, incomes, goals, cards, expenses, gastosVariables } = data;
   const today = todayISO();
   const week = last7Days();
 
@@ -30,6 +30,8 @@ export default function Dashboard({ data, setData, onNavigate }) {
   const totalAhorro = goals.reduce((a, g) => a + g.current, 0) + unassignedAhorro;
   const totalDeuda = cards.reduce((a, c) => a + c.balance, 0);
   const totalProyectado = projectedIncomes.reduce((a, i) => a + i.amount, 0);
+  const variablesThisMonth = (gastosVariables || []).filter((g) => isSameMonth(g.date));
+  const totalVariablesMonth = variablesThisMonth.reduce((a, g) => a + g.amount, 0);
 
   const incomeByDate = {};
   confirmedIncomes.forEach((i) => {
@@ -497,6 +499,69 @@ export default function Dashboard({ data, setData, onNavigate }) {
           ))}
         </div>
       )}
+
+      {/* Resumen general — every account's total in one place, since the cards
+          above only ever surface one goal (the next incomplete one) and never
+          show gastos variables at all. */}
+      <div style={cardStyle}>
+        <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text)', marginBottom: 6 }}>Resumen general</div>
+        <button
+          type="button"
+          onClick={() => onNavigate('metas')}
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', padding: '10px 0', cursor: 'pointer', width: '100%', textAlign: 'left', borderTop: '1px solid var(--divider)' }}
+        >
+          <div>
+            <div style={labelStyle}>AHORRO</div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+              {goals.length === 0 ? 'Sin metas' : goals.length === 1 ? '1 meta' : `${goals.length} metas`}
+            </div>
+          </div>
+          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{fmt(totalAhorro, user.currency)}</div>
+        </button>
+        <button
+          type="button"
+          onClick={() => onNavigate('tarjetas')}
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', padding: '10px 0', cursor: 'pointer', width: '100%', textAlign: 'left', borderTop: '1px solid var(--divider)' }}
+        >
+          <div>
+            <div style={labelStyle}>DEUDAS</div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+              {cards.length === 0 ? 'Sin deudas' : cards.length === 1 ? '1 deuda' : `${cards.length} deudas`}
+            </div>
+          </div>
+          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{fmt(totalDeuda, user.currency)}</div>
+        </button>
+        <button
+          type="button"
+          onClick={() => onNavigate('tarjetas')}
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', padding: '10px 0', cursor: 'pointer', width: '100%', textAlign: 'left', borderTop: '1px solid var(--divider)' }}
+        >
+          <div>
+            <div style={labelStyle}>GASTOS FIJOS</div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+              {expenses.length === 0 ? 'Sin gastos fijos' : expenses.length === 1 ? '1 gasto fijo' : `${expenses.length} gastos fijos`}
+            </div>
+          </div>
+          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{fmt(totalGastos, user.currency)}</div>
+        </button>
+        <button
+          type="button"
+          onClick={() => onNavigate('tarjetas')}
+          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', padding: '10px 0', cursor: 'pointer', width: '100%', textAlign: 'left', borderTop: '1px solid var(--divider)' }}
+        >
+          <div>
+            <div style={labelStyle}>GASTOS VARIABLES</div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+              {variablesThisMonth.length === 0 ? 'Este mes' : `Este mes · ${variablesThisMonth.length === 1 ? '1 gasto' : `${variablesThisMonth.length} gastos`}`}
+            </div>
+          </div>
+          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{fmt(totalVariablesMonth, user.currency)}</div>
+        </button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderTop: '1px solid var(--divider)' }}>
+          <div style={labelStyle}>DISPONIBLE</div>
+          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{fmt(disponible, user.currency)}</div>
+        </div>
+      </div>
     </div>
   );
 }
