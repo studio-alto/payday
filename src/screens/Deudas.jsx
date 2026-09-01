@@ -24,14 +24,23 @@ const CATEGORIAS = ['Suscripción', 'Servicios', 'Transporte', 'Vivienda', 'Tarj
 // in both themes since these are chart fills, not text.
 const CATEGORY_CHART_COLORS = ['#7bd6dc', '#00c45b', '#476bff', '#f2c200', '#ff7500', '#f03d0e', '#939598', '#ff578b', '#ba5aed'];
 
-function categoryDonutGradient(slices) {
+// Ring geometry for the category donut — separated, rounded-cap arcs (not a solid
+// touching pie) per the reference design. viewBox is 0-100 so RADIUS/STROKE are in
+// those units; the svg itself is rotated -90deg so arcs start at 12 o'clock.
+const DONUT_RADIUS = 40;
+const DONUT_STROKE = 14;
+const DONUT_CIRCUMFERENCE = 2 * Math.PI * DONUT_RADIUS;
+
+function categoryDonutArcs(slices) {
+  const gapLen = slices.length > 1 ? (6 / 360) * DONUT_CIRCUMFERENCE : 0;
   let cumulative = 0;
-  const stops = slices.map(({ pct }, i) => {
-    const start = cumulative;
-    cumulative += pct;
-    return `${CATEGORY_CHART_COLORS[i % CATEGORY_CHART_COLORS.length]} ${start}% ${cumulative}%`;
+  return slices.map((s, i) => {
+    const segLen = (s.pct / 100) * DONUT_CIRCUMFERENCE;
+    const visibleLen = Math.max(segLen - gapLen, 0);
+    const offset = -cumulative;
+    cumulative += segLen;
+    return { ...s, visibleLen, offset, color: CATEGORY_CHART_COLORS[i % CATEGORY_CHART_COLORS.length] };
   });
-  return `conic-gradient(${stops.join(', ')})`;
 }
 
 // Keeps digits and at most one decimal point (up to 2 decimal places) — interest rates
@@ -1092,15 +1101,31 @@ export default function Deudas({ data, setData, onViewDetail }) {
             const spent = [...categoryTotals].filter((c) => c.total > 0).sort((a, b) => b.total - a.total);
             const totalSpent = spent.reduce((a, c) => a + c.total, 0);
             const slices = spent.map((c) => ({ ...c, pct: totalSpent > 0 ? (c.total / totalSpent) * 100 : 0 }));
-            const donut = categoryDonutGradient(slices);
+            const arcs = categoryDonutArcs(slices);
             return (
               <div style={cardStyle}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em', marginBottom: 14 }}>
                   GASTO POR CATEGORÍA (ESTE MES)
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'center' }}>
-                  <div style={{ width: 140, height: 140, borderRadius: '50%', background: donut, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ width: 96, height: 96, borderRadius: '50%', background: 'var(--card-bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                  <div style={{ position: 'relative', width: 140, height: 140 }}>
+                    <svg width={140} height={140} viewBox="0 0 100 100" style={{ transform: 'rotate(-90deg)' }}>
+                      {arcs.map((a) => (
+                        <circle
+                          key={a.categoria}
+                          cx={50}
+                          cy={50}
+                          r={DONUT_RADIUS}
+                          fill="none"
+                          stroke={a.color}
+                          strokeWidth={DONUT_STROKE}
+                          strokeLinecap="round"
+                          strokeDasharray={`${a.visibleLen} ${DONUT_CIRCUMFERENCE - a.visibleLen}`}
+                          strokeDashoffset={a.offset}
+                        />
+                      ))}
+                    </svg>
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                       <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.04em' }}>TOTAL</div>
                       <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text)', letterSpacing: '-0.02em' }}>{fmt(totalSpent, currency)}</div>
                     </div>
