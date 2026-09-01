@@ -423,7 +423,7 @@ export default function Deudas({ data, setData, onViewDetail }) {
       <FixedHeader>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', letterSpacing: '-0.02em' }}>Deudas</div>
+            <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', letterSpacing: '-0.02em' }}>Gastos</div>
             <button
               type="button"
               onClick={section === 'deudas' ? openNewModal : section === 'gastos' ? openNewExpenseModal : openNewVariableModal}

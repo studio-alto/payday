@@ -89,7 +89,7 @@ export default function BottomNav({ activeTab, onChange }) {
         </div>
       </NavButton>
 
-      <NavButton label="Deudas" labelColor={tarjetas.label} bg={tarjetas.bg} onClick={() => onChange('tarjetas')}>
+      <NavButton label="Gastos" labelColor={tarjetas.label} bg={tarjetas.bg} onClick={() => onChange('tarjetas')}>
         <div style={{ width: 18, height: 12, borderRadius: 4, border: `2px solid ${tarjetas.color}`, position: 'relative' }}>
           <div style={{ position: 'absolute', top: 2, left: 0, right: 0, height: 3, background: tarjetas.color }} />
         </div>

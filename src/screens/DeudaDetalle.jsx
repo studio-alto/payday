@@ -28,7 +28,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 'var(--header-h, 88px)' }}>
         <FixedHeader>
           <button type="button" onClick={() => onNavigate('tarjetas')} style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer' }}>
-            ‹ Volver a Deudas
+            ‹ Volver a Gastos
           </button>
         </FixedHeader>
         <div style={cardStyle}>
@@ -88,7 +88,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
             onClick={() => onNavigate('tarjetas')}
             style={{ alignSelf: 'flex-start', fontSize: 13, fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer', border: 'none', background: 'none', padding: 0 }}
           >
-            ‹ Deudas
+            ‹ Gastos
           </button>
           <div style={{ fontWeight: 800, fontSize: 24, color: 'var(--text)', letterSpacing: '-0.02em' }}>{card.name}</div>
           <div style={{ fontSize: 12, color: 'var(--text-secondary)', fontWeight: 700 }}>
