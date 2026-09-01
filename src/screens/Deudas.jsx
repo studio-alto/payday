@@ -8,11 +8,10 @@ import InlineConfirm from '../components/InlineConfirm';
 import NumberInput from '../components/NumberInput';
 import MoneyInput from '../components/MoneyInput';
 import DateField from '../components/DateField';
-import PencilIcon from '../components/PencilIcon';
 import PlusIcon from '../components/PlusIcon';
 import CategoryIcon from '../components/CategoryIcon';
 import FixedHeader from '../components/FixedHeader';
-import SwipeActions from '../components/SwipeActions';
+import CardMenu from '../components/CardMenu';
 import ProgressRing from '../components/ProgressRing';
 import { sortDebtsByPriority, simulatePayoffPlan, formatMonthsLabel, monthlyPaidTotals, METHODS } from '../lib/debt';
 import { VARIABLE_CATEGORIES, monthlyCategoryTotals, monthlyVariableTotals } from '../lib/variableExpenses';
@@ -618,15 +617,15 @@ export default function Deudas({ data, setData, onViewDetail }) {
         const isOverdue = c.nextPayment < today && c.balance > 0;
 
         return (
-          <SwipeActions
+          <CardMenu
             key={c.id}
             actions={[
-              { label: 'Editar', bg: 'var(--text)', color: 'var(--page-bg)', icon: <PencilIcon color="var(--page-bg)" accent="var(--page-bg)" />, onClick: () => openEditModal(c) },
-              { label: 'Eliminar', bg: 'var(--danger)', icon: <span style={{ fontSize: 20, fontWeight: 700 }}>×</span>, onClick: () => askDelete(c.id) },
+              { label: 'Editar', onClick: () => openEditModal(c) },
+              { label: 'Eliminar', destructive: true, onClick: () => askDelete(c.id) },
             ]}
           >
           <div style={cardStyle}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', paddingRight: 34 }}>
               <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>{c.name}</div>
               {c.id === priorityId && (
                 <div
@@ -741,7 +740,7 @@ export default function Deudas({ data, setData, onViewDetail }) {
               <InlineConfirm message="¿Eliminar esta deuda?" onConfirm={() => confirmDelete(c.id)} onCancel={cancelDelete} />
             )}
           </div>
-          </SwipeActions>
+          </CardMenu>
         );
       })}
 
@@ -889,12 +888,14 @@ export default function Deudas({ data, setData, onViewDetail }) {
             const chipBg = highlighted ? 'rgba(255,255,255,0.25)' : 'var(--input-bg)';
 
             return (
-              <SwipeActions
+              <CardMenu
                 key={e.id}
                 actions={[
-                  { label: 'Editar', bg: 'var(--text)', color: 'var(--page-bg)', icon: <PencilIcon color="var(--page-bg)" accent="var(--page-bg)" />, onClick: () => openEditExpenseModal(e) },
-                  { label: 'Eliminar', bg: 'var(--danger)', icon: <span style={{ fontSize: 20, fontWeight: 700 }}>×</span>, onClick: () => askDeleteExpense(e.id) },
+                  { label: 'Editar', onClick: () => openEditExpenseModal(e) },
+                  { label: 'Eliminar', destructive: true, onClick: () => askDeleteExpense(e.id) },
                 ]}
+                triggerBg={highlighted ? 'rgba(255,255,255,0.25)' : 'var(--input-bg)'}
+                triggerColor={highlighted ? 'white' : 'var(--text-secondary)'}
               >
               <div style={{ ...cardStyle, padding: 16, background: bg }}>
                 {highlighted && (
@@ -902,7 +903,7 @@ export default function Deudas({ data, setData, onViewDetail }) {
                     {e.isOverdue ? 'VENCIDO' : 'PRÓXIMO A VENCER'}
                   </div>
                 )}
-                <div style={{ fontWeight: 700, fontSize: 15, color: fg }}>{e.name}</div>
+                <div style={{ fontWeight: 700, fontSize: 15, color: fg, paddingRight: 34 }}>{e.name}</div>
                 <div style={{ fontSize: 11, color: fgSoft, fontWeight: 700, marginTop: 2 }}>
                   {e.categoria}
                   {linkedCard && ` · ${linkedCard.name}${linkedCard.interestRate > 0 ? ` · ${linkedCard.interestRate}% E.A.` : ''}`}
@@ -947,7 +948,7 @@ export default function Deudas({ data, setData, onViewDetail }) {
                   <InlineConfirm message="¿Eliminar este gasto?" onConfirm={() => confirmDeleteExpense(e.id)} onCancel={cancelDeleteExpense} />
                 )}
               </div>
-              </SwipeActions>
+              </CardMenu>
             );
           })}
 
@@ -1152,30 +1153,29 @@ export default function Deudas({ data, setData, onViewDetail }) {
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', paddingTop: 8 }}>Sin gastos variables registrados este mes.</div>
             ) : (
               thisMonthVariables.map((g) => (
-                <SwipeActions
-                  key={g.id}
-                  borderRadius={0}
-                  background="var(--card-bg)"
-                  actions={[
-                    { label: 'Editar', bg: 'var(--text)', color: 'var(--page-bg)', icon: <PencilIcon color="var(--page-bg)" accent="var(--page-bg)" />, onClick: () => openEditVariableModal(g) },
-                    { label: 'Eliminar', bg: 'var(--danger)', icon: <span style={{ fontSize: 20, fontWeight: 700 }}>×</span>, onClick: () => askDeleteVariable(g.id) },
-                  ]}
-                >
-                  <div style={{ padding: '11px 0', borderTop: '1px solid var(--divider)', background: 'var(--card-bg)' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div style={{ minWidth: 0 }}>
-                        <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{g.name || g.categoria}</div>
-                        <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
-                          {g.categoria} · {formatShortDate(g.date)}
-                        </div>
+                <div key={g.id} style={{ padding: '11px 0', borderTop: '1px solid var(--divider)', background: 'var(--card-bg)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{g.name || g.categoria}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                        {g.categoria} · {formatShortDate(g.date)}
                       </div>
-                      <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)', flexShrink: 0 }}>{fmt(g.amount, currency)}</div>
                     </div>
-                    {confirmDeleteVariableId === g.id && (
-                      <InlineConfirm message="¿Eliminar este gasto?" onConfirm={() => confirmDeleteVariable(g.id)} onCancel={cancelDeleteVariable} />
-                    )}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{fmt(g.amount, currency)}</div>
+                      <CardMenu
+                        inline
+                        actions={[
+                          { label: 'Editar', onClick: () => openEditVariableModal(g) },
+                          { label: 'Eliminar', destructive: true, onClick: () => askDeleteVariable(g.id) },
+                        ]}
+                      />
+                    </div>
                   </div>
-                </SwipeActions>
+                  {confirmDeleteVariableId === g.id && (
+                    <InlineConfirm message="¿Eliminar este gasto?" onConfirm={() => confirmDeleteVariable(g.id)} onCancel={cancelDeleteVariable} />
+                  )}
+                </div>
               ))
             )}
           </div>

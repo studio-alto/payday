@@ -8,10 +8,9 @@ import { formatFullDate, todayISO } from '../lib/dates';
 import BottomSheet from '../components/BottomSheet';
 import InlineConfirm from '../components/InlineConfirm';
 import NumberInput from '../components/NumberInput';
-import PencilIcon from '../components/PencilIcon';
 import PlusIcon from '../components/PlusIcon';
 import FixedHeader from '../components/FixedHeader';
-import SwipeActions from '../components/SwipeActions';
+import CardMenu from '../components/CardMenu';
 import DateField from '../components/DateField';
 import ProgressRing from '../components/ProgressRing';
 import { CHART_COLORS } from '../lib/colors';
@@ -155,12 +154,14 @@ export default function Metas({ data, setData, onViewDetail }) {
         const ringTrack = isOverdue ? 'rgba(255,255,255,0.3)' : 'var(--divider)';
 
         return (
-          <SwipeActions
+          <CardMenu
             key={g.id}
             actions={[
-              { label: 'Editar', bg: 'var(--text)', color: 'var(--page-bg)', icon: <PencilIcon color="var(--page-bg)" accent="var(--page-bg)" />, onClick: () => openEditModal(g) },
-              { label: 'Eliminar', bg: 'var(--danger)', icon: <span style={{ fontSize: 20, fontWeight: 700 }}>×</span>, onClick: () => askDelete(g.id) },
+              { label: 'Editar', onClick: () => openEditModal(g) },
+              { label: 'Eliminar', destructive: true, onClick: () => askDelete(g.id) },
             ]}
+            triggerBg={isOverdue ? 'rgba(255,255,255,0.25)' : 'var(--input-bg)'}
+            triggerColor={isOverdue ? 'white' : 'var(--text-secondary)'}
           >
           <div style={{ ...cardStyle, background: bg }}>
             {isOverdue && (
@@ -171,7 +172,7 @@ export default function Metas({ data, setData, onViewDetail }) {
                 ✓ COMPLETADA
               </div>
             )}
-            <div style={{ fontWeight: 700, fontSize: 15, color: fg }}>{g.name}</div>
+            <div style={{ fontWeight: 700, fontSize: 15, color: fg, paddingRight: 34 }}>{g.name}</div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 12 }}>
               <ProgressRing pct={pct} size={88} color={ringColor} trackColor={ringTrack}>
@@ -312,7 +313,7 @@ export default function Metas({ data, setData, onViewDetail }) {
               />
             )}
           </div>
-          </SwipeActions>
+          </CardMenu>
         );
       })}
 

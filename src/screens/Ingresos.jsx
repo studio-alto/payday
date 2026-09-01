@@ -3,9 +3,8 @@ import { fmt } from '../lib/format';
 import { dayTypeLabel, formatShortDate, isSameMonth, isWithinDays, todayISO } from '../lib/dates';
 import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import InlineConfirm from '../components/InlineConfirm';
-import PencilIcon from '../components/PencilIcon';
 import FixedHeader from '../components/FixedHeader';
-import SwipeActions from '../components/SwipeActions';
+import CardMenu from '../components/CardMenu';
 import MonthCalendar from '../components/MonthCalendar';
 import { reverseIncomeEffects } from '../lib/debt';
 
@@ -18,15 +17,13 @@ const TIME_FILTERS = [
 
 function IncomeRow({ inc, currency, isLast, onEdit, confirmDeleteId, setConfirmDeleteId, confirmDelete }) {
   return (
-    <SwipeActions
-      borderRadius={0}
-      background="var(--card-bg)"
+    <CardMenu
       actions={[
-        { label: 'Editar', bg: 'var(--text)', color: 'var(--page-bg)', icon: <PencilIcon color="var(--page-bg)" accent="var(--page-bg)" />, onClick: () => onEdit(inc) },
-        { label: 'Eliminar', bg: 'var(--danger)', icon: <span style={{ fontSize: 20, fontWeight: 700 }}>×</span>, onClick: () => setConfirmDeleteId(inc.id) },
+        { label: 'Editar', onClick: () => onEdit(inc) },
+        { label: 'Eliminar', destructive: true, onClick: () => setConfirmDeleteId(inc.id) },
       ]}
     >
-      <div style={{ padding: '11px 0', borderBottom: isLast ? 'none' : '1px solid var(--divider)', background: 'var(--card-bg)' }}>
+      <div style={{ padding: '11px 44px 11px 0', borderBottom: isLast ? 'none' : '1px solid var(--divider)', background: 'var(--card-bg)' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -47,7 +44,7 @@ function IncomeRow({ inc, currency, isLast, onEdit, confirmDeleteId, setConfirmD
           <InlineConfirm message="¿Eliminar este ingreso?" onConfirm={() => confirmDelete(inc.id)} onCancel={() => setConfirmDeleteId(null)} />
         )}
       </div>
-    </SwipeActions>
+    </CardMenu>
   );
 }
 
