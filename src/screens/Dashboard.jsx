@@ -288,7 +288,11 @@ export default function Dashboard({ data, setData, onNavigate }) {
       </button>
 
       {user.metaIngresoMensual > 0 && (
-        <div style={cardStyle}>
+        <button
+          type="button"
+          onClick={() => onNavigate('ingresos')}
+          style={{ ...cardStyle, border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%' }}
+        >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
             <div style={labelStyle}>META DE INGRESO MENSUAL</div>
             <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)' }}>
@@ -306,11 +310,15 @@ export default function Dashboard({ data, setData, onNavigate }) {
               }}
             />
           </div>
-        </div>
+        </button>
       )}
 
       {/* Proyección del mes + Próximo pago */}
-      <div style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
+      <button
+        type="button"
+        onClick={() => onNavigate('ingresos')}
+        style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%' }}
+      >
         {projectedTotal !== null && (
           <div>
             <div style={labelStyle}>PROYECCIÓN DEL MES</div>
@@ -321,10 +329,14 @@ export default function Dashboard({ data, setData, onNavigate }) {
           <div style={labelStyle}>PRÓXIMO PAGO</div>
           <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)', marginTop: 3 }}>{paydayLabel}</div>
         </div>
-      </div>
+      </button>
 
       {projectedIncomes.length > 0 && (
-        <div style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <button
+          type="button"
+          onClick={() => onNavigate('ingresos')}
+          style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%' }}
+        >
           <div>
             <div style={labelStyle}>PRÓXIMOS A RECIBIR</div>
             <div style={{ fontWeight: 800, fontSize: 20, color: 'var(--text)', marginTop: 3 }}>{fmt(totalProyectado, user.currency)}</div>
@@ -332,12 +344,16 @@ export default function Dashboard({ data, setData, onNavigate }) {
           <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
             {projectedIncomes.length === 1 ? '1 ingreso' : `${projectedIncomes.length} ingresos`}
           </div>
-        </div>
+        </button>
       )}
 
       {/* Meta principal + Ahorro/Deudas/Disponible */}
       <div className="meta-ahorro-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-        <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 0 }}>
+        <button
+          type="button"
+          onClick={() => onNavigate('metas')}
+          style={{ ...cardStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 0, border: 'none', cursor: 'pointer', width: '100%' }}
+        >
           <div style={{ ...labelStyle, alignSelf: 'flex-start' }}>META PRINCIPAL</div>
           <div style={{ width: 120, height: 120, borderRadius: '50%', background: goalDonut, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 10 }}>
             <div style={{ width: 92, height: 92, borderRadius: '50%', background: 'var(--card-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -348,7 +364,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
           <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
             {fmt(nextGoal.current, user.currency)} / {fmt(nextGoal.target, user.currency)}
           </div>
-        </div>
+        </button>
 
         <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 10, minWidth: 0 }}>
           <button type="button" onClick={() => onNavigate('metas')} style={{ background: 'none', border: 'none', padding: 0, textAlign: 'left', cursor: 'pointer' }}>
