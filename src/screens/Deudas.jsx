@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { fmt } from '../lib/format';
 import { formatShortDate, todayISO, isSameMonth, daysUntilPayday } from '../lib/dates';
 import { uid } from '../lib/id';
@@ -12,7 +12,7 @@ import CategoryIcon from '../components/CategoryIcon';
 import FixedHeader from '../components/FixedHeader';
 import SwipeActions from '../components/SwipeActions';
 import { sortDebtsByPriority, simulatePayoffPlan, formatMonthsLabel, monthlyPaidTotals, METHODS } from '../lib/debt';
-import { VARIABLE_CATEGORIES, monthlyCategoryTotals } from '../lib/variableExpenses';
+import { VARIABLE_CATEGORIES, monthlyCategoryTotals, monthlyVariableTotals } from '../lib/variableExpenses';
 
 const TIPOS = ['Tarjeta de crédito', 'Préstamo', 'Otro'];
 const CATEGORIAS = ['Suscripción', 'Servicios', 'Transporte', 'Vivienda', 'Tarjeta de crédito', 'Otro'];
@@ -24,6 +24,15 @@ function sanitizeDecimal(raw) {
   const [whole, ...rest] = cleaned.split('.');
   if (rest.length === 0) return whole.slice(0, 3);
   return `${whole.slice(0, 3)}.${rest.join('').slice(0, 2)}`;
+}
+
+// Same idea as sanitizeDecimal but for money amounts — no cap on the whole-number
+// part (a balance or budget can be far more than 3 digits, unlike a percentage).
+function sanitizeMoneyDecimal(raw) {
+  const cleaned = raw.replace(/[^\d.]/g, '');
+  const [whole, ...rest] = cleaned.split('.');
+  if (rest.length === 0) return whole;
+  return `${whole}.${rest.join('').slice(0, 2)}`;
 }
 
 // Concentric progress rings (Apple Watch-style), one per metric — outer to inner.
@@ -325,13 +334,19 @@ export default function Deudas({ data, setData, onViewDetail }) {
   // Budget-vs-actual per category, for the current calendar month only — matches
   // how the rest of the app (gastos fijos, deudas) always reasons in "this month" terms.
   const categoryTotals = monthlyCategoryTotals(gastosVariables, trackedCategories, currentYear, currentMonth);
-  const totalVariableMonth = categoryTotals.reduce((a, c) => a + c.total, 0);
   const thisMonthVariables = [...gastosVariables]
     .filter((g) => {
       const d = new Date(g.date + 'T00:00:00');
       return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
     })
     .sort((a, b) => b.date.localeCompare(a.date));
+  // Sums every gasto this month, tracked category or not — the itemized list below
+  // shows all of them too, so this total shouldn't silently exclude an untracked one.
+  const totalVariableMonth = thisMonthVariables.reduce((a, g) => a + g.amount, 0);
+
+  const variableMonthly = monthlyVariableTotals(gastosVariables, 6);
+  const maxVariableMonthly = Math.max(1, ...variableMonthly.map((m) => m.total));
+  const variableMonthlyLabel = `Gastado por mes: ${variableMonthly.map((m) => `${m.label} ${fmt(m.total, currency)}`).join(', ')}`;
 
   const setPresupuestoCategoria = (categoria, value) => {
     setData((s) => ({
@@ -342,7 +357,6 @@ export default function Deudas({ data, setData, onViewDetail }) {
 
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const [customCategoryText, setCustomCategoryText] = useState('');
-  const customCategoryInputRef = useRef(null);
   const toggleTrackedCategory = (categoria) => {
     setData((s) => {
       const list = s.user.gastoVariableCategorias || [];
@@ -968,6 +982,29 @@ export default function Deudas({ data, setData, onViewDetail }) {
 
       {section === 'variables' && (
         <>
+          {gastosVariables.length > 0 && (
+            <div style={cardStyle}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em', marginBottom: 12 }}>GASTADO POR MES</div>
+              <div role="img" aria-label={variableMonthlyLabel} style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 90 }}>
+                {variableMonthly.map((m) => (
+                  <div key={`${m.year}-${m.month}`} aria-hidden="true" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, height: '100%', justifyContent: 'flex-end' }}>
+                    <div style={{ fontSize: 9, color: 'var(--text-secondary)', fontWeight: 700 }}>{m.total > 0 ? fmt(m.total, currency) : ''}</div>
+                    <div
+                      style={{
+                        width: '100%',
+                        borderRadius: 6,
+                        height: Math.max(4, Math.round((m.total / maxVariableMonthly) * 60)),
+                        background: m.total > 0 ? 'var(--accent)' : 'var(--divider)',
+                        transition: 'height 0.4s ease',
+                      }}
+                    />
+                    <div style={{ fontSize: 10, color: 'var(--text-secondary)', fontWeight: 700 }}>{m.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div style={cardStyle}>
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em' }}>GASTADO ESTE MES</div>
             <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', marginTop: 4, letterSpacing: '-0.02em' }}>{fmt(totalVariableMonth, currency)}</div>
@@ -1025,9 +1062,11 @@ export default function Deudas({ data, setData, onViewDetail }) {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, gap: 8 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Presupuesto:</div>
-                        <NumberInput
+                        <input
+                          type="text"
+                          inputMode="decimal"
                           value={data.user.presupuestoVariable?.[categoria] ?? ''}
-                          onChange={(e) => setPresupuestoCategoria(categoria, e.target.value)}
+                          onChange={(e) => setPresupuestoCategoria(categoria, sanitizeMoneyDecimal(e.target.value))}
                           placeholder="0"
                           style={{ width: 84, padding: '5px 8px', borderRadius: 8, border: 'none', background: 'var(--input-bg)', color: 'var(--text)', fontSize: 12, fontWeight: 700 }}
                         />
@@ -1137,7 +1176,14 @@ export default function Deudas({ data, setData, onViewDetail }) {
                 })}
               </div>
               <input type="text" value={variableForm.name} onChange={setVariableField('name')} placeholder="Nombre (opcional, ej: Carne, Cine)" style={textInputStyle()} />
-              <NumberInput value={variableForm.amount} onChange={setVariableField('amount')} placeholder="Monto" style={textInputStyle()} />
+              <input
+                type="text"
+                inputMode="decimal"
+                value={variableForm.amount}
+                onChange={(e) => setVariableForm((f) => ({ ...f, amount: sanitizeMoneyDecimal(e.target.value) }))}
+                placeholder="Monto"
+                style={textInputStyle()}
+              />
               <input type="date" value={variableForm.date} max={today} onChange={setVariableField('date')} style={textInputStyle()} />
               <button type="button" onClick={saveVariable} style={{ ...primaryButtonStyle(), height: 50, borderRadius: 25 }}>
                 Guardar
@@ -1152,16 +1198,6 @@ export default function Deudas({ data, setData, onViewDetail }) {
                 Toca las que quieras seguir. Puedes agregar una propia abajo.
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
-                <button
-                  type="button"
-                  onClick={() => customCategoryInputRef.current?.focus()}
-                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '4px 2px', border: 'none', background: 'none', cursor: 'pointer' }}
-                >
-                  <div style={{ width: 48, height: 48, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--input-bg)' }}>
-                    <PlusIcon color="var(--text)" size={16} />
-                  </div>
-                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text)', textAlign: 'center', lineHeight: 1.2 }}>Agregar</div>
-                </button>
                 {[...new Set([...VARIABLE_CATEGORIES, ...trackedCategories])].map((c) => {
                   const active = trackedCategories.includes(c);
                   return (
@@ -1193,7 +1229,6 @@ export default function Deudas({ data, setData, onViewDetail }) {
 
               <div style={{ display: 'flex', gap: 8 }}>
                 <input
-                  ref={customCategoryInputRef}
                   type="text"
                   value={customCategoryText}
                   onChange={(e) => setCustomCategoryText(e.target.value)}
