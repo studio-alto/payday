@@ -499,6 +499,22 @@ export default function Deudas({ data, setData, onViewDetail }) {
         </div>
       </FixedHeader>
 
+      {section === 'deudas' && cards.length === 0 && (
+        <div style={{ ...cardStyle, textAlign: 'center' }}>
+          <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>Aún no tienes deudas registradas</div>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 6 }}>
+            Agrega una tarjeta o préstamo para hacerle seguimiento a cuánto debes y cuánto ya pagaste.
+          </div>
+          <button
+            type="button"
+            onClick={openNewModal}
+            style={{ ...primaryButtonStyle(), marginTop: 14, padding: '10px 20px', borderRadius: 20, display: 'inline-block', width: 'auto' }}
+          >
+            + Nueva deuda
+          </button>
+        </div>
+      )}
+
       {section === 'deudas' && cards.length > 0 && (
         <div style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: 20 }}>
           <ProgressRing pct={pctPaidGlobal} size={88}>
@@ -756,7 +772,10 @@ export default function Deudas({ data, setData, onViewDetail }) {
           </select>
           <input type="text" value={form.name} onChange={setField('name')} placeholder="Nombre (ej: Visa Roja, Préstamo banco X)" style={textInputStyle()} />
           <NumberInput value={form.balance} onChange={setField('balance')} placeholder="Saldo pendiente" style={textInputStyle()} />
-          <DateField value={form.nextPayment} onChange={setField('nextPayment')} style={textInputStyle()} />
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 700 }}>PRÓXIMO PAGO</div>
+            <DateField value={form.nextPayment} onChange={setField('nextPayment')} style={textInputStyle()} />
+          </div>
           <NumberInput value={form.minPayment} onChange={setField('minPayment')} placeholder="Pago mínimo (opcional)" style={textInputStyle()} />
           <input
             type="text"
@@ -815,6 +834,21 @@ export default function Deudas({ data, setData, onViewDetail }) {
 
       {section === 'gastos' && (
         <>
+          {expenses.length === 0 && (
+            <div style={{ ...cardStyle, textAlign: 'center' }}>
+              <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>Aún no tienes gastos fijos</div>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 6 }}>
+                Agrega tus pagos mensuales — arriendo, servicios, suscripciones — para saber cuándo vencen.
+              </div>
+              <button
+                type="button"
+                onClick={openNewExpenseModal}
+                style={{ ...primaryButtonStyle(), marginTop: 14, padding: '10px 20px', borderRadius: 20, display: 'inline-block', width: 'auto' }}
+              >
+                + Nuevo gasto
+              </button>
+            </div>
+          )}
           {expenses.length > 0 && (
             <div style={cardStyle}>
               <div

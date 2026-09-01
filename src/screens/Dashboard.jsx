@@ -24,7 +24,10 @@ export default function Dashboard({ data, setData, onNavigate }) {
   const budgetNecesidades = user.budgetNecesidades ?? 50;
 
   const weeklyTotal = confirmedIncomes.filter((i) => week.includes(i.date)).reduce((a, i) => a + i.amount, 0);
-  const totalAhorro = goals.reduce((a, g) => a + g.current, 0);
+  // Ahorro saved before any goal existed (or since reassigned/deleted) still lives on
+  // the income record itself — count it here so it isn't invisible on the dashboard.
+  const unassignedAhorro = confirmedIncomes.reduce((a, i) => a + (!i.distribution.goalId ? i.distribution.ahorro || 0 : 0), 0);
+  const totalAhorro = goals.reduce((a, g) => a + g.current, 0) + unassignedAhorro;
   const totalDeuda = cards.reduce((a, c) => a + c.balance, 0);
   const totalProyectado = projectedIncomes.reduce((a, i) => a + i.amount, 0);
 

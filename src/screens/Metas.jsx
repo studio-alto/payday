@@ -141,6 +141,22 @@ export default function Metas({ data, setData, onViewDetail }) {
         </div>
       </FixedHeader>
 
+      {goals.length === 0 && (
+        <div style={{ ...cardStyle, textAlign: 'center' }}>
+          <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>Aún no tienes metas</div>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 6 }}>
+            Crea una para separar dinero de tus ingresos — un fondo de emergencia, un viaje, lo que quieras ahorrar.
+          </div>
+          <button
+            type="button"
+            onClick={openNewModal}
+            style={{ ...primaryButtonStyle(), marginTop: 14, padding: '10px 20px', borderRadius: 20, display: 'inline-block', width: 'auto' }}
+          >
+            + Nueva meta
+          </button>
+        </div>
+      )}
+
       {goals.map((g) => {
         const pct = Math.min(100, Math.round((g.current / g.target) * 100));
         const completed = g.current >= g.target;
