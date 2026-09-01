@@ -20,7 +20,7 @@ function emptyForm() {
   return { name: '', target: '', current: '', description: '', fechaObjetivo: '' };
 }
 
-export default function Metas({ data, setData }) {
+export default function Metas({ data, setData, onViewDetail }) {
   const { goals } = data;
   const { currency } = data.user;
 
@@ -183,23 +183,40 @@ export default function Metas({ data, setData }) {
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => startAdd(g.id)}
-              style={{
-                padding: '8px 16px',
-                borderRadius: 20,
-                background: isOverdue ? 'white' : 'var(--text)',
-                color: isOverdue ? bg : 'var(--page-bg)',
-                fontWeight: 700,
-                fontSize: 12,
-                cursor: 'pointer',
-                border: 'none',
-                marginTop: 12,
-              }}
-            >
-              + Agregar
-            </button>
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <button
+                type="button"
+                onClick={() => startAdd(g.id)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: 20,
+                  background: isOverdue ? 'white' : 'var(--text)',
+                  color: isOverdue ? bg : 'var(--page-bg)',
+                  fontWeight: 700,
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  border: 'none',
+                }}
+              >
+                + Agregar
+              </button>
+              <button
+                type="button"
+                onClick={() => onViewDetail(g.id)}
+                style={{
+                  padding: '8px 16px',
+                  borderRadius: 20,
+                  background: isOverdue ? 'rgba(255,255,255,0.18)' : 'var(--input-bg)',
+                  color: fg,
+                  fontWeight: 700,
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  border: 'none',
+                }}
+              >
+                Ver detalle
+              </button>
+            </div>
 
             {projection && (
               <div

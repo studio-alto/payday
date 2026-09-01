@@ -15,6 +15,7 @@ import UpdateToast from './components/UpdateToast';
 import Dashboard from './screens/Dashboard';
 const Registrar = lazy(() => import('./screens/Registrar'));
 const Metas = lazy(() => import('./screens/Metas'));
+const MetaDetalle = lazy(() => import('./screens/MetaDetalle'));
 const Deudas = lazy(() => import('./screens/Deudas'));
 const DeudaDetalle = lazy(() => import('./screens/DeudaDetalle'));
 const Ingresos = lazy(() => import('./screens/Ingresos'));
@@ -25,6 +26,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [editingIncome, setEditingIncome] = useState(null);
   const [viewingDebtId, setViewingDebtId] = useState(null);
+  const [viewingGoalId, setViewingGoalId] = useState(null);
   const [splashFading, setSplashFading] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
   const [installPrompt, setInstallPrompt] = useState(null);
@@ -51,6 +53,7 @@ export default function App() {
   const navigate = (tab) => {
     setEditingIncome(null);
     setViewingDebtId(null);
+    setViewingGoalId(null);
     setActiveTab(tab);
   };
   const startEditIncome = (income) => {
@@ -60,6 +63,10 @@ export default function App() {
   const viewDebtDetail = (cardId) => {
     setViewingDebtId(cardId);
     setActiveTab('deuda-detalle');
+  };
+  const viewGoalDetail = (goalId) => {
+    setViewingGoalId(goalId);
+    setActiveTab('meta-detalle');
   };
 
   useEffect(() => {
@@ -143,7 +150,8 @@ export default function App() {
           {activeTab === 'registrar' && (
             <Registrar data={data} setData={setData} onNavigate={navigate} editingIncome={editingIncome} onDoneEditing={() => setEditingIncome(null)} />
           )}
-          {activeTab === 'metas' && <Metas data={data} setData={setData} />}
+          {activeTab === 'metas' && <Metas data={data} setData={setData} onViewDetail={viewGoalDetail} />}
+          {activeTab === 'meta-detalle' && <MetaDetalle data={data} setData={setData} goalId={viewingGoalId} onNavigate={navigate} />}
           {activeTab === 'tarjetas' && <Deudas data={data} setData={setData} onViewDetail={viewDebtDetail} />}
           {activeTab === 'deuda-detalle' && <DeudaDetalle data={data} setData={setData} cardId={viewingDebtId} onNavigate={navigate} />}
           {activeTab === 'ingresos' && <Ingresos data={data} setData={setData} onNavigate={navigate} onEdit={startEditIncome} />}

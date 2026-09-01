@@ -1,4 +1,11 @@
-import { todayISO } from './dates';
+import { todayISO, isoOffset } from './dates';
+
+export const CONTRIBUTION_FREQUENCIES = [
+  { key: 'diario', label: 'Diario', days: 1, noun: 'día', nounPlural: 'días' },
+  { key: 'semanal', label: 'Semanal', days: 7, noun: 'semana', nounPlural: 'semanas' },
+  { key: 'quincenal', label: 'Quincenal', days: 15, noun: 'quincena', nounPlural: 'quincenas' },
+  { key: 'mensual', label: 'Mensual', days: 30, noun: 'mes', nounPlural: 'meses' },
+];
 
 // How much to save per day/week/month to reach a goal by a target date, given
 // how much is left. Returns null when there's nothing to project (goal
@@ -32,4 +39,16 @@ export function estimateMonthsToGoal(remaining, history, today = todayISO()) {
   const monthlyRate = totalContributed / monthsBetween(firstDate, today);
   if (monthlyRate <= 0) return null;
   return Math.ceil(remaining / monthlyRate);
+}
+
+// User-driven "what if I save $X every [day/week/month]" projection — lets someone
+// without a target date (or who wants to try a different pace than their own
+// history) pick a frequency and amount and see how many periods and what calendar
+// date that works out to. Returns null when there's nothing to project.
+export function projectGoalByContribution(remaining, amountPerPeriod, frequencyKey, today = todayISO()) {
+  if (remaining <= 0 || amountPerPeriod <= 0) return null;
+  const frequency = CONTRIBUTION_FREQUENCIES.find((f) => f.key === frequencyKey) || CONTRIBUTION_FREQUENCIES[3];
+  const periods = Math.ceil(remaining / amountPerPeriod);
+  const totalDays = periods * frequency.days;
+  return { periods, frequency, totalDays, completionDate: isoOffset(totalDays, new Date(today + 'T00:00:00')) };
 }

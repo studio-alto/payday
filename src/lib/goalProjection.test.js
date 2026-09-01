@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeSavingsProjection, estimateMonthsToGoal } from './goalProjection';
+import { computeSavingsProjection, estimateMonthsToGoal, projectGoalByContribution } from './goalProjection';
 
 describe('computeSavingsProjection', () => {
   it('returns null when the goal is already reached', () => {
@@ -51,5 +51,25 @@ describe('estimateMonthsToGoal', () => {
     const history = [{ date: '2026-08-05', amount: 50000 }];
     // Same month as `today` -> 1 month elapsed -> rate is 50000/month; 100000 left -> ceil(2) = 2
     expect(estimateMonthsToGoal(100000, history, '2026-08-27')).toBe(2);
+  });
+});
+
+describe('projectGoalByContribution', () => {
+  it('returns null when the goal is already reached or the amount is zero', () => {
+    expect(projectGoalByContribution(0, 50000, 'mensual', '2026-08-27')).toBeNull();
+    expect(projectGoalByContribution(500000, 0, 'mensual', '2026-08-27')).toBeNull();
+  });
+
+  it('projects periods and completion date for a daily pace', () => {
+    const result = projectGoalByContribution(100000, 10000, 'diario', '2026-08-27');
+    expect(result.periods).toBe(10);
+    expect(result.totalDays).toBe(10);
+    expect(result.completionDate).toBe('2026-09-06');
+  });
+
+  it('projects periods and completion date for a monthly pace, rounding up partial periods', () => {
+    const result = projectGoalByContribution(250000, 100000, 'mensual', '2026-08-27');
+    expect(result.periods).toBe(3); // ceil(2.5)
+    expect(result.totalDays).toBe(90);
   });
 });
