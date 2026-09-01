@@ -13,6 +13,7 @@ import PlusIcon from '../components/PlusIcon';
 import FixedHeader from '../components/FixedHeader';
 import SwipeActions from '../components/SwipeActions';
 import DateField from '../components/DateField';
+import ProgressRing from '../components/ProgressRing';
 
 const GOAL_PRESETS = ['Fondo de emergencia', 'Viaje', 'Laptop', 'Curso', 'Otra'];
 
@@ -149,7 +150,6 @@ export default function Metas({ data, setData, onViewDetail }) {
         const fgSoft = isOverdue ? 'rgba(255,255,255,0.85)' : 'var(--text-secondary)';
         const ringColor = isOverdue ? 'white' : 'var(--accent)';
         const ringTrack = isOverdue ? 'rgba(255,255,255,0.3)' : 'var(--divider)';
-        const donut = `conic-gradient(${ringColor} ${pct}%, ${ringTrack} ${pct}% 100%)`;
 
         return (
           <SwipeActions
@@ -171,11 +171,9 @@ export default function Metas({ data, setData, onViewDetail }) {
             <div style={{ fontWeight: 700, fontSize: 15, color: fg }}>{g.name}</div>
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 12 }}>
-              <div style={{ width: 88, height: 88, borderRadius: '50%', background: donut, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <div style={{ width: 60, height: 60, borderRadius: '50%', background: isOverdue ? bg : 'var(--card-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <div style={{ fontWeight: 800, fontSize: 15, color: fg }}>{pct}%</div>
-                </div>
-              </div>
+              <ProgressRing pct={pct} size={88} color={ringColor} trackColor={ringTrack}>
+                <div style={{ fontWeight: 800, fontSize: 15, color: fg }}>{pct}%</div>
+              </ProgressRing>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ fontSize: 11, color: fgSoft, fontWeight: 700 }}>AHORRADO</div>
                 <div style={{ fontWeight: 800, fontSize: 20, color: fg, letterSpacing: '-0.02em' }}>{fmt(g.current, currency)}</div>

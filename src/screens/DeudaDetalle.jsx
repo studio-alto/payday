@@ -7,6 +7,7 @@ import NumberInput from '../components/NumberInput';
 import DateField from '../components/DateField';
 import BottomSheet from '../components/BottomSheet';
 import FixedHeader from '../components/FixedHeader';
+import ProgressRing from '../components/ProgressRing';
 
 const EXTRA_PRESETS = [0, 20000, 50000, 100000, 200000];
 
@@ -40,7 +41,6 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
 
   const paidToDate = card.history.reduce((a, h) => a + h.amount, 0);
   const pct = paidToDate + card.balance > 0 ? Math.round((paidToDate / (paidToDate + card.balance)) * 100) : 0;
-  const donut = `conic-gradient(var(--accent) ${pct}%, var(--divider) ${pct}% 100%)`;
   const months = card.startDate ? monthsSince(card.startDate) : null;
   const interestCost = monthlyInterestCost(card);
 
@@ -102,11 +102,9 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
       <div style={{ display: 'flex', gap: 12 }}>
         <div style={heroTileStyle}>
           <div style={labelStyle}>% PAGADO</div>
-          <div style={{ width: 128, height: 128, borderRadius: '50%', background: donut, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 10 }}>
-            <div style={{ width: 82, height: 82, borderRadius: '50%', background: 'var(--card-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ fontWeight: 800, fontSize: 24, color: 'var(--text)', letterSpacing: '-0.02em' }}>{pct}%</div>
-            </div>
-          </div>
+          <ProgressRing pct={pct} size={128} style={{ marginTop: 10 }}>
+            <div style={{ fontWeight: 800, fontSize: 24, color: 'var(--text)', letterSpacing: '-0.02em' }}>{pct}%</div>
+          </ProgressRing>
         </div>
 
         {card.interestRate > 0 && (

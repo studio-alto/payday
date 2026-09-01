@@ -13,6 +13,7 @@ import PlusIcon from '../components/PlusIcon';
 import CategoryIcon from '../components/CategoryIcon';
 import FixedHeader from '../components/FixedHeader';
 import SwipeActions from '../components/SwipeActions';
+import ProgressRing from '../components/ProgressRing';
 import { sortDebtsByPriority, simulatePayoffPlan, formatMonthsLabel, monthlyPaidTotals, METHODS } from '../lib/debt';
 import { VARIABLE_CATEGORIES, monthlyCategoryTotals, monthlyVariableTotals } from '../lib/variableExpenses';
 
@@ -120,7 +121,6 @@ export default function Deudas({ data, setData, onViewDetail }) {
   const totalBalance = cards.reduce((a, c) => a + c.balance, 0);
   const totalPaidAllTime = cards.reduce((a, c) => a + c.history.reduce((h, x) => h + x.amount, 0), 0);
   const pctPaidGlobal = totalPaidAllTime + totalBalance > 0 ? Math.round((totalPaidAllTime / (totalPaidAllTime + totalBalance)) * 100) : 0;
-  const debtDonut = `conic-gradient(var(--accent) ${pctPaidGlobal}%, var(--divider) ${pctPaidGlobal}% 100%)`;
   const monthlyPaid = monthlyPaidTotals(cards, 6);
   const maxMonthlyPaid = Math.max(1, ...monthlyPaid.map((m) => m.total));
   const monthlyPaidLabel = `Abonado por mes: ${monthlyPaid.map((m) => `${m.label} ${fmt(m.total, currency)}`).join(', ')}`;
@@ -503,11 +503,9 @@ export default function Deudas({ data, setData, onViewDetail }) {
 
       {section === 'deudas' && cards.length > 0 && (
         <div style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: 20 }}>
-          <div style={{ width: 88, height: 88, borderRadius: '50%', background: debtDonut, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'var(--card-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{pctPaidGlobal}%</div>
-            </div>
-          </div>
+          <ProgressRing pct={pctPaidGlobal} size={88}>
+            <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{pctPaidGlobal}%</div>
+          </ProgressRing>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0, flex: 1 }}>
             <div>
               <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700 }}>FALTA POR PAGAR</div>

@@ -7,6 +7,7 @@ import { formatMonthsLabel } from '../lib/debt';
 import NumberInput from '../components/NumberInput';
 import FixedHeader from '../components/FixedHeader';
 import InlineConfirm from '../components/InlineConfirm';
+import ProgressRing from '../components/ProgressRing';
 
 function ExplainerNote({ children }) {
   return <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: 8 }}>{children}</div>;
@@ -43,7 +44,6 @@ export default function MetaDetalle({ data, setData, goalId, onNavigate }) {
   const remaining = Math.max(0, goal.target - goal.current);
   const completed = goal.current >= goal.target;
   const pct = Math.min(100, Math.round((goal.current / goal.target) * 100));
-  const donut = `conic-gradient(var(--accent) ${pct}%, var(--divider) ${pct}% 100%)`;
 
   const dateProjection = computeSavingsProjection(remaining, goal.fechaObjetivo);
   const monthsEstimate = !goal.fechaObjetivo ? estimateMonthsToGoal(remaining, goal.history || []) : null;
@@ -92,11 +92,9 @@ export default function MetaDetalle({ data, setData, goalId, onNavigate }) {
       <div style={{ display: 'flex', justifyContent: 'center' }}>
         <div style={heroTileStyle}>
           <div style={labelStyle}>AVANCE</div>
-          <div style={{ width: 128, height: 128, borderRadius: '50%', background: donut, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 10 }}>
-            <div style={{ width: 82, height: 82, borderRadius: '50%', background: 'var(--card-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ fontWeight: 800, fontSize: 24, color: 'var(--text)', letterSpacing: '-0.02em' }}>{pct}%</div>
-            </div>
-          </div>
+          <ProgressRing pct={pct} size={128} style={{ marginTop: 10 }}>
+            <div style={{ fontWeight: 800, fontSize: 24, color: 'var(--text)', letterSpacing: '-0.02em' }}>{pct}%</div>
+          </ProgressRing>
         </div>
       </div>
 

@@ -4,6 +4,7 @@ import { cardStyle, labelStyle } from '../lib/styles';
 import { averageRecentIncome, getPendingConfirmations } from '../lib/incomeStats';
 import { applyIncomeEffects } from '../lib/debt';
 import FixedHeader from '../components/FixedHeader';
+import ProgressRing from '../components/ProgressRing';
 
 export default function Dashboard({ data, setData, onNavigate }) {
   const { user, incomes, goals, cards, expenses } = data;
@@ -62,7 +63,6 @@ export default function Dashboard({ data, setData, onNavigate }) {
 
   const goalsWithPct = goals.map((g) => ({ ...g, pct: Math.min(100, Math.round((g.current / g.target) * 100)) }));
   const nextGoal = goalsWithPct.find((g) => g.pct < 100) || goalsWithPct[0] || { name: 'Sin metas', current: 0, target: 1, pct: 0 };
-  const goalDonut = `conic-gradient(var(--accent) ${nextGoal.pct || 0}%, var(--divider) ${nextGoal.pct || 0}% 100%)`;
 
   const sortedIncomes = [...confirmedIncomes].sort((a, b) => b.date.localeCompare(a.date));
   const recentIncomes = sortedIncomes.slice(0, 4);
@@ -355,11 +355,9 @@ export default function Dashboard({ data, setData, onNavigate }) {
           style={{ ...cardStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 0, border: 'none', cursor: 'pointer', width: '100%' }}
         >
           <div style={{ ...labelStyle, alignSelf: 'flex-start' }}>META PRINCIPAL</div>
-          <div style={{ width: 120, height: 120, borderRadius: '50%', background: goalDonut, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 10 }}>
-            <div style={{ width: 82, height: 82, borderRadius: '50%', background: 'var(--card-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ fontWeight: 800, fontSize: 21, color: 'var(--text)' }}>{nextGoal.pct || 0}%</div>
-            </div>
-          </div>
+          <ProgressRing pct={nextGoal.pct || 0} size={120} style={{ marginTop: 10 }}>
+            <div style={{ fontWeight: 800, fontSize: 21, color: 'var(--text)' }}>{nextGoal.pct || 0}%</div>
+          </ProgressRing>
           <div style={{ fontSize: 13, color: 'var(--text)', marginTop: 12, fontWeight: 700, textAlign: 'center' }}>{nextGoal.name}</div>
           <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>
             {fmt(nextGoal.current, user.currency)} / {fmt(nextGoal.target, user.currency)}
