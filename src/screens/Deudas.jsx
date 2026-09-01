@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { fmt } from '../lib/format';
 import { formatShortDate, todayISO, isSameMonth, daysUntilPayday } from '../lib/dates';
 import { uid } from '../lib/id';
@@ -8,6 +8,7 @@ import InlineConfirm from '../components/InlineConfirm';
 import NumberInput from '../components/NumberInput';
 import PencilIcon from '../components/PencilIcon';
 import PlusIcon from '../components/PlusIcon';
+import CategoryIcon from '../components/CategoryIcon';
 import FixedHeader from '../components/FixedHeader';
 import SwipeActions from '../components/SwipeActions';
 import { sortDebtsByPriority, simulatePayoffPlan, formatMonthsLabel, monthlyPaidTotals, METHODS } from '../lib/debt';
@@ -341,6 +342,7 @@ export default function Deudas({ data, setData, onViewDetail }) {
 
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const [customCategoryText, setCustomCategoryText] = useState('');
+  const customCategoryInputRef = useRef(null);
   const toggleTrackedCategory = (categoria) => {
     setData((s) => {
       const list = s.user.gastoVariableCategorias || [];
@@ -1105,13 +1107,35 @@ export default function Deudas({ data, setData, onViewDetail }) {
           {variableModalOpen && (
             <BottomSheet onClose={closeVariableModal}>
               <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{editingVariableId ? 'Editar gasto' : 'Nuevo gasto variable'}</div>
-              <select value={variableForm.categoria} onChange={setVariableField('categoria')} style={textInputStyle()}>
-                {allAvailableCategories.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+                {allAvailableCategories.map((c) => {
+                  const active = variableForm.categoria === c;
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setVariableForm((f) => ({ ...f, categoria: c }))}
+                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '4px 2px', border: 'none', background: 'none', cursor: 'pointer' }}
+                    >
+                      <div
+                        style={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: active ? 'var(--text)' : 'var(--input-bg)',
+                          color: active ? 'var(--page-bg)' : 'var(--text)',
+                        }}
+                      >
+                        <CategoryIcon categoria={c} />
+                      </div>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text)', textAlign: 'center', lineHeight: 1.2 }}>{c}</div>
+                    </button>
+                  );
+                })}
+              </div>
               <input type="text" value={variableForm.name} onChange={setVariableField('name')} placeholder="Nombre (opcional, ej: Carne, Cine)" style={textInputStyle()} />
               <NumberInput value={variableForm.amount} onChange={setVariableField('amount')} placeholder="Monto" style={textInputStyle()} />
               <input type="date" value={variableForm.date} max={today} onChange={setVariableField('date')} style={textInputStyle()} />
@@ -1127,59 +1151,49 @@ export default function Deudas({ data, setData, onViewDetail }) {
               <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: -8 }}>
                 Toca las que quieras seguir. Puedes agregar una propia abajo.
               </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {VARIABLE_CATEGORIES.map((c) => {
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
+                <button
+                  type="button"
+                  onClick={() => customCategoryInputRef.current?.focus()}
+                  style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '4px 2px', border: 'none', background: 'none', cursor: 'pointer' }}
+                >
+                  <div style={{ width: 48, height: 48, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--input-bg)' }}>
+                    <PlusIcon color="var(--text)" size={16} />
+                  </div>
+                  <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text)', textAlign: 'center', lineHeight: 1.2 }}>Agregar</div>
+                </button>
+                {[...new Set([...VARIABLE_CATEGORIES, ...trackedCategories])].map((c) => {
                   const active = trackedCategories.includes(c);
                   return (
                     <button
                       key={c}
                       type="button"
                       onClick={() => toggleTrackedCategory(c)}
-                      style={{
-                        padding: '9px 14px',
-                        borderRadius: 20,
-                        fontSize: 13,
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        background: active ? 'var(--text)' : 'var(--input-bg)',
-                        color: active ? 'var(--page-bg)' : 'var(--text)',
-                        border: 'none',
-                      }}
+                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, padding: '4px 2px', border: 'none', background: 'none', cursor: 'pointer' }}
                     >
-                      {c}
+                      <div
+                        style={{
+                          width: 48,
+                          height: 48,
+                          borderRadius: '50%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          background: active ? 'var(--text)' : 'var(--input-bg)',
+                          color: active ? 'var(--page-bg)' : 'var(--text)',
+                        }}
+                      >
+                        <CategoryIcon categoria={c} />
+                      </div>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text)', textAlign: 'center', lineHeight: 1.2 }}>{c}</div>
                     </button>
                   );
                 })}
               </div>
 
-              {trackedCategories.filter((c) => !VARIABLE_CATEGORIES.includes(c)).length > 0 && (
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {trackedCategories
-                    .filter((c) => !VARIABLE_CATEGORIES.includes(c))
-                    .map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => toggleTrackedCategory(c)}
-                        style={{
-                          padding: '9px 14px',
-                          borderRadius: 20,
-                          fontSize: 13,
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          background: 'var(--text)',
-                          color: 'var(--page-bg)',
-                          border: 'none',
-                        }}
-                      >
-                        {c} ×
-                      </button>
-                    ))}
-                </div>
-              )}
-
               <div style={{ display: 'flex', gap: 8 }}>
                 <input
+                  ref={customCategoryInputRef}
                   type="text"
                   value={customCategoryText}
                   onChange={(e) => setCustomCategoryText(e.target.value)}
