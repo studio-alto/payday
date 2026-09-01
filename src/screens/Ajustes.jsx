@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { todayISO, formatFullDate } from '../lib/dates';
 import { referenceIncome } from '../lib/incomeStats';
 import { fetchLiveExchangeRates } from '../lib/exchangeRates';
@@ -6,7 +6,7 @@ import { fmt } from '../lib/format';
 import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import { hashPin } from '../lib/pin';
 import { sendBackupEmail, sendReportLinkEmail, emailBackupConfigured } from '../lib/emailBackup';
-import { driveConfigured, preloadGis, requestAccessToken, uploadReportToDrive } from '../lib/googleDrive';
+import { driveConfigured, hasValidToken, getAccessToken, connectDrive, uploadReportToDrive } from '../lib/googleDrive';
 import NumberInput from '../components/NumberInput';
 import FixedHeader from '../components/FixedHeader';
 import BottomSheet from '../components/BottomSheet';
@@ -46,14 +46,18 @@ function isValidBackup(parsed) {
 export default function Ajustes({ data, setData, canInstall, isInstalled, onInstall }) {
   const { user } = data;
   const dark = user.theme === 'oscuro';
-  const [section, setSection] = useState('general');
+  // Restores the "Datos" tab after a Google Drive connect redirect bounces the
+  // whole page away and back (see connectDrive() in lib/googleDrive) — otherwise
+  // returning from Google would land back on "General" with no indication of why.
+  const [section, setSection] = useState(() => {
+    const pending = sessionStorage.getItem('payday_return_section');
+    if (pending) sessionStorage.removeItem('payday_return_section');
+    return pending || 'general';
+  });
   const budgetTotal = (user.budgetNecesidades ?? 50) + (user.budgetDeseos ?? 30) + (user.budgetAhorro ?? 20);
   const incomeMode = user.incomeMode || 'variable';
   const setIncomeMode = (mode) => setData((s) => ({ ...s, user: { ...s.user, incomeMode: mode } }));
   const avgRecentIncome = referenceIncome(data.incomes, incomeMode);
-  useEffect(() => {
-    preloadGis();
-  }, []);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [ratesStatus, setRatesStatus] = useState('idle');
   const fileInputRef = useRef(null);
@@ -198,15 +202,20 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
 
   const [driveStatus, setDriveStatus] = useState('idle'); // idle | loading | uploaded | emailed | error
   const [driveError, setDriveError] = useState('');
+  const connectedToDrive = hasValidToken();
+  const startDriveConnect = () => {
+    // Remember where we were — connectDrive() leaves the app entirely (Google's
+    // consent screen, then back), so the next load needs to know to land back on
+    // this tab instead of the default Home screen.
+    sessionStorage.setItem('payday_return_tab', 'config');
+    sessionStorage.setItem('payday_return_section', 'datos');
+    connectDrive();
+  };
   const sendToDrive = async () => {
     setDriveStatus('loading');
     setDriveError('');
-    // requestAccessToken() must be the very first thing awaited here, with nothing
-    // async ahead of it — Google's consent popup only opens if it's triggered
-    // synchronously within this click, before any other await hands control back
-    // to the event loop (see the comment on preloadGis() in googleDrive.js).
     try {
-      const accessToken = await requestAccessToken();
+      const accessToken = getAccessToken();
       const { buildSummaryWorkbook } = await import('../lib/exportExcel');
       const blob = await buildSummaryWorkbook(data);
       const link = await uploadReportToDrive(accessToken, blob, `payday-resumen-${todayISO()}.xlsx`);
@@ -621,27 +630,40 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
           <>
             <div style={{ height: 1, background: 'var(--divider)', margin: '4px 0' }} />
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>ENVIAR A GOOGLE DRIVE</div>
-            <button
-              type="button"
-              onClick={sendToDrive}
-              disabled={driveStatus === 'loading'}
-              style={{ ...actionRowStyle, opacity: driveStatus === 'loading' ? 0.5 : 1 }}
-            >
-              {driveStatus === 'loading'
-                ? 'Subiendo…'
-                : user.backupEmail
-                  ? 'Subir Excel a Drive y enviar el enlace por correo'
-                  : 'Subir Excel a Drive'}
-            </button>
-            <div style={{ fontSize: 11, color: driveStatus === 'error' ? 'var(--danger-text)' : 'var(--text-secondary)', marginTop: -4 }}>
-              {driveStatus === 'error'
-                ? driveError
-                : driveStatus === 'emailed'
-                  ? 'Listo — se subió a tu Drive (carpeta "Payday") y te mandamos el enlace por correo.'
-                  : driveStatus === 'uploaded'
-                    ? 'Listo — se subió a tu Drive, en una carpeta llamada "Payday".'
-                    : 'Conecta tu cuenta de Google al tocar el botón. Solo puede ver y crear archivos que suba esta app, nada más de tu Drive.'}
-            </div>
+            {!connectedToDrive ? (
+              <>
+                <button type="button" onClick={startDriveConnect} style={actionRowStyle}>
+                  Conectar Google Drive
+                </button>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: -4 }}>
+                  Te lleva a Google para autorizar, y vuelve aquí. Solo puede ver y crear archivos que suba esta app, nada más de tu Drive.
+                </div>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={sendToDrive}
+                  disabled={driveStatus === 'loading'}
+                  style={{ ...actionRowStyle, opacity: driveStatus === 'loading' ? 0.5 : 1 }}
+                >
+                  {driveStatus === 'loading'
+                    ? 'Subiendo…'
+                    : user.backupEmail
+                      ? 'Subir Excel a Drive y enviar el enlace por correo'
+                      : 'Subir Excel a Drive'}
+                </button>
+                <div style={{ fontSize: 11, color: driveStatus === 'error' ? 'var(--danger-text)' : 'var(--text-secondary)', marginTop: -4 }}>
+                  {driveStatus === 'error'
+                    ? driveError
+                    : driveStatus === 'emailed'
+                      ? 'Listo — se subió a tu Drive (carpeta "Payday") y te mandamos el enlace por correo.'
+                      : driveStatus === 'uploaded'
+                        ? 'Listo — se subió a tu Drive, en una carpeta llamada "Payday".'
+                        : 'Ya conectado a Google Drive.'}
+                </div>
+              </>
+            )}
           </>
         )}
 

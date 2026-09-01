@@ -1,79 +1,72 @@
 // Google Drive upload — the "middle ground" version of accounts: no backend, no
-// user database, no passwords to manage. Google Identity Services hands the app a
-// short-lived access token scoped to `drive.file` (the app can only see/manage
-// files it creates itself, never the rest of the person's Drive), entirely from
-// the browser. See the project setup notes for how to create VITE_GOOGLE_CLIENT_ID.
+// user database, no passwords to manage. Uses a plain OAuth 2.0 implicit-flow
+// redirect (not Google Identity Services' popup-based token client) because an
+// installed/standalone PWA on iOS cannot open popup windows at all — window.open
+// silently fails there, even on a direct tap. A full-page redirect to Google and
+// back is just navigation, which standalone mode allows fine.
+//
+// Scope is `drive.file`: the app can only see/manage files it creates itself,
+// never the rest of the person's Drive.
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 const SCOPE = 'https://www.googleapis.com/auth/drive.file';
-const GIS_SRC = 'https://accounts.google.com/gsi/client';
+const TOKEN_KEY = 'payday_drive_token';
 
 export const driveConfigured = !!CLIENT_ID;
 
-let gisLoadPromise = null;
-function loadGis() {
-  if (window.google?.accounts?.oauth2) return Promise.resolve();
-  if (gisLoadPromise) return gisLoadPromise;
-  gisLoadPromise = new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = GIS_SRC;
-    script.async = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error('No se pudo cargar Google Identity Services.'));
-    document.head.appendChild(script);
-  });
-  return gisLoadPromise;
+function redirectUri() {
+  return window.location.origin + window.location.pathname;
 }
 
-// Fire-and-forget — call this as soon as the Drive feature might be used (e.g. when
-// the settings screen mounts) so the GIS script is almost certainly already loaded
-// by the time someone taps the button. That matters because requestAccessToken()
-// below must open Google's popup synchronously within the click's call stack; if
-// the script were still loading, the `await loadGis()` there would introduce the
-// async gap that gets the popup blocked (Safari in particular revokes the
-// "user activation" needed for window.open after any await).
-export function preloadGis() {
-  if (driveConfigured) loadGis().catch(() => {});
+function saveToken(accessToken, expiresIn) {
+  const expiresAt = Date.now() + (Number(expiresIn) || 3600) * 1000;
+  sessionStorage.setItem(TOKEN_KEY, JSON.stringify({ accessToken, expiresAt }));
 }
 
-// Not persisted across reloads on purpose — this is an occasional, user-initiated
-// action (not a background sync), so a fresh consent prompt each session is fine
-// and avoids the complexity of storing/refreshing long-lived tokens client-side.
-let cachedToken = null;
-
-// Call this FIRST, with nothing awaited before it, directly from the click handler —
-// see the comment on preloadGis() above for why the ordering matters.
-export async function requestAccessToken() {
-  if (!driveConfigured) throw new Error('Google Drive no está configurado todavía (falta VITE_GOOGLE_CLIENT_ID).');
-  if (cachedToken && cachedToken.expiresAt > Date.now() + 30000) return cachedToken.accessToken;
-
-  if (!window.google?.accounts?.oauth2) {
-    // Only hit if preloadGis() hasn't finished yet — this await does introduce a
-    // gap, but it's unavoidable when the script genuinely isn't there yet.
-    await loadGis();
+// A cached token is only good for the rest of this browser session (sessionStorage)
+// and for its real ~1h lifetime — after that, connectDrive() runs again.
+export function getAccessToken() {
+  try {
+    const raw = sessionStorage.getItem(TOKEN_KEY);
+    if (!raw) return null;
+    const { accessToken, expiresAt } = JSON.parse(raw);
+    return expiresAt > Date.now() + 30000 ? accessToken : null;
+  } catch {
+    return null;
   }
-  return new Promise((resolve, reject) => {
-    const client = window.google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID,
-      scope: SCOPE,
-      callback: (resp) => {
-        if (resp.error) {
-          reject(new Error(resp.error));
-          return;
-        }
-        cachedToken = { accessToken: resp.access_token, expiresAt: Date.now() + (resp.expires_in || 3600) * 1000 };
-        resolve(resp.access_token);
-      },
-      error_callback: (err) => reject(new Error(err?.message || 'No se pudo conectar con Google.')),
-    });
-    client.requestAccessToken();
-  });
+}
+
+export function hasValidToken() {
+  return !!getAccessToken();
 }
 
 export function disconnectDrive() {
-  if (cachedToken && window.google?.accounts?.oauth2) {
-    window.google.accounts.oauth2.revoke(cachedToken.accessToken, () => {});
-  }
-  cachedToken = null;
+  sessionStorage.removeItem(TOKEN_KEY);
+}
+
+// Call once when the app boots (before anything reads getAccessToken) — picks the
+// access token out of the URL fragment Google appends after redirecting back, and
+// strips it from the visible URL.
+export function consumeDriveRedirect() {
+  if (!window.location.hash.includes('access_token=')) return;
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  const accessToken = params.get('access_token');
+  const expiresIn = params.get('expires_in');
+  if (accessToken) saveToken(accessToken, expiresIn);
+  history.replaceState(null, '', window.location.pathname + window.location.search);
+}
+
+// Navigates the whole page to Google's consent screen — never returns (the app
+// reloads fresh when Google redirects back). Call hasValidToken() first; only
+// call this when it's false.
+export function connectDrive() {
+  if (!driveConfigured) throw new Error('Google Drive no está configurado todavía (falta VITE_GOOGLE_CLIENT_ID).');
+  const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
+  url.searchParams.set('client_id', CLIENT_ID);
+  url.searchParams.set('redirect_uri', redirectUri());
+  url.searchParams.set('response_type', 'token');
+  url.searchParams.set('scope', SCOPE);
+  url.searchParams.set('include_granted_scopes', 'true');
+  window.location.href = url.toString();
 }
 
 async function findOrCreatePaydayFolder(accessToken) {
@@ -97,8 +90,7 @@ async function findOrCreatePaydayFolder(accessToken) {
 
 // Uploads the blob into the person's own "Payday" Drive folder (created on first
 // use) and returns a link they (and only they — the file isn't made public) can
-// open to view it. Takes an already-fetched access token (see requestAccessToken)
-// rather than requesting one itself, so callers control exactly when the popup opens.
+// open to view it. Takes an already-fetched access token (see getAccessToken).
 export async function uploadReportToDrive(accessToken, blob, filename) {
   const folderId = await findOrCreatePaydayFolder(accessToken);
 
