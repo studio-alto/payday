@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { todayISO, formatFullDate } from '../lib/dates';
 import { referenceIncome } from '../lib/incomeStats';
 import { fetchLiveExchangeRates } from '../lib/exchangeRates';
@@ -6,7 +6,7 @@ import { fmt } from '../lib/format';
 import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import { hashPin } from '../lib/pin';
 import { sendBackupEmail, sendReportLinkEmail, emailBackupConfigured } from '../lib/emailBackup';
-import { driveConfigured, uploadReportToDrive } from '../lib/googleDrive';
+import { driveConfigured, preloadGis, requestAccessToken, uploadReportToDrive } from '../lib/googleDrive';
 import NumberInput from '../components/NumberInput';
 import FixedHeader from '../components/FixedHeader';
 import BottomSheet from '../components/BottomSheet';
@@ -51,6 +51,9 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
   const incomeMode = user.incomeMode || 'variable';
   const setIncomeMode = (mode) => setData((s) => ({ ...s, user: { ...s.user, incomeMode: mode } }));
   const avgRecentIncome = referenceIncome(data.incomes, incomeMode);
+  useEffect(() => {
+    preloadGis();
+  }, []);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [ratesStatus, setRatesStatus] = useState('idle');
   const fileInputRef = useRef(null);
@@ -198,10 +201,15 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
   const sendToDrive = async () => {
     setDriveStatus('loading');
     setDriveError('');
+    // requestAccessToken() must be the very first thing awaited here, with nothing
+    // async ahead of it — Google's consent popup only opens if it's triggered
+    // synchronously within this click, before any other await hands control back
+    // to the event loop (see the comment on preloadGis() in googleDrive.js).
     try {
+      const accessToken = await requestAccessToken();
       const { buildSummaryWorkbook } = await import('../lib/exportExcel');
       const blob = await buildSummaryWorkbook(data);
-      const link = await uploadReportToDrive(blob, `payday-resumen-${todayISO()}.xlsx`);
+      const link = await uploadReportToDrive(accessToken, blob, `payday-resumen-${todayISO()}.xlsx`);
       if (user.backupEmail) {
         await sendReportLinkEmail(link, user.backupEmail);
         setDriveStatus('emailed');

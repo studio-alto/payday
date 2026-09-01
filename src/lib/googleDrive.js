@@ -24,16 +24,33 @@ function loadGis() {
   return gisLoadPromise;
 }
 
+// Fire-and-forget — call this as soon as the Drive feature might be used (e.g. when
+// the settings screen mounts) so the GIS script is almost certainly already loaded
+// by the time someone taps the button. That matters because requestAccessToken()
+// below must open Google's popup synchronously within the click's call stack; if
+// the script were still loading, the `await loadGis()` there would introduce the
+// async gap that gets the popup blocked (Safari in particular revokes the
+// "user activation" needed for window.open after any await).
+export function preloadGis() {
+  if (driveConfigured) loadGis().catch(() => {});
+}
+
 // Not persisted across reloads on purpose — this is an occasional, user-initiated
 // action (not a background sync), so a fresh consent prompt each session is fine
 // and avoids the complexity of storing/refreshing long-lived tokens client-side.
 let cachedToken = null;
 
-async function requestAccessToken() {
+// Call this FIRST, with nothing awaited before it, directly from the click handler —
+// see the comment on preloadGis() above for why the ordering matters.
+export async function requestAccessToken() {
   if (!driveConfigured) throw new Error('Google Drive no está configurado todavía (falta VITE_GOOGLE_CLIENT_ID).');
   if (cachedToken && cachedToken.expiresAt > Date.now() + 30000) return cachedToken.accessToken;
 
-  await loadGis();
+  if (!window.google?.accounts?.oauth2) {
+    // Only hit if preloadGis() hasn't finished yet — this await does introduce a
+    // gap, but it's unavoidable when the script genuinely isn't there yet.
+    await loadGis();
+  }
   return new Promise((resolve, reject) => {
     const client = window.google.accounts.oauth2.initTokenClient({
       client_id: CLIENT_ID,
@@ -80,9 +97,9 @@ async function findOrCreatePaydayFolder(accessToken) {
 
 // Uploads the blob into the person's own "Payday" Drive folder (created on first
 // use) and returns a link they (and only they — the file isn't made public) can
-// open to view it.
-export async function uploadReportToDrive(blob, filename) {
-  const accessToken = await requestAccessToken();
+// open to view it. Takes an already-fetched access token (see requestAccessToken)
+// rather than requesting one itself, so callers control exactly when the popup opens.
+export async function uploadReportToDrive(accessToken, blob, filename) {
   const folderId = await findOrCreatePaydayFolder(accessToken);
 
   const metadata = { name: filename, parents: [folderId] };
