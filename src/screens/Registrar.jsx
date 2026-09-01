@@ -75,9 +75,13 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
   const budgetAhorro = data.user.budgetAhorro ?? 20;
 
   const setField = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+  // Picking the date and toggling "Es un ingreso futuro" both work regardless of
+  // order: a date after today can't be a confirmed income, so choosing one here
+  // flips the toggle on automatically instead of silently refusing the date (which
+  // used to require toggling first, with no indication of why the date "didn't save").
   const setDate = (e) => {
-    const value = !form.esFuturo && e.target.value > today ? today : e.target.value;
-    setForm((f) => ({ ...f, date: value }));
+    const value = e.target.value;
+    setForm((f) => ({ ...f, date: value, esFuturo: value > today ? true : f.esFuturo }));
   };
   const toggleEsFuturo = () => setForm((f) => ({ ...f, esFuturo: !f.esFuturo, date: f.esFuturo ? (f.date > today ? today : f.date) : f.date }));
   const setType = (key) => setForm((f) => ({ ...f, type: key }));
@@ -292,7 +296,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
           </div>
           <div>
             <div style={fieldLabelStyle}>FECHA</div>
-            <DateField value={form.date} max={form.esFuturo ? undefined : today} onChange={setDate} style={textInputStyle()} />
+            <DateField value={form.date} onChange={setDate} style={textInputStyle()} />
           </div>
           <button
             type="button"
