@@ -66,8 +66,8 @@ function emptyExpenseForm() {
   return { name: '', categoria: 'Suscripción', amount: '', dueDay: '', medioPago: 'efectivo' };
 }
 
-function emptyVariableForm(today) {
-  return { name: '', categoria: VARIABLE_CATEGORIES[0], amount: '', date: today };
+function emptyVariableForm(today, defaultCategoria) {
+  return { name: '', categoria: defaultCategoria, amount: '', date: today };
 }
 
 export default function Deudas({ data, setData, onViewDetail }) {
@@ -315,9 +315,15 @@ export default function Deudas({ data, setData, onViewDetail }) {
     setDeleteHistoryTarget(null);
   };
 
+  // Which categories actually show up as budget rows — chosen by the person (see
+  // "Elegir categorías" below), not every preset at once. Logging a gasto still
+  // offers the full preset list plus any custom category, even before it's tracked.
+  const trackedCategories = data.user.gastoVariableCategorias || [];
+  const allAvailableCategories = [...new Set([...VARIABLE_CATEGORIES, ...trackedCategories])];
+
   // Budget-vs-actual per category, for the current calendar month only — matches
   // how the rest of the app (gastos fijos, deudas) always reasons in "this month" terms.
-  const categoryTotals = monthlyCategoryTotals(gastosVariables, VARIABLE_CATEGORIES, currentYear, currentMonth);
+  const categoryTotals = monthlyCategoryTotals(gastosVariables, trackedCategories, currentYear, currentMonth);
   const totalVariableMonth = categoryTotals.reduce((a, c) => a + c.total, 0);
   const thisMonthVariables = [...gastosVariables]
     .filter((g) => {
@@ -333,14 +339,34 @@ export default function Deudas({ data, setData, onViewDetail }) {
     }));
   };
 
+  const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
+  const [customCategoryText, setCustomCategoryText] = useState('');
+  const toggleTrackedCategory = (categoria) => {
+    setData((s) => {
+      const list = s.user.gastoVariableCategorias || [];
+      const next = list.includes(categoria) ? list.filter((c) => c !== categoria) : [...list, categoria];
+      return { ...s, user: { ...s.user, gastoVariableCategorias: next } };
+    });
+  };
+  const addCustomCategory = () => {
+    const name = customCategoryText.trim();
+    if (!name) return;
+    setData((s) => {
+      const list = s.user.gastoVariableCategorias || [];
+      if (list.includes(name)) return s;
+      return { ...s, user: { ...s.user, gastoVariableCategorias: [...list, name] } };
+    });
+    setCustomCategoryText('');
+  };
+
   const [variableModalOpen, setVariableModalOpen] = useState(false);
   const [editingVariableId, setEditingVariableId] = useState(null);
-  const [variableForm, setVariableForm] = useState(emptyVariableForm(today));
+  const [variableForm, setVariableForm] = useState(emptyVariableForm(today, trackedCategories[0] || VARIABLE_CATEGORIES[0]));
   const [confirmDeleteVariableId, setConfirmDeleteVariableId] = useState(null);
 
   const openNewVariableModal = () => {
     setEditingVariableId(null);
-    setVariableForm(emptyVariableForm(today));
+    setVariableForm(emptyVariableForm(today, trackedCategories[0] || VARIABLE_CATEGORIES[0]));
     setVariableModalOpen(true);
   };
   const openEditVariableModal = (g) => {
@@ -946,45 +972,101 @@ export default function Deudas({ data, setData, onViewDetail }) {
           </div>
 
           <div style={cardStyle}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em', marginBottom: 4 }}>
-              PRESUPUESTO POR CATEGORÍA (ESTE MES)
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em' }}>
+                PRESUPUESTO POR CATEGORÍA (ESTE MES)
+              </div>
+              <button
+                type="button"
+                onClick={() => setCategoryPickerOpen(true)}
+                style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 12, fontWeight: 700, color: 'var(--accent)', flexShrink: 0 }}
+              >
+                Elegir categorías
+              </button>
             </div>
-            {categoryTotals.map(({ categoria, total }) => {
-              const budget = Number(data.user.presupuestoVariable?.[categoria]) || 0;
-              const pct = budget > 0 ? Math.min(100, Math.round((total / budget) * 100)) : 0;
-              const overBudget = budget > 0 && total > budget;
-              const diff = budget - total;
-              return (
-                <div key={categoria} style={{ padding: '12px 0', borderTop: '1px solid var(--divider)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)' }}>{categoria}</div>
-                    <div style={{ fontWeight: 800, fontSize: 14, color: overBudget ? 'var(--danger-text)' : 'var(--text)' }}>{fmt(total, currency)}</div>
-                  </div>
-                  {budget > 0 && (
-                    <div style={{ height: 5, background: 'var(--divider)', borderRadius: 6, overflow: 'hidden', marginTop: 8 }}>
-                      <div style={{ height: '100%', width: `${pct}%`, background: overBudget ? 'var(--danger)' : 'var(--accent)', borderRadius: 6, transition: 'width 0.5s ease' }} />
-                    </div>
-                  )}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, gap: 8 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Presupuesto:</div>
-                      <NumberInput
-                        value={data.user.presupuestoVariable?.[categoria] ?? ''}
-                        onChange={(e) => setPresupuestoCategoria(categoria, e.target.value)}
-                        placeholder="0"
-                        style={{ width: 84, padding: '5px 8px', borderRadius: 8, border: 'none', background: 'var(--input-bg)', color: 'var(--text)', fontSize: 12, fontWeight: 700 }}
-                      />
+
+            {trackedCategories.length === 0 ? (
+              <button
+                type="button"
+                onClick={() => setCategoryPickerOpen(true)}
+                style={{ width: '100%', textAlign: 'left', border: 'none', background: 'none', padding: '10px 0', cursor: 'pointer', fontSize: 12, color: 'var(--text-secondary)' }}
+              >
+                Aún no elegiste categorías para seguir. Toca "Elegir categorías" para escoger las que quieras.
+              </button>
+            ) : (
+              categoryTotals.map(({ categoria, total }) => {
+                const budget = Number(data.user.presupuestoVariable?.[categoria]) || 0;
+                const pct = budget > 0 ? Math.min(100, Math.round((total / budget) * 100)) : 0;
+                const overBudget = budget > 0 && total > budget;
+                const diff = budget - total;
+                return (
+                  <div key={categoria} style={{ padding: '12px 0', borderTop: '1px solid var(--divider)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)' }}>{categoria}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ fontWeight: 800, fontSize: 14, color: overBudget ? 'var(--danger-text)' : 'var(--text)' }}>{fmt(total, currency)}</div>
+                        <button
+                          type="button"
+                          onClick={() => toggleTrackedCategory(categoria)}
+                          aria-label={`Quitar ${categoria}`}
+                          style={{ color: 'var(--danger-text)', fontWeight: 700, fontSize: 14, cursor: 'pointer', lineHeight: 1, border: 'none', background: 'none', padding: 0 }}
+                        >
+                          ×
+                        </button>
+                      </div>
                     </div>
                     {budget > 0 && (
-                      <div style={{ fontSize: 11, fontWeight: 700, color: overBudget ? 'var(--danger-text)' : 'var(--text-secondary)' }}>
-                        {overBudget ? `Excedido por ${fmt(-diff, currency)}` : `Quedan ${fmt(diff, currency)}`}
+                      <div style={{ height: 5, background: 'var(--divider)', borderRadius: 6, overflow: 'hidden', marginTop: 8 }}>
+                        <div style={{ height: '100%', width: `${pct}%`, background: overBudget ? 'var(--danger)' : 'var(--accent)', borderRadius: 6, transition: 'width 0.5s ease' }} />
                       </div>
                     )}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, gap: 8 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Presupuesto:</div>
+                        <NumberInput
+                          value={data.user.presupuestoVariable?.[categoria] ?? ''}
+                          onChange={(e) => setPresupuestoCategoria(categoria, e.target.value)}
+                          placeholder="0"
+                          style={{ width: 84, padding: '5px 8px', borderRadius: 8, border: 'none', background: 'var(--input-bg)', color: 'var(--text)', fontSize: 12, fontWeight: 700 }}
+                        />
+                      </div>
+                      {budget > 0 && (
+                        <div style={{ fontSize: 11, fontWeight: 700, color: overBudget ? 'var(--danger-text)' : 'var(--text-secondary)' }}>
+                          {overBudget ? `Excedido por ${fmt(-diff, currency)}` : `Quedan ${fmt(diff, currency)}`}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
+
+          {categoryTotals.some((c) => c.total > 0) && (
+            <div style={cardStyle}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em', marginBottom: 10 }}>
+                GASTO POR CATEGORÍA (ESTE MES)
+              </div>
+              {[...categoryTotals]
+                .filter((c) => c.total > 0)
+                .sort((a, b) => b.total - a.total)
+                .map(({ categoria, total }) => {
+                  const max = Math.max(...categoryTotals.map((c) => c.total), 1);
+                  const pct = Math.round((total / max) * 100);
+                  return (
+                    <div key={categoria} style={{ marginTop: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
+                        <span style={{ color: 'var(--text-secondary)' }}>{categoria}</span>
+                        <span style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(total, currency)}</span>
+                      </div>
+                      <div style={{ height: 8, background: 'var(--divider)', borderRadius: 6, overflow: 'hidden', marginTop: 4 }}>
+                        <div style={{ height: '100%', width: `${pct}%`, background: 'var(--accent)', borderRadius: 6, transition: 'width 0.5s ease' }} />
+                      </div>
+                    </div>
+                  );
+                })}
+            </div>
+          )}
 
           <div style={cardStyle}>
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em', marginBottom: 4 }}>ESTE MES</div>
@@ -1024,7 +1106,7 @@ export default function Deudas({ data, setData, onViewDetail }) {
             <BottomSheet onClose={closeVariableModal}>
               <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{editingVariableId ? 'Editar gasto' : 'Nuevo gasto variable'}</div>
               <select value={variableForm.categoria} onChange={setVariableField('categoria')} style={textInputStyle()}>
-                {VARIABLE_CATEGORIES.map((c) => (
+                {allAvailableCategories.map((c) => (
                   <option key={c} value={c}>
                     {c}
                   </option>
@@ -1035,6 +1117,101 @@ export default function Deudas({ data, setData, onViewDetail }) {
               <input type="date" value={variableForm.date} max={today} onChange={setVariableField('date')} style={textInputStyle()} />
               <button type="button" onClick={saveVariable} style={{ ...primaryButtonStyle(), height: 50, borderRadius: 25 }}>
                 Guardar
+              </button>
+            </BottomSheet>
+          )}
+
+          {categoryPickerOpen && (
+            <BottomSheet onClose={() => setCategoryPickerOpen(false)}>
+              <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>Elegir categorías</div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: -8 }}>
+                Toca las que quieras seguir. Puedes agregar una propia abajo.
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {VARIABLE_CATEGORIES.map((c) => {
+                  const active = trackedCategories.includes(c);
+                  return (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => toggleTrackedCategory(c)}
+                      style={{
+                        padding: '9px 14px',
+                        borderRadius: 20,
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        background: active ? 'var(--text)' : 'var(--input-bg)',
+                        color: active ? 'var(--page-bg)' : 'var(--text)',
+                        border: 'none',
+                      }}
+                    >
+                      {c}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {trackedCategories.filter((c) => !VARIABLE_CATEGORIES.includes(c)).length > 0 && (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {trackedCategories
+                    .filter((c) => !VARIABLE_CATEGORIES.includes(c))
+                    .map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onClick={() => toggleTrackedCategory(c)}
+                        style={{
+                          padding: '9px 14px',
+                          borderRadius: 20,
+                          fontSize: 13,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          background: 'var(--text)',
+                          color: 'var(--page-bg)',
+                          border: 'none',
+                        }}
+                      >
+                        {c} ×
+                      </button>
+                    ))}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input
+                  type="text"
+                  value={customCategoryText}
+                  onChange={(e) => setCustomCategoryText(e.target.value)}
+                  placeholder="Otra categoría (ej: Streaming)"
+                  style={{ ...textInputStyle(), flex: 1 }}
+                />
+                <button
+                  type="button"
+                  onClick={addCustomCategory}
+                  disabled={!customCategoryText.trim()}
+                  style={{
+                    padding: '0 16px',
+                    borderRadius: 14,
+                    background: 'var(--input-bg)',
+                    color: 'var(--text)',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    cursor: customCategoryText.trim() ? 'pointer' : 'default',
+                    opacity: customCategoryText.trim() ? 1 : 0.5,
+                    border: 'none',
+                  }}
+                >
+                  Agregar
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setCategoryPickerOpen(false)}
+                style={{ ...primaryButtonStyle(), height: 50, borderRadius: 25 }}
+              >
+                Listo
               </button>
             </BottomSheet>
           )}
