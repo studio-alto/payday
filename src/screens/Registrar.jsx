@@ -74,6 +74,15 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
   const budgetDeseos = data.user.budgetDeseos ?? 30;
   const budgetAhorro = data.user.budgetAhorro ?? 20;
 
+  // Was only changeable from deep inside Ajustes, so most people never saw the
+  // choice at all and just got the "variable" default — asking here, once, the
+  // first time someone tries to register an income, means the estimates/averages
+  // are right from day one instead of quietly wrong for a fixed-salary earner.
+  const chooseIncomeMode = (mode) => {
+    setData((s) => ({ ...s, user: { ...s.user, incomeMode: mode } }));
+    setForm((f) => ({ ...f, type: mode === 'fijo' ? 'mensual' : 'normal' }));
+  };
+
   const setField = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
   // Picking the date and toggling "Es un ingreso futuro" both work regardless of
   // order: a date after today can't be a confirmed income, so choosing one here
@@ -165,6 +174,46 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
     onDoneEditing?.();
     onNavigate('dashboard');
   };
+
+  // Gated on "no incomes yet" too, not just "incomeMode unset" — otherwise
+  // everyone who was already using the app under the old implicit "variable"
+  // default would suddenly get interrupted by this the next time they registered
+  // one, instead of only truly first-time people ever seeing it.
+  if (!isEditing && !data.user.incomeMode && data.incomes.length === 0) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 'var(--header-h, 110px)' }}>
+        <FixedHeader>
+          <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', letterSpacing: '-0.02em' }}>Registrar</div>
+        </FixedHeader>
+        <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--text)' }}>¿Cómo es tu ingreso?</div>
+          <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+            Así calculamos bien tus promedios y proyecciones desde el primer día. Lo puedes cambiar después en Ajustes.
+          </div>
+          <button
+            type="button"
+            onClick={() => chooseIncomeMode('variable')}
+            style={{ textAlign: 'left', padding: 16, borderRadius: 16, background: 'var(--input-bg)', border: 'none', cursor: 'pointer' }}
+          >
+            <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>Variable (día a día)</div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
+              Para pagos que varían — turnos, domingos, festivos, etc.
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={() => chooseIncomeMode('fijo')}
+            style={{ textAlign: 'left', padding: 16, borderRadius: 16, background: 'var(--input-bg)', border: 'none', cursor: 'pointer' }}
+          >
+            <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>Fijo (mensual)</div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
+              Para cuando recibes un sueldo fijo una vez al mes, en vez de ingresos variables día a día.
+            </div>
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const stepDots = [1, 2, 3, 4].map((n) => ({ n, active: n <= step }));
 
