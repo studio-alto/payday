@@ -172,7 +172,7 @@ export default function Metas({ data, setData, onViewDetail }) {
 
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginTop: 12 }}>
               <div style={{ width: 88, height: 88, borderRadius: '50%', background: donut, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <div style={{ width: 68, height: 68, borderRadius: '50%', background: isOverdue ? bg : 'var(--card-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: 46, height: 46, borderRadius: '50%', background: isOverdue ? bg : 'var(--card-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <div style={{ fontWeight: 800, fontSize: 15, color: fg }}>{pct}%</div>
                 </div>
               </div>

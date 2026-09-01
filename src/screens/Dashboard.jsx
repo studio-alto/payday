@@ -356,8 +356,8 @@ export default function Dashboard({ data, setData, onNavigate }) {
         >
           <div style={{ ...labelStyle, alignSelf: 'flex-start' }}>META PRINCIPAL</div>
           <div style={{ width: 120, height: 120, borderRadius: '50%', background: goalDonut, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 10 }}>
-            <div style={{ width: 92, height: 92, borderRadius: '50%', background: 'var(--card-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ fontWeight: 800, fontSize: 22, color: 'var(--text)' }}>{nextGoal.pct || 0}%</div>
+            <div style={{ width: 62, height: 62, borderRadius: '50%', background: 'var(--card-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--text)' }}>{nextGoal.pct || 0}%</div>
             </div>
           </div>
           <div style={{ fontSize: 13, color: 'var(--text)', marginTop: 12, fontWeight: 700, textAlign: 'center' }}>{nextGoal.name}</div>
