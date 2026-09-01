@@ -92,7 +92,7 @@ export default function MetaDetalle({ data, setData, goalId, onNavigate }) {
       <div style={{ display: 'flex', justifyContent: 'center' }}>
         <div style={heroTileStyle}>
           <div style={labelStyle}>AVANCE</div>
-          <ProgressRing pct={pct} size={128} style={{ marginTop: 10 }}>
+          <ProgressRing pct={pct} size={128} color={goal.color || 'var(--accent)'} style={{ marginTop: 10 }}>
             <div style={{ fontWeight: 800, fontSize: 24, color: 'var(--text)', letterSpacing: '-0.02em' }}>{pct}%</div>
           </ProgressRing>
         </div>

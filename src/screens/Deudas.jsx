@@ -16,6 +16,7 @@ import SwipeActions from '../components/SwipeActions';
 import ProgressRing from '../components/ProgressRing';
 import { sortDebtsByPriority, simulatePayoffPlan, formatMonthsLabel, monthlyPaidTotals, METHODS } from '../lib/debt';
 import { VARIABLE_CATEGORIES, monthlyCategoryTotals, monthlyVariableTotals } from '../lib/variableExpenses';
+import { CHART_COLORS as CATEGORY_CHART_COLORS } from '../lib/colors';
 
 const TIPOS = ['Tarjeta de crédito', 'Préstamo', 'Otro'];
 const CATEGORIAS = ['Suscripción', 'Servicios', 'Transporte', 'Vivienda', 'Tarjeta de crédito', 'Otro'];
@@ -23,8 +24,6 @@ const CATEGORIAS = ['Suscripción', 'Servicios', 'Transporte', 'Vivienda', 'Tarj
 // Qualitative palette for the category donut — cycles if there are more tracked
 // categories than colors. Distinct enough from each other and from --divider/--card-bg
 // in both themes since these are chart fills, not text.
-const CATEGORY_CHART_COLORS = ['#7bd6dc', '#00c45b', '#476bff', '#f2c200', '#ff7500', '#f03d0e', '#939598', '#ff578b', '#ba5aed'];
-
 // Ring geometry for the category donut — separated, rounded-cap arcs (not a solid
 // touching pie) per the reference design. viewBox is 0-100 so RADIUS/STROKE are in
 // those units; the svg itself is rotated -90deg so arcs start at 12 o'clock.

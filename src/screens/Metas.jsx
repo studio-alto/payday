@@ -14,11 +14,12 @@ import FixedHeader from '../components/FixedHeader';
 import SwipeActions from '../components/SwipeActions';
 import DateField from '../components/DateField';
 import ProgressRing from '../components/ProgressRing';
+import { CHART_COLORS } from '../lib/colors';
 
 const GOAL_PRESETS = ['Fondo de emergencia', 'Viaje', 'Laptop', 'Curso', 'Otra'];
 
 function emptyForm() {
-  return { name: '', target: '', current: '', description: '', fechaObjetivo: '' };
+  return { name: '', target: '', current: '', description: '', fechaObjetivo: '', color: '' };
 }
 
 export default function Metas({ data, setData, onViewDetail }) {
@@ -39,12 +40,13 @@ export default function Metas({ data, setData, onViewDetail }) {
   };
   const openEditModal = (g) => {
     setEditingGoalId(g.id);
-    setForm({ name: g.name, target: String(g.target), current: String(g.current), description: g.description || '', fechaObjetivo: g.fechaObjetivo || '' });
+    setForm({ name: g.name, target: String(g.target), current: String(g.current), description: g.description || '', fechaObjetivo: g.fechaObjetivo || '', color: g.color || '' });
     setModalOpen(true);
   };
   const closeModal = () => setModalOpen(false);
   const setField = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
   const pickPreset = (label) => setForm((f) => ({ ...f, name: label === 'Otra' ? '' : label }));
+  const pickColor = (color) => setForm((f) => ({ ...f, color: f.color === color ? '' : color }));
 
   const saveGoal = () => {
     if (!form.name || !form.target) return;
@@ -54,7 +56,7 @@ export default function Metas({ data, setData, onViewDetail }) {
           ...s,
           goals: s.goals.map((g) =>
             g.id === editingGoalId
-              ? { ...g, name: form.name, target: Number(form.target), current: Number(form.current) || 0, description: form.description, fechaObjetivo: form.fechaObjetivo || null }
+              ? { ...g, name: form.name, target: Number(form.target), current: Number(form.current) || 0, description: form.description, fechaObjetivo: form.fechaObjetivo || null, color: form.color || null }
               : g,
           ),
         };
@@ -71,6 +73,7 @@ export default function Metas({ data, setData, onViewDetail }) {
             current: initialCurrent,
             description: form.description,
             fechaObjetivo: form.fechaObjetivo || null,
+            color: form.color || null,
             estado: 'activa',
             history: initialCurrent > 0 ? [{ date: todayISO(), amount: initialCurrent }] : [],
           },
@@ -148,7 +151,7 @@ export default function Metas({ data, setData, onViewDetail }) {
         const bg = isOverdue ? 'var(--danger)' : 'var(--card-bg)';
         const fg = isOverdue ? 'white' : 'var(--text)';
         const fgSoft = isOverdue ? 'rgba(255,255,255,0.85)' : 'var(--text-secondary)';
-        const ringColor = isOverdue ? 'white' : 'var(--accent)';
+        const ringColor = isOverdue ? 'white' : (g.color || 'var(--accent)');
         const ringTrack = isOverdue ? 'rgba(255,255,255,0.3)' : 'var(--divider)';
 
         return (
@@ -339,6 +342,42 @@ export default function Metas({ data, setData, onViewDetail }) {
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
               Si la pones, te decimos cuánto ahorrar por día, semana o mes para llegar a tiempo. Si la dejas en blanco, te
               estimamos igual cuántos meses te faltan según tu ritmo de aportes.
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 8, fontWeight: 700 }}>COLOR (OPCIONAL)</div>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => pickColor('')}
+                aria-label="Color por defecto"
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  background: 'var(--accent)',
+                  border: form.color === '' ? '3px solid var(--text)' : '3px solid transparent',
+                  cursor: 'pointer',
+                  padding: 0,
+                }}
+              />
+              {CHART_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => pickColor(c)}
+                  aria-label={`Color ${c}`}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    background: c,
+                    border: form.color === c ? '3px solid var(--text)' : '3px solid transparent',
+                    cursor: 'pointer',
+                    padding: 0,
+                  }}
+                />
+              ))}
             </div>
           </div>
           <textarea

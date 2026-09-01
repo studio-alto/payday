@@ -355,7 +355,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
           style={{ ...cardStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 0, border: 'none', cursor: 'pointer', width: '100%' }}
         >
           <div style={{ ...labelStyle, alignSelf: 'flex-start' }}>META PRINCIPAL</div>
-          <ProgressRing pct={nextGoal.pct || 0} size={120} style={{ marginTop: 10 }}>
+          <ProgressRing pct={nextGoal.pct || 0} size={120} color={nextGoal.color || 'var(--accent)'} style={{ marginTop: 10 }}>
             <div style={{ fontWeight: 800, fontSize: 21, color: 'var(--text)' }}>{nextGoal.pct || 0}%</div>
           </ProgressRing>
           <div style={{ fontSize: 13, color: 'var(--text)', marginTop: 12, fontWeight: 700, textAlign: 'center' }}>{nextGoal.name}</div>
