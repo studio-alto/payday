@@ -2,6 +2,11 @@ import { useRef, useState } from 'react';
 
 const SLOT_WIDTH = 68;
 const BUTTON_SIZE = 44;
+// How far the pointer has to move before a press counts as a swipe rather than a
+// tap. Below this, capture is never taken, so a plain click on a nested button
+// (Ver detalle, + Agregar, etc.) fires normally instead of being swallowed by
+// setPointerCapture retargeting the click to this wrapper.
+const DRAG_THRESHOLD = 8;
 
 // Swipe-left-to-reveal actions (iOS Mail/Reminders style) — wraps a card's content;
 // dragging it left uncovers one or more floating circular action buttons pinned
@@ -20,18 +25,25 @@ export default function SwipeActions({ children, actions, borderRadius = 24, bac
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     startX.current = e.clientX;
     startedOpen.current = open;
-    setDragging(true);
-    e.currentTarget.setPointerCapture(e.pointerId);
+    // Pointer capture is deferred to onPointerMove, once real drag motion is seen —
+    // taking it immediately here would retarget the click from a plain tap (no
+    // movement) to this wrapper instead of the nested button the user actually pressed.
   };
   const onPointerMove = (e) => {
     if (startX.current === null) return;
     const delta = e.clientX - startX.current;
+    if (!dragging) {
+      if (Math.abs(delta) < DRAG_THRESHOLD) return;
+      setDragging(true);
+      e.currentTarget.setPointerCapture(e.pointerId);
+    }
     const base = startedOpen.current ? -maxReveal : 0;
     setDragX(Math.max(-maxReveal, Math.min(0, base + delta)));
   };
   const endDrag = () => {
     if (startX.current === null) return;
     startX.current = null;
+    if (!dragging) return;
     setDragging(false);
     const shouldOpen = dragX < -maxReveal / 2;
     setOpen(shouldOpen);
