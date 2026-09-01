@@ -504,7 +504,7 @@ export default function Deudas({ data, setData, onViewDetail }) {
       {section === 'deudas' && cards.length > 0 && (
         <div style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: 20 }}>
           <div style={{ width: 88, height: 88, borderRadius: '50%', background: debtDonut, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-            <div style={{ width: 46, height: 46, borderRadius: '50%', background: 'var(--card-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'var(--card-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{pctPaidGlobal}%</div>
             </div>
           </div>

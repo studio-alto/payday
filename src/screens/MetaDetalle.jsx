@@ -93,8 +93,8 @@ export default function MetaDetalle({ data, setData, goalId, onNavigate }) {
         <div style={heroTileStyle}>
           <div style={labelStyle}>AVANCE</div>
           <div style={{ width: 128, height: 128, borderRadius: '50%', background: donut, display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: 10 }}>
-            <div style={{ width: 66, height: 66, borderRadius: '50%', background: 'var(--card-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <div style={{ fontWeight: 800, fontSize: 19, color: 'var(--text)', letterSpacing: '-0.02em' }}>{pct}%</div>
+            <div style={{ width: 82, height: 82, borderRadius: '50%', background: 'var(--card-bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ fontWeight: 800, fontSize: 24, color: 'var(--text)', letterSpacing: '-0.02em' }}>{pct}%</div>
             </div>
           </div>
         </div>
