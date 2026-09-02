@@ -5,6 +5,12 @@ import { averageRecentIncome, getPendingConfirmations } from '../lib/incomeStats
 import { applyIncomeEffects } from '../lib/debt';
 import FixedHeader from '../components/FixedHeader';
 import ProgressRing from '../components/ProgressRing';
+import SummaryIcon from '../components/SummaryIcon';
+
+// One color per "Resumen general" row — a small, fixed palette (not the Variables
+// donut's per-category one, which grows/cycles) used purely to make each account
+// type visually distinct at a glance, not to imply good/bad.
+const SUMMARY_COLORS = { ahorro: '#00c45b', deudas: '#476bff', gastosFijos: '#ff7500', gastosVariables: '#2fa4ad' };
 
 export default function Dashboard({ data, setData, onNavigate }) {
   const { user, incomes, goals, cards, expenses, gastosVariables } = data;
@@ -502,64 +508,88 @@ export default function Dashboard({ data, setData, onNavigate }) {
 
       {/* Resumen general — every account's total in one place, since the cards
           above only ever surface one goal (the next incomplete one) and never
-          show gastos variables at all. */}
-      <div style={cardStyle}>
-        <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text)', marginBottom: 6 }}>Resumen general</div>
+          show gastos variables at all. Each row gets its own tinted color chip
+          (icon circle + soft background) so the card reads at a glance instead
+          of as a flat list of numbers. */}
+      <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text)' }}>Resumen general</div>
+
         <button
           type="button"
           onClick={() => onNavigate('metas')}
-          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', padding: '10px 0', cursor: 'pointer', width: '100%', textAlign: 'left', borderTop: '1px solid var(--divider)' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 12, background: `${SUMMARY_COLORS.ahorro}17`, border: 'none', borderRadius: 16, padding: '10px 12px', cursor: 'pointer', width: '100%', textAlign: 'left' }}
         >
-          <div>
-            <div style={labelStyle}>AHORRO</div>
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+          <div style={{ width: 38, height: 38, borderRadius: '50%', background: `${SUMMARY_COLORS.ahorro}2b`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <SummaryIcon name="ahorro" size={18} color={SUMMARY_COLORS.ahorro} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Ahorro</div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 1 }}>
               {goals.length === 0 ? 'Sin metas' : goals.length === 1 ? '1 meta' : `${goals.length} metas`}
             </div>
           </div>
-          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{fmt(totalAhorro, user.currency)}</div>
+          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)', flexShrink: 0 }}>{fmt(totalAhorro, user.currency)}</div>
         </button>
+
         <button
           type="button"
           onClick={() => onNavigate('tarjetas')}
-          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', padding: '10px 0', cursor: 'pointer', width: '100%', textAlign: 'left', borderTop: '1px solid var(--divider)' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 12, background: `${SUMMARY_COLORS.deudas}17`, border: 'none', borderRadius: 16, padding: '10px 12px', cursor: 'pointer', width: '100%', textAlign: 'left' }}
         >
-          <div>
-            <div style={labelStyle}>DEUDAS</div>
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+          <div style={{ width: 38, height: 38, borderRadius: '50%', background: `${SUMMARY_COLORS.deudas}2b`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <SummaryIcon name="deudas" size={18} color={SUMMARY_COLORS.deudas} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Deudas</div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 1 }}>
               {cards.length === 0 ? 'Sin deudas' : cards.length === 1 ? '1 deuda' : `${cards.length} deudas`}
             </div>
           </div>
-          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{fmt(totalDeuda, user.currency)}</div>
+          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)', flexShrink: 0 }}>{fmt(totalDeuda, user.currency)}</div>
         </button>
+
         <button
           type="button"
           onClick={() => onNavigate('tarjetas')}
-          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', padding: '10px 0', cursor: 'pointer', width: '100%', textAlign: 'left', borderTop: '1px solid var(--divider)' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 12, background: `${SUMMARY_COLORS.gastosFijos}17`, border: 'none', borderRadius: 16, padding: '10px 12px', cursor: 'pointer', width: '100%', textAlign: 'left' }}
         >
-          <div>
-            <div style={labelStyle}>GASTOS FIJOS</div>
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+          <div style={{ width: 38, height: 38, borderRadius: '50%', background: `${SUMMARY_COLORS.gastosFijos}2b`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <SummaryIcon name="gastosFijos" size={18} color={SUMMARY_COLORS.gastosFijos} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Gastos fijos</div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 1 }}>
               {expenses.length === 0 ? 'Sin gastos fijos' : expenses.length === 1 ? '1 gasto fijo' : `${expenses.length} gastos fijos`}
             </div>
           </div>
-          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{fmt(totalGastos, user.currency)}</div>
+          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)', flexShrink: 0 }}>{fmt(totalGastos, user.currency)}</div>
         </button>
+
         <button
           type="button"
           onClick={() => onNavigate('tarjetas')}
-          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'none', border: 'none', padding: '10px 0', cursor: 'pointer', width: '100%', textAlign: 'left', borderTop: '1px solid var(--divider)' }}
+          style={{ display: 'flex', alignItems: 'center', gap: 12, background: `${SUMMARY_COLORS.gastosVariables}17`, border: 'none', borderRadius: 16, padding: '10px 12px', cursor: 'pointer', width: '100%', textAlign: 'left' }}
         >
-          <div>
-            <div style={labelStyle}>GASTOS VARIABLES</div>
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+          <div style={{ width: 38, height: 38, borderRadius: '50%', background: `${SUMMARY_COLORS.gastosVariables}2b`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <SummaryIcon name="gastosVariables" size={18} color={SUMMARY_COLORS.gastosVariables} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Gastos variables</div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 1 }}>
               {variablesThisMonth.length === 0 ? 'Este mes' : `Este mes · ${variablesThisMonth.length === 1 ? '1 gasto' : `${variablesThisMonth.length} gastos`}`}
             </div>
           </div>
-          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{fmt(totalVariablesMonth, user.currency)}</div>
+          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)', flexShrink: 0 }}>{fmt(totalVariablesMonth, user.currency)}</div>
         </button>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderTop: '1px solid var(--divider)' }}>
-          <div style={labelStyle}>DISPONIBLE</div>
-          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{fmt(disponible, user.currency)}</div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--accent-soft-bg)', borderRadius: 16, padding: '10px 12px' }}>
+          <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <SummaryIcon name="disponible" size={18} color="white" />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Disponible</div>
+          </div>
+          <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--accent-text)', flexShrink: 0 }}>{fmt(disponible, user.currency)}</div>
         </div>
       </div>
     </div>
