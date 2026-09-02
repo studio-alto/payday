@@ -65,7 +65,7 @@ describe('computeDebtWaterfall', () => {
 describe('simulatePayoffPlan', () => {
   it('no debt: pays off immediately, no simulation needed', () => {
     const plan = simulatePayoffPlan([{ ...smallLow, balance: 0 }], 'bola_nieve', 0);
-    expect(plan).toEqual({ monthsToPayoff: 0, stuck: false, perCard: [] });
+    expect(plan).toEqual({ monthsToPayoff: 0, stuck: false, stuckInfo: null, perCard: [] });
   });
 
   it('a minimum payment that exactly covers the balance pays it off in one month', () => {
@@ -89,6 +89,8 @@ describe('simulatePayoffPlan', () => {
     const plan = simulatePayoffPlan([{ id: 'a', name: 'A', balance: 1000, interestRate: 1000, minPayment: 1 }], 'bola_nieve', 0);
     expect(plan.stuck).toBe(true);
     expect(plan.monthsToPayoff).toBeNull();
+    expect(plan.stuckInfo.worstCards).toEqual(['A']);
+    expect(plan.stuckInfo.gap).toBeGreaterThan(0);
   });
 
   it('bola_nieve pays off the smaller debt first even if the extra could clear the bigger one faster', () => {

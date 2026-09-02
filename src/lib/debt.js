@@ -65,8 +65,18 @@ export function simulatePayoffPlan(cards, method, extraMonthly) {
     }));
 
   if (working.length === 0) {
-    return { monthsToPayoff: 0, stuck: false, perCard: [] };
+    return { monthsToPayoff: 0, stuck: false, stuckInfo: null, perCard: [] };
   }
+
+  // Snapshot of this month's interest vs. minimum payments, at today's balances —
+  // used to explain *why* the plan is stuck, in numbers the user recognizes right now
+  // (not the ballooned balances 30 years into a simulation that never converges).
+  const initialInterest = working.map((c) => ({
+    id: c.id,
+    name: c.name,
+    monthlyInterest: c.balance * c.monthlyRate,
+    minPayment: c.minPayment,
+  }));
 
   let month = 0;
   while (working.some((c) => c.balance > 0.01) && month < MAX_MONTHS) {
@@ -93,9 +103,24 @@ export function simulatePayoffPlan(cards, method, extraMonthly) {
   }
 
   const stuck = working.some((c) => c.balance > 0.01);
+  let stuckInfo = null;
+  if (stuck) {
+    const totalMonthlyInterest = initialInterest.reduce((a, c) => a + c.monthlyInterest, 0);
+    const totalMinPayments = initialInterest.reduce((a, c) => a + c.minPayment, 0);
+    const gap = Math.max(0, Math.round(totalMonthlyInterest - totalMinPayments - extraMonthly));
+    const worstCards = initialInterest.filter((c) => c.monthlyInterest > c.minPayment).map((c) => c.name);
+    stuckInfo = {
+      totalMonthlyInterest: Math.round(totalMonthlyInterest),
+      totalMinPayments: Math.round(totalMinPayments),
+      gap,
+      worstCards,
+    };
+  }
+
   return {
     monthsToPayoff: stuck ? null : month,
     stuck,
+    stuckInfo,
     perCard: [...working].sort((a, b) => (a.payoffMonth ?? Infinity) - (b.payoffMonth ?? Infinity)).map((c) => ({ id: c.id, name: c.name, payoffMonth: c.payoffMonth })),
   };
 }

@@ -8,6 +8,7 @@ import DateField from '../components/DateField';
 import BottomSheet from '../components/BottomSheet';
 import FixedHeader from '../components/FixedHeader';
 import ProgressRing from '../components/ProgressRing';
+import InlineConfirm from '../components/InlineConfirm';
 
 const EXTRA_PRESETS = [0, 20000, 50000, 100000, 200000];
 
@@ -22,6 +23,8 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
 
   const [payModalOpen, setPayModalOpen] = useState(false);
   const [payForm, setPayForm] = useState({ amount: '', note: '', date: '' });
+  const [editingHistoryIdx, setEditingHistoryIdx] = useState(null);
+  const [deleteHistoryIdx, setDeleteHistoryIdx] = useState(null);
   const [extraText, setExtraText] = useState('');
 
   if (!card) {
@@ -54,11 +57,22 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
   // but this extra amount is enough to actually pay it off — the single most useful
   // thing this screen can tell someone in that situation.
   const extraRescuesFromStuck = extra > 0 && baseline.stuck && !withExtra.stuck;
+  // How far the minimum payment (and, separately, minimum + extra) falls short of this
+  // month's interest — the exact number someone needs to close that gap, not just "it's stuck".
+  const minGap = Math.max(0, Math.round(interestCost - (card.minPayment || 0)));
+  const extraGap = Math.max(0, Math.round(interestCost - (card.minPayment || 0) - extra));
 
   const today = todayISO();
-  const mostRecentPayment = card.history.length > 0 ? [...card.history].sort((a, b) => b.date.localeCompare(a.date))[0] : null;
+  const sortedHistory = card.history.map((h, i) => ({ ...h, _idx: i })).sort((a, b) => b.date.localeCompare(a.date));
   const openPayModal = () => {
+    setEditingHistoryIdx(null);
     setPayForm({ amount: '', note: '', date: today });
+    setPayModalOpen(true);
+  };
+  const openEditHistoryModal = (idx) => {
+    const entry = card.history[idx];
+    setEditingHistoryIdx(idx);
+    setPayForm({ amount: String(entry.amount), note: entry.note || '', date: entry.date });
     setPayModalOpen(true);
   };
   const confirmPay = () => {
@@ -66,13 +80,31 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
     if (amount <= 0) return;
     setData((s) => ({
       ...s,
-      cards: s.cards.map((c) =>
-        c.id === card.id
-          ? { ...c, balance: Math.max(0, c.balance - amount), history: [...c.history, { date: payForm.date || today, amount, note: payForm.note }] }
-          : c,
-      ),
+      cards: s.cards.map((c) => {
+        if (c.id !== card.id) return c;
+        if (editingHistoryIdx !== null) {
+          const oldAmount = c.history[editingHistoryIdx].amount;
+          const history = c.history.map((h, i) => (i === editingHistoryIdx ? { date: payForm.date || today, amount, note: payForm.note } : h));
+          return { ...c, balance: Math.max(0, c.balance + oldAmount - amount), history };
+        }
+        return { ...c, balance: Math.max(0, c.balance - amount), history: [...c.history, { date: payForm.date || today, amount, note: payForm.note }] };
+      }),
     }));
     setPayModalOpen(false);
+    setEditingHistoryIdx(null);
+  };
+  const askDeleteHistory = (idx) => setDeleteHistoryIdx(idx);
+  const cancelDeleteHistory = () => setDeleteHistoryIdx(null);
+  const confirmDeleteHistory = (idx) => {
+    setData((s) => ({
+      ...s,
+      cards: s.cards.map((c) => {
+        if (c.id !== card.id) return c;
+        const entry = c.history[idx];
+        return { ...c, balance: c.balance + entry.amount, history: c.history.filter((_, i) => i !== idx) };
+      }),
+    }));
+    setDeleteHistoryIdx(null);
   };
 
   const scenarioCardStyle = { background: 'var(--input-bg)', borderRadius: 16, padding: 14, flex: 1, display: 'flex', flexDirection: 'column', gap: 4 };
@@ -128,6 +160,13 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
         </div>
       </div>
 
+      {card.minPayment > 0 && (
+        <div style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={labelStyle}>CUOTA MENSUAL</div>
+          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{fmt(card.minPayment, currency)}</div>
+        </div>
+      )}
+
       <ExplainerNote>
         El círculo muestra qué tanto de esta deuda ya pagaste ({pct}%) — entre más lleno, más cerca estás de terminarla.
         {card.interestRate > 0 &&
@@ -146,7 +185,13 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
           <div style={scenarioCardStyle}>
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)' }}>SOLO EL MÍNIMO</div>
             {baseline.stuck ? (
-              <div style={{ fontSize: 12, color: 'var(--danger-text)', marginTop: 4 }}>El mínimo no alcanza a cubrir el interés — nunca se paga sola.</div>
+              <div style={{ fontSize: 12, color: 'var(--danger-text)', marginTop: 4 }}>
+                {minGap > 0 ? (
+                  <>El mínimo ({fmt(card.minPayment || 0, currency)}) no cubre el interés mensual ({fmt(interestCost, currency)}) — te faltan {fmt(minGap, currency)} más al mes solo para que deje de crecer.</>
+                ) : (
+                  <>No tienes un pago mínimo que reduzca esta deuda, así que el saldo nunca baja por sí solo.</>
+                )}
+              </div>
             ) : (
               <>
                 <div style={{ fontWeight: 800, fontSize: 20, color: 'var(--text)', marginTop: 4, letterSpacing: '-0.01em' }}>{fmt(baseline.totalInterest, currency)}</div>
@@ -157,7 +202,13 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
           <div style={{ ...scenarioCardStyle, background: 'var(--accent-soft-bg)' }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-text)' }}>ABONANDO EXTRA</div>
             {withExtra.stuck ? (
-              <div style={{ fontSize: 12, color: 'var(--danger-text)', marginTop: 4 }}>Ese extra tampoco alcanza a cubrir el interés.</div>
+              <div style={{ fontSize: 12, color: 'var(--danger-text)', marginTop: 4 }}>
+                {extra > 0 ? (
+                  <>Con el mínimo + este extra ({fmt((card.minPayment || 0) + extra, currency)}) sigues sin cubrir el interés ({fmt(interestCost, currency)}) — te faltan {fmt(extraGap, currency)} más al mes.</>
+                ) : (
+                  <>Agrega un abono extra arriba — ahora mismo el mínimo no cubre el interés.</>
+                )}
+              </div>
             ) : (
               <>
                 <div style={{ fontWeight: 800, fontSize: 20, color: 'var(--text)', marginTop: 4, letterSpacing: '-0.01em' }}>{fmt(withExtra.totalInterest, currency)}</div>
@@ -237,9 +288,43 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
         {card.history.length === 0 ? (
           <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 8 }}>Todavía no has registrado abonos a esta deuda.</div>
         ) : (
-          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 8 }}>
-            El más reciente: {formatShortDate(mostRecentPayment.date)} · {fmt(mostRecentPayment.amount, currency)}
-          </div>
+          sortedHistory.map((h) => (
+            <div key={h._idx} style={{ padding: '10px 0', borderTop: '1px solid var(--divider)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{fmt(h.amount, currency)}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                    {formatShortDate(h.date)}
+                    {h.note ? ` · ${h.note}` : ''}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                  <button
+                    type="button"
+                    onClick={() => openEditHistoryModal(h._idx)}
+                    style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer', border: 'none', background: 'none', padding: '4px 6px' }}
+                  >
+                    Editar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => askDeleteHistory(h._idx)}
+                    aria-label="Eliminar abono"
+                    style={{ color: 'var(--danger-text)', fontWeight: 700, fontSize: 18, cursor: 'pointer', border: 'none', background: 'none', padding: '4px 8px', lineHeight: 1 }}
+                  >
+                    ×
+                  </button>
+                </div>
+              </div>
+              {deleteHistoryIdx === h._idx && (
+                <InlineConfirm
+                  message="¿Eliminar este abono? El monto vuelve al saldo pendiente."
+                  onConfirm={() => confirmDeleteHistory(h._idx)}
+                  onCancel={cancelDeleteHistory}
+                />
+              )}
+            </div>
+          ))
         )}
         <button
           type="button"
@@ -262,8 +347,8 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
       </div>
 
       {payModalOpen && (
-        <BottomSheet onClose={() => setPayModalOpen(false)}>
-          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>Registrar pago</div>
+        <BottomSheet onClose={() => { setPayModalOpen(false); setEditingHistoryIdx(null); }}>
+          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{editingHistoryIdx !== null ? 'Editar abono' : 'Registrar pago'}</div>
           <NumberInput
             value={payForm.amount}
             onChange={(e) => setPayForm((f) => ({ ...f, amount: e.target.value }))}
@@ -291,7 +376,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
             onClick={confirmPay}
             style={{ height: 50, borderRadius: 25, background: 'var(--accent)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, cursor: 'pointer', border: 'none' }}
           >
-            Confirmar pago
+            {editingHistoryIdx !== null ? 'Guardar cambios' : 'Confirmar pago'}
           </button>
         </BottomSheet>
       )}

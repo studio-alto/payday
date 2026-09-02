@@ -13,7 +13,7 @@ import CategoryIcon from '../components/CategoryIcon';
 import FixedHeader from '../components/FixedHeader';
 import CardMenu from '../components/CardMenu';
 import ProgressRing from '../components/ProgressRing';
-import { sortDebtsByPriority, simulatePayoffPlan, formatMonthsLabel, monthlyPaidTotals, METHODS } from '../lib/debt';
+import { sortDebtsByPriority, simulatePayoffPlan, formatMonthsLabel, monthlyPaidTotals, monthlyInterestCost, METHODS } from '../lib/debt';
 import { VARIABLE_CATEGORIES, monthlyCategoryTotals, monthlyVariableTotals } from '../lib/variableExpenses';
 import { CHART_COLORS as CATEGORY_CHART_COLORS } from '../lib/colors';
 
@@ -228,6 +228,7 @@ export default function Deudas({ data, setData, onViewDetail }) {
   const [payModalOpen, setPayModalOpen] = useState(false);
   const [payingCardId, setPayingCardId] = useState(null);
   const [payForm, setPayForm] = useState({ amount: '', note: '' });
+  const [editingHistoryTarget, setEditingHistoryTarget] = useState(null);
 
   const openNewModal = () => {
     setEditingCardId(null);
@@ -308,22 +309,40 @@ export default function Deudas({ data, setData, onViewDetail }) {
 
   const openPayModal = (id) => {
     setPayingCardId(id);
+    setEditingHistoryTarget(null);
     setPayForm({ amount: '', note: '', date: today });
     setPayModalOpen(true);
   };
-  const closePayModal = () => setPayModalOpen(false);
+  const openEditHistoryModal = (cardId, index) => {
+    const entry = cards.find((c) => c.id === cardId)?.history[index];
+    if (!entry) return;
+    setPayingCardId(cardId);
+    setEditingHistoryTarget({ cardId, index });
+    setPayForm({ amount: String(entry.amount), note: entry.note || '', date: entry.date });
+    setPayModalOpen(true);
+  };
+  const closePayModal = () => {
+    setPayModalOpen(false);
+    setEditingHistoryTarget(null);
+  };
   const confirmPay = () => {
     const amount = Number(payForm.amount) || 0;
     if (amount <= 0) return;
     setData((s) => ({
       ...s,
-      cards: s.cards.map((c) =>
-        c.id === payingCardId
-          ? { ...c, balance: Math.max(0, c.balance - amount), history: [...c.history, { date: payForm.date || today, amount, note: payForm.note }] }
-          : c,
-      ),
+      cards: s.cards.map((c) => {
+        if (c.id !== payingCardId) return c;
+        if (editingHistoryTarget && editingHistoryTarget.cardId === payingCardId) {
+          const { index } = editingHistoryTarget;
+          const oldAmount = c.history[index].amount;
+          const history = c.history.map((h, i) => (i === index ? { date: payForm.date || today, amount, note: payForm.note } : h));
+          return { ...c, balance: Math.max(0, c.balance + oldAmount - amount), history };
+        }
+        return { ...c, balance: Math.max(0, c.balance - amount), history: [...c.history, { date: payForm.date || today, amount, note: payForm.note }] };
+      }),
     }));
     setPayModalOpen(false);
+    setEditingHistoryTarget(null);
   };
 
   const [expandedHistoryId, setExpandedHistoryId] = useState(null);
@@ -603,7 +622,13 @@ export default function Deudas({ data, setData, onViewDetail }) {
               <div style={{ fontSize: 13, color: 'var(--accent-text)', fontWeight: 700 }}>Ya no tienes deudas pendientes.</div>
             ) : payoffPlan.stuck ? (
               <div style={{ fontSize: 12, color: 'var(--accent-text)' }}>
-                Con los pagos mínimos actuales no alcanzas a cubrir el interés. Aumenta el extra mensual o los pagos mínimos.
+                {payoffPlan.stuckInfo?.worstCards.length > 0 ? (
+                  <>
+                    El interés mensual de {payoffPlan.stuckInfo.worstCards.join(', ')} ({fmt(payoffPlan.stuckInfo.totalMonthlyInterest, currency)}) supera tus pagos mínimos + extra ({fmt(payoffPlan.stuckInfo.totalMinPayments + extraMensual, currency)}). Te faltan {fmt(payoffPlan.stuckInfo.gap, currency)} más al mes para empezar a bajar el saldo.
+                  </>
+                ) : (
+                  'Con los pagos mínimos actuales no alcanzas a cubrir el interés. Aumenta el extra mensual o los pagos mínimos.'
+                )}
               </div>
             ) : (
               <>
@@ -631,6 +656,8 @@ export default function Deudas({ data, setData, onViewDetail }) {
         const paidToDate = c.history.reduce((a, h) => a + h.amount, 0);
         const pct = paidToDate + c.balance > 0 ? Math.round((paidToDate / (paidToDate + c.balance)) * 100) : 0;
         const isOverdue = c.nextPayment < today && c.balance > 0;
+        const interestCost = monthlyInterestCost(c);
+        const numAbonos = c.history.length;
 
         return (
           <CardMenu
@@ -668,11 +695,18 @@ export default function Deudas({ data, setData, onViewDetail }) {
               Próximo pago: {formatShortDate(c.nextPayment)}
               {isOverdue && <span style={{ color: 'var(--danger-text)', fontWeight: 700 }}> · Vencido</span>}
             </div>
+            {(c.minPayment > 0 || interestCost > 0) && (
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                {c.minPayment > 0 && `Cuota: ${fmt(c.minPayment, currency)}`}
+                {c.minPayment > 0 && interestCost > 0 && ' · '}
+                {interestCost > 0 && `Interés: ${fmt(interestCost, currency)}/mes`}
+              </div>
+            )}
             <div style={{ height: 7, background: 'var(--divider)', borderRadius: 6, overflow: 'hidden', marginTop: 10 }}>
               <div style={{ height: '100%', width: `${pct}%`, background: 'var(--accent)', borderRadius: 6, transition: 'width 0.5s ease' }} />
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
-              Abonado: {fmt(paidToDate, currency)} · {pct}%
+              Abonado: {fmt(paidToDate, currency)} · {pct}%{numAbonos > 0 && ` · ${numAbonos} ${numAbonos === 1 ? 'abono' : 'abonos'}`}
             </div>
             <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
               <button
@@ -730,6 +764,13 @@ export default function Deudas({ data, setData, onViewDetail }) {
                         <div style={{ color: 'var(--text-secondary)' }}>{formatShortDate(h.date)}{h.note ? ` · ${h.note}` : ''}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <div style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(h.amount, currency)}</div>
+                          <button
+                            type="button"
+                            onClick={() => openEditHistoryModal(c.id, h.i)}
+                            style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer', border: 'none', background: 'none', padding: '4px 4px' }}
+                          >
+                            Editar
+                          </button>
                           <button
                             type="button"
                             onClick={() => setDeleteHistoryTarget({ cardId: c.id, index: h.i })}
@@ -799,7 +840,7 @@ export default function Deudas({ data, setData, onViewDetail }) {
 
       {payModalOpen && (
         <BottomSheet onClose={closePayModal}>
-          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>Registrar pago</div>
+          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{editingHistoryTarget ? 'Editar abono' : 'Registrar pago'}</div>
           <NumberInput
             value={payForm.amount}
             onChange={(e) => setPayForm((f) => ({ ...f, amount: e.target.value }))}
@@ -827,7 +868,7 @@ export default function Deudas({ data, setData, onViewDetail }) {
             onClick={confirmPay}
             style={{ height: 50, borderRadius: 25, background: 'var(--accent)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, cursor: 'pointer', border: 'none' }}
           >
-            Confirmar pago
+            {editingHistoryTarget ? 'Guardar cambios' : 'Confirmar pago'}
           </button>
         </BottomSheet>
       )}
