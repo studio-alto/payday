@@ -96,7 +96,7 @@ function emptyVariableForm(today, defaultCategoria) {
   return { name: '', categoria: defaultCategoria, amount: '', date: today };
 }
 
-export default function Deudas({ data, setData, onViewDetail }) {
+export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
   const { cards, expenses } = data;
   const gastosVariables = data.gastosVariables || [];
   const { currency } = data.user;
@@ -760,31 +760,48 @@ export default function Deudas({ data, setData, onViewDetail }) {
                 {[...c.history]
                   .map((h, i) => ({ ...h, i }))
                   .sort((a, b) => b.date.localeCompare(a.date))
-                  .map((h) => (
-                    <div key={h.i}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, background: 'var(--input-bg)', borderRadius: 10, padding: '8px 10px' }}>
-                        <div style={{ color: 'var(--text-secondary)' }}>{formatShortDate(h.date)}{h.note ? ` · ${h.note}` : ''}</div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                          <div style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(h.amount, currency)}</div>
-                          <CardMenu
-                            inline
-                            triggerBg="transparent"
-                            actions={[
-                              { label: 'Editar', onClick: () => openEditHistoryModal(c.id, h.i) },
-                              { label: 'Eliminar', destructive: true, onClick: () => setDeleteHistoryTarget({ cardId: c.id, index: h.i }) },
-                            ]}
-                          />
+                  .map((h) => {
+                    const linkedIncome = h.incomeId ? data.incomes.find((inc) => inc.id === h.incomeId) : null;
+                    return (
+                      <div key={h.i}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12, background: 'var(--input-bg)', borderRadius: 10, padding: '8px 10px' }}>
+                          <div style={{ color: 'var(--text-secondary)' }}>
+                            {formatShortDate(h.date)}
+                            {h.note ? ` · ${h.note}` : ''}
+                            {h.incomeId ? ' · Desde un ingreso' : ''}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <div style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(h.amount, currency)}</div>
+                            {linkedIncome ? (
+                              <button
+                                type="button"
+                                onClick={() => onEditIncome(linkedIncome)}
+                                style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer', border: 'none', background: 'none', padding: 0, flexShrink: 0 }}
+                              >
+                                Editar ingreso
+                              </button>
+                            ) : (
+                              <CardMenu
+                                inline
+                                triggerBg="transparent"
+                                actions={[
+                                  { label: 'Editar', onClick: () => openEditHistoryModal(c.id, h.i) },
+                                  { label: 'Eliminar', destructive: true, onClick: () => setDeleteHistoryTarget({ cardId: c.id, index: h.i }) },
+                                ]}
+                              />
+                            )}
+                          </div>
                         </div>
+                        {deleteHistoryTarget?.cardId === c.id && deleteHistoryTarget?.index === h.i && (
+                          <InlineConfirm
+                            message="¿Eliminar este pago? El monto vuelve al saldo pendiente."
+                            onConfirm={() => deleteHistoryEntry(c.id, h.i)}
+                            onCancel={() => setDeleteHistoryTarget(null)}
+                          />
+                        )}
                       </div>
-                      {deleteHistoryTarget?.cardId === c.id && deleteHistoryTarget?.index === h.i && (
-                        <InlineConfirm
-                          message="¿Eliminar este pago? El monto vuelve al saldo pendiente."
-                          onConfirm={() => deleteHistoryEntry(c.id, h.i)}
-                          onCancel={() => setDeleteHistoryTarget(null)}
-                        />
-                      )}
-                    </div>
-                  ))}
+                    );
+                  })}
               </div>
             )}
 

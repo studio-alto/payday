@@ -17,7 +17,7 @@ function ExplainerNote({ children }) {
   return <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: 8 }}>{children}</div>;
 }
 
-export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
+export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEditIncome }) {
   const { cards } = data;
   const { currency } = data.user;
   const card = cards.find((c) => c.id === cardId);
@@ -341,34 +341,53 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
         {card.history.length === 0 ? (
           <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 8 }}>Todavía no has registrado abonos a esta deuda.</div>
         ) : (
-          sortedHistory.map((h) => (
-            <div key={h._idx} style={{ padding: '10px 0', borderTop: '1px solid var(--divider)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{fmt(h.amount, currency)}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
-                    {formatShortDate(h.date)}
-                    {h.note ? ` · ${h.note}` : ''}
+          sortedHistory.map((h) => {
+            const linkedIncome = h.incomeId ? data.incomes.find((i) => i.id === h.incomeId) : null;
+            return (
+              <div key={h._idx} style={{ padding: '10px 0', borderTop: '1px solid var(--divider)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{fmt(h.amount, currency)}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                      {formatShortDate(h.date)}
+                      {h.note ? ` · ${h.note}` : ''}
+                      {h.incomeId ? ' · Desde un ingreso' : ''}
+                    </div>
                   </div>
+                  {linkedIncome ? (
+                    <button
+                      type="button"
+                      onClick={() => onEditIncome(linkedIncome)}
+                      style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer', border: 'none', background: 'none', padding: '4px 0', flexShrink: 0 }}
+                    >
+                      Editar ingreso
+                    </button>
+                  ) : (
+                    <CardMenu
+                      inline
+                      triggerBg="transparent"
+                      actions={[
+                        { label: 'Editar', onClick: () => openEditHistoryModal(h._idx) },
+                        { label: 'Eliminar', destructive: true, onClick: () => askDeleteHistory(h._idx) },
+                      ]}
+                    />
+                  )}
                 </div>
-                <CardMenu
-                  inline
-                  triggerBg="transparent"
-                  actions={[
-                    { label: 'Editar', onClick: () => openEditHistoryModal(h._idx) },
-                    { label: 'Eliminar', destructive: true, onClick: () => askDeleteHistory(h._idx) },
-                  ]}
-                />
+                {deleteHistoryIdx === h._idx && (
+                  <InlineConfirm
+                    message="¿Eliminar este abono? El monto vuelve al saldo pendiente."
+                    onConfirm={() => confirmDeleteHistory(h._idx)}
+                    onCancel={cancelDeleteHistory}
+                  />
+                )}
               </div>
-              {deleteHistoryIdx === h._idx && (
-                <InlineConfirm
-                  message="¿Eliminar este abono? El monto vuelve al saldo pendiente."
-                  onConfirm={() => confirmDeleteHistory(h._idx)}
-                  onCancel={cancelDeleteHistory}
-                />
-              )}
-            </div>
-          ))
+            );
+          })
+        )}
+        {sortedHistory.some((h) => h.incomeId) && (
+          <ExplainerNote>
+            Los abonos marcados "Desde un ingreso" se editan o eliminan desde ese ingreso — usa "Editar ingreso" para ir directo.
+          </ExplainerNote>
         )}
         <button
           type="button"

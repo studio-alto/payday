@@ -32,11 +32,13 @@ const GLYPHS = {
       <path d="M9.5 8V6a2.5 2.5 0 0 1 5 0v2" />
     </>
   ),
+  // A banknote (wide rect + centered seal) reads clearly at a glance next to
+  // "deudas" (a taller rect with a stripe near the top) instead of blurring
+  // into a near-identical rounded-rectangle silhouette.
   disponible: (
     <>
-      <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5v-9z" />
-      <path d="M4 10h16" />
-      <circle cx="16.5" cy="14" r="1.3" fill="currentColor" stroke="none" />
+      <rect x="3" y="7" width="18" height="10" rx="3" />
+      <circle cx="12" cy="12" r="2.6" />
     </>
   ),
 };

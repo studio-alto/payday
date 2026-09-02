@@ -194,8 +194,10 @@ export default function App() {
           {activeTab === 'meta-detalle' && (
             <MetaDetalle data={data} setData={setData} goalId={viewingGoalId} onNavigate={navigate} onEditIncome={startEditIncome} />
           )}
-          {activeTab === 'tarjetas' && <Deudas data={data} setData={setData} onViewDetail={viewDebtDetail} />}
-          {activeTab === 'deuda-detalle' && <DeudaDetalle data={data} setData={setData} cardId={viewingDebtId} onNavigate={navigate} />}
+          {activeTab === 'tarjetas' && <Deudas data={data} setData={setData} onViewDetail={viewDebtDetail} onEditIncome={startEditIncome} />}
+          {activeTab === 'deuda-detalle' && (
+            <DeudaDetalle data={data} setData={setData} cardId={viewingDebtId} onNavigate={navigate} onEditIncome={startEditIncome} />
+          )}
           {activeTab === 'ingresos' && <Ingresos data={data} setData={setData} onNavigate={navigate} onEdit={startEditIncome} />}
           {activeTab === 'config' && (
             <Ajustes data={data} setData={setData} canInstall={!!installPrompt} isInstalled={isInstalled} onInstall={requestInstall} />
