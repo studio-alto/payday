@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { useLocalData } from './lib/storage';
-import { consumeDriveRedirect } from './lib/googleDrive';
+import { consumeGoogleRedirect } from './lib/googleAuth';
 import { setExchangeRates } from './lib/format';
 import { fetchLiveExchangeRates } from './lib/exchangeRates';
 import { todayISO } from './lib/dates';
@@ -24,11 +24,11 @@ const DeudaDetalle = lazy(() => import('./screens/DeudaDetalle'));
 const Ingresos = lazy(() => import('./screens/Ingresos'));
 const Ajustes = lazy(() => import('./screens/Ajustes'));
 
-// Must run before the first render — if Google just redirected back after a Drive
+// Must run before the first render — if Google just redirected back after a
 // connect, this parses the access token out of the URL hash (see
-// lib/googleDrive.js) so activeTab's sessionStorage-based restore below and
+// lib/googleAuth.js) so activeTab's sessionStorage-based restore below and
 // Ajustes' own hasValidToken() check both see it immediately, not one render late.
-consumeDriveRedirect();
+consumeGoogleRedirect();
 
 export default function App() {
   const [data, setData] = useLocalData();

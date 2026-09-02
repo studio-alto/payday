@@ -6,7 +6,9 @@ import { fmt } from '../lib/format';
 import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import { hashPin } from '../lib/pin';
 import { sendBackupEmail, sendReportLinkEmail, emailBackupConfigured } from '../lib/emailBackup';
-import { driveConfigured, hasValidToken, getAccessToken, connectDrive, uploadReportToDrive } from '../lib/googleDrive';
+import { googleConfigured, hasValidToken, getAccessToken, connectGoogle } from '../lib/googleAuth';
+import { uploadReportToDrive } from '../lib/googleDrive';
+import { syncFinancialEventsToCalendar } from '../lib/googleCalendar';
 import NumberInput from '../components/NumberInput';
 import FixedHeader from '../components/FixedHeader';
 import BottomSheet from '../components/BottomSheet';
@@ -46,8 +48,8 @@ function isValidBackup(parsed) {
 export default function Ajustes({ data, setData, canInstall, isInstalled, onInstall }) {
   const { user } = data;
   const dark = user.theme === 'oscuro';
-  // Restores the "Datos" tab after a Google Drive connect redirect bounces the
-  // whole page away and back (see connectDrive() in lib/googleDrive) — otherwise
+  // Restores the "Datos" tab after a Google connect redirect bounces the
+  // whole page away and back (see connectGoogle() in lib/googleAuth) — otherwise
   // returning from Google would land back on "General" with no indication of why.
   const [section, setSection] = useState(() => {
     const pending = sessionStorage.getItem('payday_return_section');
@@ -202,14 +204,16 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
 
   const [driveStatus, setDriveStatus] = useState('idle'); // idle | loading | uploaded | emailed | error
   const [driveError, setDriveError] = useState('');
-  const connectedToDrive = hasValidToken();
-  const startDriveConnect = () => {
-    // Remember where we were — connectDrive() leaves the app entirely (Google's
+  const [calendarStatus, setCalendarStatus] = useState('idle'); // idle | loading | synced | error
+  const [calendarError, setCalendarError] = useState('');
+  const connectedToGoogle = hasValidToken();
+  const startGoogleConnect = () => {
+    // Remember where we were — connectGoogle() leaves the app entirely (Google's
     // consent screen, then back), so the next load needs to know to land back on
     // this tab instead of the default Home screen.
     sessionStorage.setItem('payday_return_tab', 'config');
     sessionStorage.setItem('payday_return_section', 'datos');
-    connectDrive();
+    connectGoogle();
   };
   const sendToDrive = async () => {
     setDriveStatus('loading');
@@ -228,6 +232,18 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
     } catch (err) {
       setDriveError(err.message || 'Algo salió mal.');
       setDriveStatus('error');
+    }
+  };
+  const syncCalendar = async () => {
+    setCalendarStatus('loading');
+    setCalendarError('');
+    try {
+      const accessToken = getAccessToken();
+      await syncFinancialEventsToCalendar(accessToken, data);
+      setCalendarStatus('synced');
+    } catch (err) {
+      setCalendarError(err.message || 'Algo salió mal.');
+      setCalendarStatus('error');
     }
   };
 
@@ -626,17 +642,18 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
           Mándalo a Drive, correo o donde prefieras guardarlo — luego se puede restaurar en la app.
         </div>
 
-        {driveConfigured && (
+        {googleConfigured && (
           <>
             <div style={{ height: 1, background: 'var(--divider)', margin: '4px 0' }} />
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>ENVIAR A GOOGLE DRIVE</div>
-            {!connectedToDrive ? (
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>GOOGLE</div>
+            {!connectedToGoogle ? (
               <>
-                <button type="button" onClick={startDriveConnect} style={actionRowStyle}>
-                  Conectar Google Drive
+                <button type="button" onClick={startGoogleConnect} style={actionRowStyle}>
+                  Conectar con Google
                 </button>
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: -4 }}>
-                  Te lleva a Google para autorizar, y vuelve aquí. Solo puede ver y crear archivos que suba esta app, nada más de tu Drive.
+                  Te lleva a Google para autorizar, y vuelve aquí. Solo puede ver y crear archivos que suba esta app en Drive, y crear/editar
+                  eventos en tu Calendar — nada más de tu cuenta.
                 </div>
               </>
             ) : (
@@ -660,7 +677,22 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
                       ? 'Listo — se subió a tu Drive (carpeta "Payday") y te mandamos el enlace por correo.'
                       : driveStatus === 'uploaded'
                         ? 'Listo — se subió a tu Drive, en una carpeta llamada "Payday".'
-                        : 'Ya conectado a Google Drive.'}
+                        : 'Ya conectado a Google.'}
+                </div>
+                <button
+                  type="button"
+                  onClick={syncCalendar}
+                  disabled={calendarStatus === 'loading'}
+                  style={{ ...actionRowStyle, opacity: calendarStatus === 'loading' ? 0.5 : 1 }}
+                >
+                  {calendarStatus === 'loading' ? 'Sincronizando…' : 'Sincronizar recordatorios con Calendar'}
+                </button>
+                <div style={{ fontSize: 11, color: calendarStatus === 'error' ? 'var(--danger-text)' : 'var(--text-secondary)', marginTop: -4 }}>
+                  {calendarStatus === 'error'
+                    ? calendarError
+                    : calendarStatus === 'synced'
+                      ? 'Listo — se crearon/actualizaron los eventos de tus deudas, gastos fijos e ingresos esperados en tu Calendar.'
+                      : 'Crea un evento por cada deuda (próximo pago), gasto fijo (próximo vencimiento) e ingreso esperado. Vuelve a tocar el botón cuando quieras que se actualicen.'}
                 </div>
               </>
             )}
