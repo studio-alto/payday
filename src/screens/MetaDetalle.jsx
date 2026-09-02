@@ -13,7 +13,7 @@ function ExplainerNote({ children }) {
   return <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: 8 }}>{children}</div>;
 }
 
-export default function MetaDetalle({ data, setData, goalId, onNavigate }) {
+export default function MetaDetalle({ data, setData, goalId, onNavigate, onEditIncome }) {
   const { goals } = data;
   const { currency } = data.user;
   const goal = goals.find((g) => g.id === goalId);
@@ -205,35 +205,49 @@ export default function MetaDetalle({ data, setData, goalId, onNavigate }) {
         {sortedHistory.length === 0 ? (
           <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 8 }}>Todavía no has registrado aportes a esta meta.</div>
         ) : (
-          sortedHistory.map((h) => (
-            <div key={h._idx} style={{ padding: '11px 0', borderTop: '1px solid var(--divider)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{fmt(h.amount, currency)}</div>
-                  <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
-                    {formatFullDate(h.date)}
-                    {h.incomeId ? ' · Desde un ingreso' : ''}
+          sortedHistory.map((h) => {
+            const linkedIncome = h.incomeId ? data.incomes.find((i) => i.id === h.incomeId) : null;
+            return (
+              <div key={h._idx} style={{ padding: '11px 0', borderTop: '1px solid var(--divider)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{fmt(h.amount, currency)}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                      {formatFullDate(h.date)}
+                      {h.incomeId ? ' · Desde un ingreso' : ''}
+                    </div>
                   </div>
+                  {!h.incomeId && (
+                    <button
+                      type="button"
+                      onClick={() => askDeleteContribution(h._idx)}
+                      aria-label="Eliminar aporte"
+                      style={{ color: 'var(--danger-text)', fontWeight: 700, fontSize: 18, cursor: 'pointer', border: 'none', background: 'none', padding: '4px 8px', lineHeight: 1, flexShrink: 0 }}
+                    >
+                      ×
+                    </button>
+                  )}
+                  {linkedIncome && (
+                    <button
+                      type="button"
+                      onClick={() => onEditIncome(linkedIncome)}
+                      style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer', border: 'none', background: 'none', padding: '4px 0', flexShrink: 0 }}
+                    >
+                      Editar ingreso
+                    </button>
+                  )}
                 </div>
-                {!h.incomeId && (
-                  <button
-                    type="button"
-                    onClick={() => askDeleteContribution(h._idx)}
-                    aria-label="Eliminar aporte"
-                    style={{ color: 'var(--danger-text)', fontWeight: 700, fontSize: 18, cursor: 'pointer', border: 'none', background: 'none', padding: '4px 8px', lineHeight: 1, flexShrink: 0 }}
-                  >
-                    ×
-                  </button>
+                {confirmDeleteIdx === h._idx && (
+                  <InlineConfirm message="¿Eliminar este aporte?" onConfirm={() => confirmDeleteContribution(h._idx)} onCancel={cancelDeleteContribution} />
                 )}
               </div>
-              {confirmDeleteIdx === h._idx && (
-                <InlineConfirm message="¿Eliminar este aporte?" onConfirm={() => confirmDeleteContribution(h._idx)} onCancel={cancelDeleteContribution} />
-              )}
-            </div>
-          ))
+            );
+          })
         )}
         {sortedHistory.some((h) => h.incomeId) && (
-          <ExplainerNote>Los aportes marcados "Desde un ingreso" se editan o eliminan desde ese ingreso, no aquí.</ExplainerNote>
+          <ExplainerNote>
+            Los aportes marcados "Desde un ingreso" se editan o eliminan desde ese ingreso — usa "Editar ingreso" para ir directo.
+          </ExplainerNote>
         )}
       </div>
     </div>

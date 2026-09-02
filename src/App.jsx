@@ -165,7 +165,9 @@ export default function App() {
             <Registrar data={data} setData={setData} onNavigate={navigate} editingIncome={editingIncome} onDoneEditing={() => setEditingIncome(null)} />
           )}
           {activeTab === 'metas' && <Metas data={data} setData={setData} onViewDetail={viewGoalDetail} />}
-          {activeTab === 'meta-detalle' && <MetaDetalle data={data} setData={setData} goalId={viewingGoalId} onNavigate={navigate} />}
+          {activeTab === 'meta-detalle' && (
+            <MetaDetalle data={data} setData={setData} goalId={viewingGoalId} onNavigate={navigate} onEditIncome={startEditIncome} />
+          )}
           {activeTab === 'tarjetas' && <Deudas data={data} setData={setData} onViewDetail={viewDebtDetail} />}
           {activeTab === 'deuda-detalle' && <DeudaDetalle data={data} setData={setData} cardId={viewingDebtId} onNavigate={navigate} />}
           {activeTab === 'ingresos' && <Ingresos data={data} setData={setData} onNavigate={navigate} onEdit={startEditIncome} />}
