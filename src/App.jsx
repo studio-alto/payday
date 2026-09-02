@@ -4,11 +4,13 @@ import { consumeDriveRedirect } from './lib/googleDrive';
 import { setExchangeRates } from './lib/format';
 import { fetchLiveExchangeRates } from './lib/exchangeRates';
 import { todayISO } from './lib/dates';
+import { computeMonthlyRecap, monthKey, previousMonth } from './lib/monthlyRecap';
 import Splash from './components/Splash';
 import Welcome from './components/Welcome';
 import AppLock from './components/AppLock';
 import BottomNav from './components/BottomNav';
 import UpdateToast from './components/UpdateToast';
+import MonthlyRecap from './components/MonthlyRecap';
 // Dashboard loads eagerly since it's the very first screen shown; every other
 // screen is only fetched the moment the person actually navigates to it, so the
 // initial bundle doesn't carry code (charts, forms, the debt simulator) for
@@ -46,6 +48,7 @@ export default function App() {
   const [installPrompt, setInstallPrompt] = useState(null);
   const [isInstalled, setIsInstalled] = useState(() => window.matchMedia('(display-mode: standalone)').matches);
   const [locked, setLocked] = useState(() => !!data.user.appLockPin);
+  const [monthlyRecap, setMonthlyRecap] = useState(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -127,6 +130,26 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Once per app session, notices a new calendar month started since the person's
+  // last visit and surfaces a recap of the month that just ended. Runs once at true
+  // mount for a returning user, and again the moment onboarding finishes for a new
+  // one — either way it only ever shows the month immediately before "now", never a
+  // backlog of skipped months.
+  useEffect(() => {
+    if (!data.user.onboarded) return;
+    const now = new Date();
+    const currentKey = monthKey(now.getFullYear(), now.getMonth());
+    if (data.user.lastRecapMonth && data.user.lastRecapMonth !== currentKey) {
+      const prev = previousMonth(now.getFullYear(), now.getMonth());
+      const recap = computeMonthlyRecap(data, prev.year, prev.month);
+      if (recap.hasActivity) setMonthlyRecap(recap);
+    }
+    if (data.user.lastRecapMonth !== currentKey) {
+      setData((s) => ({ ...s, user: { ...s.user, lastRecapMonth: currentKey } }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.user.onboarded]);
+
   const finishOnboarding = (backupEmail) => {
     setData((s) => ({ ...s, user: { ...s.user, onboarded: true, ...(backupEmail ? { backupEmail } : {}) } }));
   };
@@ -156,6 +179,9 @@ export default function App() {
       {showSplash && <Splash fading={splashFading} />}
       {!showSplash && !data.user.onboarded && <Welcome onFinish={finishOnboarding} />}
       {locked && data.user.appLockPin && <AppLock pinHash={data.user.appLockPin} onUnlock={() => setLocked(false)} />}
+      {!locked && monthlyRecap && (
+        <MonthlyRecap recap={monthlyRecap} currency={data.user.currency} onClose={() => setMonthlyRecap(null)} />
+      )}
       <UpdateToast />
 
       <div className="app-scroll" style={{ width: '100%', maxWidth: 640, padding: '0 20px var(--nav-clearance) 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>

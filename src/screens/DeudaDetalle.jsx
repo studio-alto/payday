@@ -27,6 +27,8 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
   const [editingHistoryIdx, setEditingHistoryIdx] = useState(null);
   const [deleteHistoryIdx, setDeleteHistoryIdx] = useState(null);
   const [extraText, setExtraText] = useState('');
+  const [cuotaModalOpen, setCuotaModalOpen] = useState(false);
+  const [cuotaText, setCuotaText] = useState('');
 
   if (!card) {
     return (
@@ -112,6 +114,19 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
     setDeleteHistoryIdx(null);
   };
 
+  // A quick way to set/update just the cuota — credit cards especially have a minimum
+  // payment that moves with the balance each cycle, so this needs to be editable often,
+  // not buried behind the full "Editar deuda" form.
+  const openCuotaModal = () => {
+    setCuotaText(card.minPayment > 0 ? String(card.minPayment) : '');
+    setCuotaModalOpen(true);
+  };
+  const saveCuota = () => {
+    const minPayment = Number(cuotaText) || 0;
+    setData((s) => ({ ...s, cards: s.cards.map((c) => (c.id === card.id ? { ...c, minPayment } : c)) }));
+    setCuotaModalOpen(false);
+  };
+
   const scenarioCardStyle = { background: 'var(--input-bg)', borderRadius: 16, padding: 14, flex: 1, display: 'flex', flexDirection: 'column', gap: 4 };
   const heroTileStyle = { ...cardStyle, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minWidth: 0 };
   const statTileStyle = { ...cardStyle, flex: 1, minWidth: 0 };
@@ -165,12 +180,36 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
         </div>
       </div>
 
-      <div style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <button
+        type="button"
+        onClick={openCuotaModal}
+        style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+      >
         <div style={labelStyle}>CUOTA MENSUAL</div>
-        <div style={{ fontWeight: 800, fontSize: 16, color: card.minPayment > 0 ? 'var(--text)' : 'var(--text-secondary)' }}>
-          {card.minPayment > 0 ? fmt(card.minPayment, currency) : 'No configurada'}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ fontWeight: 800, fontSize: 16, color: card.minPayment > 0 ? 'var(--text)' : 'var(--text-secondary)' }}>
+            {card.minPayment > 0 ? fmt(card.minPayment, currency) : 'No configurada'}
+          </div>
+          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-text)' }}>Editar</span>
         </div>
-      </div>
+      </button>
+
+      {cuotaModalOpen && (
+        <BottomSheet onClose={() => setCuotaModalOpen(false)}>
+          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>Cuota mensual</div>
+          <ExplainerNote>
+            El pago mínimo que debes hacer cada mes por esta deuda. En tarjetas de crédito suele cambiar de un mes a otro — actualízalo aquí cuando cambie.
+          </ExplainerNote>
+          <NumberInput value={cuotaText} onChange={(e) => setCuotaText(e.target.value)} placeholder="Ej: 400.000" style={textInputStyle()} />
+          <button
+            type="button"
+            onClick={saveCuota}
+            style={{ height: 50, borderRadius: 25, background: 'var(--accent)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, cursor: 'pointer', border: 'none' }}
+          >
+            Guardar
+          </button>
+        </BottomSheet>
+      )}
 
       <ExplainerNote>
         El círculo muestra qué tanto de esta deuda ya pagaste ({pct}%) — entre más lleno, más cerca estás de terminarla.

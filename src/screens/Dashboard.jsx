@@ -25,7 +25,9 @@ export default function Dashboard({ data, setData, onNavigate }) {
   const ahorroMonth = incomesThisMonth.reduce((a, i) => a + (i.distribution.ahorro || 0), 0);
   const tarjetaMonth = incomesThisMonth.reduce((a, i) => a + (i.distribution.tarjeta || 0), 0);
   const totalGastos = expenses.reduce((a, e) => a + e.amount, 0);
-  const disponible = totalMonth - ahorroMonth - tarjetaMonth - totalGastos;
+  const variablesThisMonth = (gastosVariables || []).filter((g) => isSameMonth(g.date));
+  const totalVariablesMonth = variablesThisMonth.reduce((a, g) => a + g.amount, 0);
+  const disponible = totalMonth - ahorroMonth - tarjetaMonth - totalGastos - totalVariablesMonth;
   const gastosPct = totalMonth > 0 ? Math.round((totalGastos / totalMonth) * 100) : 0;
   const budgetNecesidades = user.budgetNecesidades ?? 50;
 
@@ -36,8 +38,6 @@ export default function Dashboard({ data, setData, onNavigate }) {
   const totalAhorro = goals.reduce((a, g) => a + g.current, 0) + unassignedAhorro;
   const totalDeuda = cards.reduce((a, c) => a + c.balance, 0);
   const totalProyectado = projectedIncomes.reduce((a, i) => a + i.amount, 0);
-  const variablesThisMonth = (gastosVariables || []).filter((g) => isSameMonth(g.date));
-  const totalVariablesMonth = variablesThisMonth.reduce((a, g) => a + g.amount, 0);
 
   const incomeByDate = {};
   confirmedIncomes.forEach((i) => {

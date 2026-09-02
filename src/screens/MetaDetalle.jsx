@@ -5,9 +5,12 @@ import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import { computeSavingsProjection, estimateMonthsToGoal, projectGoalByContribution, CONTRIBUTION_FREQUENCIES } from '../lib/goalProjection';
 import { formatMonthsLabel } from '../lib/debt';
 import NumberInput from '../components/NumberInput';
+import DateField from '../components/DateField';
+import BottomSheet from '../components/BottomSheet';
 import FixedHeader from '../components/FixedHeader';
 import InlineConfirm from '../components/InlineConfirm';
 import ProgressRing from '../components/ProgressRing';
+import CardMenu from '../components/CardMenu';
 
 function ExplainerNote({ children }) {
   return <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: 8 }}>{children}</div>;
@@ -21,6 +24,9 @@ export default function MetaDetalle({ data, setData, goalId, onNavigate, onEditI
   const [confirmDeleteIdx, setConfirmDeleteIdx] = useState(null);
   const [freq, setFreq] = useState('mensual');
   const [simAmount, setSimAmount] = useState('');
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingIdx, setEditingIdx] = useState(null);
+  const [editForm, setEditForm] = useState({ amount: '', date: '' });
 
   if (!goal) {
     return (
@@ -68,6 +74,28 @@ export default function MetaDetalle({ data, setData, goalId, onNavigate, onEditI
       }),
     }));
     setConfirmDeleteIdx(null);
+  };
+
+  const openEditContribution = (idx) => {
+    const entry = goal.history[idx];
+    setEditingIdx(idx);
+    setEditForm({ amount: String(entry.amount), date: entry.date });
+    setEditModalOpen(true);
+  };
+  const saveContribution = () => {
+    const amount = Number(editForm.amount) || 0;
+    if (amount <= 0 || !editForm.date) return;
+    setData((s) => ({
+      ...s,
+      goals: s.goals.map((g) => {
+        if (g.id !== goal.id) return g;
+        const oldAmount = g.history[editingIdx].amount;
+        const history = g.history.map((h, i) => (i === editingIdx ? { ...h, amount, date: editForm.date } : h));
+        return { ...g, current: Math.max(0, g.current - oldAmount + amount), history };
+      }),
+    }));
+    setEditModalOpen(false);
+    setEditingIdx(null);
   };
 
   const heroTileStyle = { ...cardStyle, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minWidth: 0 };
@@ -217,25 +245,18 @@ export default function MetaDetalle({ data, setData, goalId, onNavigate, onEditI
                       {h.incomeId ? ' · Desde un ingreso' : ''}
                     </div>
                   </div>
-                  {!h.incomeId && (
-                    <button
-                      type="button"
-                      onClick={() => askDeleteContribution(h._idx)}
-                      aria-label="Eliminar aporte"
-                      style={{ color: 'var(--danger-text)', fontWeight: 700, fontSize: 18, cursor: 'pointer', border: 'none', background: 'none', padding: '4px 8px', lineHeight: 1, flexShrink: 0 }}
-                    >
-                      ×
-                    </button>
-                  )}
-                  {linkedIncome && (
-                    <button
-                      type="button"
-                      onClick={() => onEditIncome(linkedIncome)}
-                      style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer', border: 'none', background: 'none', padding: '4px 0', flexShrink: 0 }}
-                    >
-                      Editar ingreso
-                    </button>
-                  )}
+                  <CardMenu
+                    inline
+                    triggerBg="transparent"
+                    actions={
+                      h.incomeId
+                        ? [{ label: 'Editar ingreso', onClick: () => onEditIncome(linkedIncome) }]
+                        : [
+                            { label: 'Editar', onClick: () => openEditContribution(h._idx) },
+                            { label: 'Eliminar', destructive: true, onClick: () => askDeleteContribution(h._idx) },
+                          ]
+                    }
+                  />
                 </div>
                 {confirmDeleteIdx === h._idx && (
                   <InlineConfirm message="¿Eliminar este aporte?" onConfirm={() => confirmDeleteContribution(h._idx)} onCancel={cancelDeleteContribution} />
@@ -250,6 +271,29 @@ export default function MetaDetalle({ data, setData, goalId, onNavigate, onEditI
           </ExplainerNote>
         )}
       </div>
+
+      {editModalOpen && (
+        <BottomSheet onClose={() => setEditModalOpen(false)}>
+          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>Editar aporte</div>
+          <NumberInput
+            value={editForm.amount}
+            onChange={(e) => setEditForm((f) => ({ ...f, amount: e.target.value }))}
+            placeholder="Monto"
+            style={textInputStyle()}
+          />
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 700 }}>FECHA DEL APORTE</div>
+            <DateField value={editForm.date} max={todayISO()} onChange={(e) => setEditForm((f) => ({ ...f, date: e.target.value }))} style={textInputStyle()} />
+          </div>
+          <button
+            type="button"
+            onClick={saveContribution}
+            style={{ height: 50, borderRadius: 25, background: 'var(--accent)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, cursor: 'pointer', border: 'none' }}
+          >
+            Guardar cambios
+          </button>
+        </BottomSheet>
+      )}
     </div>
   );
 }
