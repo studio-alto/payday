@@ -9,6 +9,7 @@ import BottomSheet from '../components/BottomSheet';
 import FixedHeader from '../components/FixedHeader';
 import ProgressRing from '../components/ProgressRing';
 import InlineConfirm from '../components/InlineConfirm';
+import CardMenu from '../components/CardMenu';
 
 const EXTRA_PRESETS = [0, 20000, 50000, 100000, 200000];
 
@@ -57,6 +58,10 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
   // but this extra amount is enough to actually pay it off — the single most useful
   // thing this screen can tell someone in that situation.
   const extraRescuesFromStuck = extra > 0 && baseline.stuck && !withExtra.stuck;
+  // The extra typed in is more than this debt will ever need — telling someone "1 mes"
+  // is technically true but useless when what they actually want to know is how much
+  // of that money is free to go toward something else.
+  const hasSurplus = extra > 0 && !withExtra.stuck && withExtra.surplus > 0;
   // How far the minimum payment (and, separately, minimum + extra) falls short of this
   // month's interest — the exact number someone needs to close that gap, not just "it's stuck".
   const minGap = Math.max(0, Math.round(interestCost - (card.minPayment || 0)));
@@ -160,12 +165,12 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
         </div>
       </div>
 
-      {card.minPayment > 0 && (
-        <div style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={labelStyle}>CUOTA MENSUAL</div>
-          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{fmt(card.minPayment, currency)}</div>
+      <div style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={labelStyle}>CUOTA MENSUAL</div>
+        <div style={{ fontWeight: 800, fontSize: 16, color: card.minPayment > 0 ? 'var(--text)' : 'var(--text-secondary)' }}>
+          {card.minPayment > 0 ? fmt(card.minPayment, currency) : 'No configurada'}
         </div>
-      )}
+      </div>
 
       <ExplainerNote>
         El círculo muestra qué tanto de esta deuda ya pagaste ({pct}%) — entre más lleno, más cerca estás de terminarla.
@@ -244,7 +249,16 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
           <NumberInput value={extraText} onChange={(e) => setExtraText(e.target.value)} placeholder="Otro monto" style={textInputStyle()} />
         </div>
 
-        {extraRescuesFromStuck && (
+        {hasSurplus && (
+          <div style={{ marginTop: 12, background: 'var(--accent-soft-bg)', borderRadius: 14, padding: 12 }}>
+            <div style={{ fontSize: 13, color: 'var(--text)' }}>
+              {fmt(extra, currency)} es más de lo que esta deuda necesita — con eso la <b>saldas por completo este mes</b> y te sobran{' '}
+              <span style={{ fontWeight: 800, color: 'var(--accent-text)' }}>{fmt(withExtra.surplus, currency)}</span> que podrías destinar a tus otras deudas o metas.
+            </div>
+          </div>
+        )}
+
+        {!hasSurplus && extraRescuesFromStuck && (
           <div style={{ marginTop: 12, background: 'var(--accent-soft-bg)', borderRadius: 14, padding: 12 }}>
             <div style={{ fontSize: 13, color: 'var(--text)' }}>
               Con el mínimo solo, esta deuda <b>nunca se termina de pagar</b> — el interés crece más rápido de lo que abonas. Pero con{' '}
@@ -254,7 +268,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
           </div>
         )}
 
-        {extra > 0 && !extraRescuesFromStuck && interestSaved !== null && (
+        {!hasSurplus && extra > 0 && !extraRescuesFromStuck && interestSaved !== null && (
           <div style={{ marginTop: 12, background: 'var(--accent-soft-bg)', borderRadius: 14, padding: 12 }}>
             <div style={{ fontSize: 13, color: 'var(--text)' }}>
               Abonando {fmt(extra, currency)} extra cada mes, te ahorrarías{' '}
@@ -298,23 +312,14 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate }) {
                     {h.note ? ` · ${h.note}` : ''}
                   </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                  <button
-                    type="button"
-                    onClick={() => openEditHistoryModal(h._idx)}
-                    style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer', border: 'none', background: 'none', padding: '4px 6px' }}
-                  >
-                    Editar
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => askDeleteHistory(h._idx)}
-                    aria-label="Eliminar abono"
-                    style={{ color: 'var(--danger-text)', fontWeight: 700, fontSize: 18, cursor: 'pointer', border: 'none', background: 'none', padding: '4px 8px', lineHeight: 1 }}
-                  >
-                    ×
-                  </button>
-                </div>
+                <CardMenu
+                  inline
+                  triggerBg="transparent"
+                  actions={[
+                    { label: 'Editar', onClick: () => openEditHistoryModal(h._idx) },
+                    { label: 'Eliminar', destructive: true, onClick: () => askDeleteHistory(h._idx) },
+                  ]}
+                />
               </div>
               {deleteHistoryIdx === h._idx && (
                 <InlineConfirm

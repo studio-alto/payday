@@ -65,7 +65,7 @@ describe('computeDebtWaterfall', () => {
 describe('simulatePayoffPlan', () => {
   it('no debt: pays off immediately, no simulation needed', () => {
     const plan = simulatePayoffPlan([{ ...smallLow, balance: 0 }], 'bola_nieve', 0);
-    expect(plan).toEqual({ monthsToPayoff: 0, stuck: false, stuckInfo: null, perCard: [] });
+    expect(plan).toEqual({ monthsToPayoff: 0, stuck: false, stuckInfo: null, surplus: 0, perCard: [] });
   });
 
   it('a minimum payment that exactly covers the balance pays it off in one month', () => {
@@ -103,6 +103,14 @@ describe('simulatePayoffPlan', () => {
     const big = plan.perCard.find((c) => c.id === 'big');
     expect(small.payoffMonth).toBeLessThan(big.payoffMonth);
   });
+
+  it('reports how much of an oversized extra payment is left unapplied once every debt clears', () => {
+    const cards = [{ id: 'a', name: 'A', balance: 1000, interestRate: 0, minPayment: 0 }];
+    const plan = simulatePayoffPlan(cards, 'bola_nieve', 1000000);
+    expect(plan.stuck).toBe(false);
+    expect(plan.monthsToPayoff).toBe(1);
+    expect(plan.surplus).toBe(999000);
+  });
 });
 
 describe('monthlyInterestCost', () => {
@@ -123,12 +131,12 @@ describe('monthlyInterestCost', () => {
 
 describe('simulateCardPayoff', () => {
   it('is instantly paid off with no balance', () => {
-    expect(simulateCardPayoff({ balance: 0, interestRate: 20, minPayment: 100 })).toEqual({ monthsToPayoff: 0, totalInterest: 0, stuck: false });
+    expect(simulateCardPayoff({ balance: 0, interestRate: 20, minPayment: 100 })).toEqual({ monthsToPayoff: 0, totalInterest: 0, stuck: false, surplus: 0 });
   });
 
   it('with no interest, total interest is 0 and months = balance / minPayment', () => {
     const result = simulateCardPayoff({ balance: 1000, interestRate: 0, minPayment: 100 });
-    expect(result).toEqual({ monthsToPayoff: 10, totalInterest: 0, stuck: false });
+    expect(result).toEqual({ monthsToPayoff: 10, totalInterest: 0, stuck: false, surplus: 0 });
   });
 
   it('accrues interest when a rate is set, taking at least as long as with no interest', () => {
@@ -149,6 +157,18 @@ describe('simulateCardPayoff', () => {
     const withExtra = simulateCardPayoff({ balance: 1000, interestRate: 30, minPayment: 100 }, 200);
     expect(withExtra.totalInterest).toBeLessThan(base.totalInterest);
     expect(withExtra.monthsToPayoff).toBeLessThan(base.monthsToPayoff);
+  });
+
+  it('reports how much of an oversized extra payment goes unused once the balance clears', () => {
+    const result = simulateCardPayoff({ balance: 1000, interestRate: 0, minPayment: 0 }, 1000000);
+    expect(result.stuck).toBe(false);
+    expect(result.monthsToPayoff).toBe(1);
+    expect(result.surplus).toBe(999000);
+  });
+
+  it('surplus is 0 when the extra payment is exactly what is needed', () => {
+    const result = simulateCardPayoff({ balance: 1000, interestRate: 0, minPayment: 0 }, 1000);
+    expect(result.surplus).toBe(0);
   });
 });
 

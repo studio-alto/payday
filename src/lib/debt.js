@@ -65,7 +65,7 @@ export function simulatePayoffPlan(cards, method, extraMonthly) {
     }));
 
   if (working.length === 0) {
-    return { monthsToPayoff: 0, stuck: false, stuckInfo: null, perCard: [] };
+    return { monthsToPayoff: 0, stuck: false, stuckInfo: null, surplus: 0, perCard: [] };
   }
 
   // Snapshot of this month's interest vs. minimum payments, at today's balances —
@@ -79,6 +79,10 @@ export function simulatePayoffPlan(cards, method, extraMonthly) {
   }));
 
   let month = 0;
+  // Extra left over after rolling through every open card this month — 0 in every
+  // month but the last one (it's fully absorbed while debts remain), so whatever
+  // value survives the loop is the leftover from the month everything got paid off.
+  let leftoverExtra = 0;
   while (working.some((c) => c.balance > 0.01) && month < MAX_MONTHS) {
     month++;
     working.forEach((c) => {
@@ -97,6 +101,7 @@ export function simulatePayoffPlan(cards, method, extraMonthly) {
       c.balance -= pay;
       extra -= pay;
     }
+    leftoverExtra = extra;
     working.forEach((c) => {
       if (c.balance <= 0.01 && c.payoffMonth === null) c.payoffMonth = month;
     });
@@ -121,6 +126,7 @@ export function simulatePayoffPlan(cards, method, extraMonthly) {
     monthsToPayoff: stuck ? null : month,
     stuck,
     stuckInfo,
+    surplus: stuck ? 0 : Math.round(leftoverExtra),
     perCard: [...working].sort((a, b) => (a.payoffMonth ?? Infinity) - (b.payoffMonth ?? Infinity)).map((c) => ({ id: c.id, name: c.name, payoffMonth: c.payoffMonth })),
   };
 }
@@ -137,22 +143,27 @@ export function monthlyInterestCost(card) {
 // simulatePayoffPlan (interest accrues, then the minimum payment, then any extra), but
 // tracks how much of everything paid ends up being interest instead of just the payoff month.
 export function simulateCardPayoff(card, extraMonthly = 0) {
-  if (!(card.balance > 0)) return { monthsToPayoff: 0, totalInterest: 0, stuck: false };
+  if (!(card.balance > 0)) return { monthsToPayoff: 0, totalInterest: 0, stuck: false, surplus: 0 };
   const MAX_MONTHS = 360;
   const monthlyRate = card.interestRate > 0 ? Math.pow(1 + card.interestRate / 100, 1 / 12) - 1 : 0;
   let balance = card.balance;
   let month = 0;
   let totalInterest = 0;
+  // How much of `extraMonthly` wasn't needed once the balance hit 0 — 0 every month
+  // but the last, so its final value is what's left over the month the debt clears.
+  let leftoverExtra = 0;
   while (balance > 0.01 && month < MAX_MONTHS) {
     month++;
     const interest = balance * monthlyRate;
     balance += interest;
     totalInterest += interest;
     balance -= Math.min(card.minPayment || 0, balance);
-    balance -= Math.min(extraMonthly, balance);
+    const extraApplied = Math.min(extraMonthly, balance);
+    leftoverExtra = extraMonthly - extraApplied;
+    balance -= extraApplied;
   }
   const stuck = balance > 0.01;
-  return { monthsToPayoff: stuck ? null : month, totalInterest: Math.round(totalInterest), stuck };
+  return { monthsToPayoff: stuck ? null : month, totalInterest: Math.round(totalInterest), stuck, surplus: stuck ? 0 : Math.round(leftoverExtra) };
 }
 
 export function formatMonthsLabel(months) {

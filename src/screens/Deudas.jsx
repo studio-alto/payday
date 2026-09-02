@@ -636,6 +636,11 @@ export default function Deudas({ data, setData, onViewDetail }) {
                   Terminarías de pagar todo en{' '}
                   <span style={{ fontWeight: 800, color: 'var(--accent-text)' }}>{formatMonthsLabel(payoffPlan.monthsToPayoff)}</span>
                 </div>
+                {payoffPlan.surplus > 0 && (
+                  <div style={{ fontSize: 12, color: 'var(--accent-text)', marginTop: 4 }}>
+                    Tu extra mensual es más de lo que tus deudas necesitan — te sobran {fmt(payoffPlan.surplus, currency)} al mes sin aplicar a ninguna, que podrías destinar a tus metas o ahorro.
+                  </div>
+                )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
                   {payoffPlan.perCard.map((c) => (
                     <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12 }}>
@@ -695,13 +700,10 @@ export default function Deudas({ data, setData, onViewDetail }) {
               Próximo pago: {formatShortDate(c.nextPayment)}
               {isOverdue && <span style={{ color: 'var(--danger-text)', fontWeight: 700 }}> · Vencido</span>}
             </div>
-            {(c.minPayment > 0 || interestCost > 0) && (
-              <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
-                {c.minPayment > 0 && `Cuota: ${fmt(c.minPayment, currency)}`}
-                {c.minPayment > 0 && interestCost > 0 && ' · '}
-                {interestCost > 0 && `Interés: ${fmt(interestCost, currency)}/mes`}
-              </div>
-            )}
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+              Cuota: {c.minPayment > 0 ? fmt(c.minPayment, currency) : 'No configurada'}
+              {interestCost > 0 && ` · Interés: ${fmt(interestCost, currency)}/mes`}
+            </div>
             <div style={{ height: 7, background: 'var(--divider)', borderRadius: 6, overflow: 'hidden', marginTop: 10 }}>
               <div style={{ height: '100%', width: `${pct}%`, background: 'var(--accent)', borderRadius: 6, transition: 'width 0.5s ease' }} />
             </div>
@@ -764,21 +766,14 @@ export default function Deudas({ data, setData, onViewDetail }) {
                         <div style={{ color: 'var(--text-secondary)' }}>{formatShortDate(h.date)}{h.note ? ` · ${h.note}` : ''}</div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           <div style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(h.amount, currency)}</div>
-                          <button
-                            type="button"
-                            onClick={() => openEditHistoryModal(c.id, h.i)}
-                            style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer', border: 'none', background: 'none', padding: '4px 4px' }}
-                          >
-                            Editar
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setDeleteHistoryTarget({ cardId: c.id, index: h.i })}
-                            aria-label="Eliminar pago"
-                            style={{ color: 'var(--danger-text)', fontWeight: 700, fontSize: 14, cursor: 'pointer', lineHeight: 1 }}
-                          >
-                            ×
-                          </button>
+                          <CardMenu
+                            inline
+                            triggerBg="transparent"
+                            actions={[
+                              { label: 'Editar', onClick: () => openEditHistoryModal(c.id, h.i) },
+                              { label: 'Eliminar', destructive: true, onClick: () => setDeleteHistoryTarget({ cardId: c.id, index: h.i }) },
+                            ]}
+                          />
                         </div>
                       </div>
                       {deleteHistoryTarget?.cardId === c.id && deleteHistoryTarget?.index === h.i && (
