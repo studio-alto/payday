@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { fmt } from '../lib/format';
 import { uid } from '../lib/id';
-import { cardStyle, textInputStyle, primaryButtonStyle } from '../lib/styles';
+import { cardStyle, labelStyle, textInputStyle, primaryButtonStyle } from '../lib/styles';
 import { computeSavingsProjection, estimateMonthsToGoal } from '../lib/goalProjection';
 import { formatMonthsLabel } from '../lib/debt';
 import { formatFullDate, todayISO } from '../lib/dates';
@@ -31,6 +31,30 @@ export default function Metas({ data, setData, onViewDetail }) {
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [addingToGoalId, setAddingToGoalId] = useState(null);
   const [addAmount, setAddAmount] = useState('');
+  const [claimTarget, setClaimTarget] = useState('');
+
+  // Ahorro that's counted in the Home totals but invisible here — either the
+  // person picked "Sin meta" when distributing an ingreso, or the goal it was
+  // tied to got deleted (which nulls the link but never moves the money anywhere).
+  // Surfacing it — and letting it be assigned to a real goal — closes that gap.
+  const unassignedIncomes = data.incomes.filter(
+    (i) => i.estado !== 'proyectado' && !i.distribution.goalId && (i.distribution.ahorro || 0) > 0,
+  );
+  const unassignedTotal = unassignedIncomes.reduce((a, i) => a + i.distribution.ahorro, 0);
+  const claimUnassigned = (goalId) => {
+    setData((s) => {
+      const targets = s.incomes.filter((i) => i.estado !== 'proyectado' && !i.distribution.goalId && (i.distribution.ahorro || 0) > 0);
+      if (targets.length === 0) return s;
+      const addedTotal = targets.reduce((a, i) => a + i.distribution.ahorro, 0);
+      const entries = targets.map((i) => ({ date: i.date, amount: i.distribution.ahorro, incomeId: i.id }));
+      return {
+        ...s,
+        incomes: s.incomes.map((i) => (targets.some((t) => t.id === i.id) ? { ...i, distribution: { ...i.distribution, goalId } } : i)),
+        goals: s.goals.map((g) => (g.id === goalId ? { ...g, current: g.current + addedTotal, history: [...(g.history || []), ...entries] } : g)),
+      };
+    });
+    setClaimTarget('');
+  };
 
   const openNewModal = () => {
     setEditingGoalId(null);
@@ -140,6 +164,54 @@ export default function Metas({ data, setData, onViewDetail }) {
           </button>
         </div>
       </FixedHeader>
+
+      {unassignedTotal > 0 && (
+        <div style={cardStyle}>
+          <div style={labelStyle}>AHORRO SIN META</div>
+          <div style={{ fontWeight: 800, fontSize: 22, color: 'var(--text)', marginTop: 4, letterSpacing: '-0.02em' }}>{fmt(unassignedTotal, currency)}</div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 6 }}>
+            De ingresos donde elegiste "Sin meta", o de una meta que eliminaste — cuenta en tu ahorro total de Inicio, pero no en el
+            progreso de ninguna meta hasta que lo asignes.
+          </div>
+          {goals.length > 0 ? (
+            <>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.03em', marginTop: 12 }}>
+                ASIGNAR A
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
+                {goals.map((g) => (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => setClaimTarget(g.id)}
+                    style={{
+                      padding: '9px 14px',
+                      borderRadius: 20,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      background: claimTarget === g.id ? 'var(--text)' : 'var(--input-bg)',
+                      color: claimTarget === g.id ? 'var(--page-bg)' : 'var(--text)',
+                      border: 'none',
+                    }}
+                  >
+                    {g.name}
+                  </button>
+                ))}
+              </div>
+              {claimTarget && (
+                <InlineConfirm
+                  message={`¿Asignar ${fmt(unassignedTotal, currency)} a "${goals.find((g) => g.id === claimTarget)?.name}"?`}
+                  onConfirm={() => claimUnassigned(claimTarget)}
+                  onCancel={() => setClaimTarget('')}
+                />
+              )}
+            </>
+          ) : (
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 10 }}>Crea una meta para poder asignarlo.</div>
+          )}
+        </div>
+      )}
 
       {goals.length === 0 && (
         <div style={{ ...cardStyle, textAlign: 'center' }}>
