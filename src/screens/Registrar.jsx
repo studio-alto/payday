@@ -70,6 +70,10 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
   const overAllocated = ahorroMonto + tarjetaMonto > regAmount;
   const debtMethod = data.user.debtMethod || 'bola_nieve';
   const debtWaterfall = computeDebtWaterfall(data.cards, debtMethod, tarjetaMonto);
+  // Whatever doesn't fit any debt (debtWaterfall.leftover) never reaches a card balance —
+  // it has to stay part of "disponible", not get subtracted as if it were paid toward
+  // debt, or that amount would silently vanish from every total in the app.
+  const tarjetaAplicado = form.esFuturo ? tarjetaMonto : tarjetaMonto - debtWaterfall.leftover;
   const budgetNecesidades = data.user.budgetNecesidades ?? 50;
   const budgetDeseos = data.user.budgetDeseos ?? 30;
   const budgetAhorro = data.user.budgetAhorro ?? 20;
@@ -162,7 +166,11 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
       const applied = form.esFuturo
         ? { goals, cards, debtAllocations: [] }
         : applyIncomeEffects(baseEntry, goals, cards, s.user.debtMethod || 'bola_nieve');
-      const entry = { ...baseEntry, distribution: { ...baseEntry.distribution, debtAllocations: applied.debtAllocations } };
+      // Only what actually landed on a card counts as "tarjeta" from here on — any part
+      // that didn't fit any debt stays disponible instead of disappearing from every
+      // total (Dashboard, recap, Excel) that reads distribution.tarjeta.
+      const tarjetaAplicado = form.esFuturo ? tarjetaMonto : applied.debtAllocations.reduce((a, x) => a + x.amount, 0);
+      const entry = { ...baseEntry, distribution: { ...baseEntry.distribution, tarjeta: tarjetaAplicado, debtAllocations: applied.debtAllocations } };
 
       return {
         ...s,
@@ -614,7 +622,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
               )}
               {debtWaterfall.leftover > 0 && (
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                  Sobran {fmt(debtWaterfall.leftover, currency)} sin deudas a las que aplicarlos.
+                  Sobran {fmt(debtWaterfall.leftover, currency)} sin deudas a las que aplicarlos — ese monto se queda como disponible, no se resta de tus cuentas.
                 </div>
               )}
             </div>
@@ -645,13 +653,18 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
               <span style={{ color: 'var(--text-secondary)' }}>Deudas</span>
-              <span style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(tarjetaMonto, currency)}</span>
+              <span style={{ fontWeight: 700, color: 'var(--text)' }}>{fmt(tarjetaAplicado, currency)}</span>
             </div>
+            {tarjetaAplicado < tarjetaMonto && (
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+                De los {fmt(tarjetaMonto, currency)} que separaste, {fmt(tarjetaMonto - tarjetaAplicado, currency)} no tenían deuda a la cual aplicarse y quedan disponibles.
+              </div>
+            )}
           </div>
           <div style={{ background: 'var(--accent-soft-bg)', borderRadius: 16, padding: 16 }}>
             <div style={labelStyle}>DISPONIBLE PARA GASTAR</div>
             <div style={{ fontWeight: 800, fontSize: 32, color: 'var(--text)', marginTop: 6, letterSpacing: '-0.02em' }}>
-              {fmt(regAmount - ahorroMonto - tarjetaMonto, currency)}
+              {fmt(regAmount - ahorroMonto - tarjetaAplicado, currency)}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>

@@ -107,7 +107,11 @@ export default function Dashboard({ data, setData, onNavigate }) {
   const confirmIncome = (income) => {
     setData((s) => {
       const applied = applyIncomeEffects(income, s.goals, s.cards, s.user.debtMethod || 'bola_nieve');
-      const updatedIncome = { ...income, estado: 'confirmado', distribution: { ...income.distribution, debtAllocations: applied.debtAllocations } };
+      // Same rule as registering a confirmed income directly: only what actually landed
+      // on a card counts as "tarjeta" — the rest (no debt left to apply it to) stays
+      // disponible instead of vanishing from every total that reads distribution.tarjeta.
+      const tarjetaAplicado = applied.debtAllocations.reduce((a, x) => a + x.amount, 0);
+      const updatedIncome = { ...income, estado: 'confirmado', distribution: { ...income.distribution, tarjeta: tarjetaAplicado, debtAllocations: applied.debtAllocations } };
       return { ...s, incomes: s.incomes.map((i) => (i.id === income.id ? updatedIncome : i)), goals: applied.goals, cards: applied.cards };
     });
   };

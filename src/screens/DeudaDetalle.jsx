@@ -214,7 +214,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
       <ExplainerNote>
         El círculo muestra qué tanto de esta deuda ya pagaste ({pct}%) — entre más lleno, más cerca estás de terminarla.
         {card.interestRate > 0 &&
-          ` Lo rojo es lo que te cuesta cada mes solo por tenerla — no reduce lo que debes, es dinero extra que pagas por no haberla saldado todavía.`}
+          ` Lo rojo es lo que te cuesta cada mes solo por tenerla — no reduce lo que debes, es dinero extra que pagas por no haberla saldado todavía. "E.A." significa Efectivo Anual: es la tasa de interés que cobran por un año completo — la misma que suele aparecer en tu extracto o contrato.`}
         {months !== null && ` Llevas ${months === 0 ? 'menos de un mes' : months === 1 ? '1 mes' : `${months} meses`} con esta deuda.`}
       </ExplainerNote>
 

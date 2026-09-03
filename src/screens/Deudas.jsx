@@ -838,6 +838,9 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
             placeholder="Tasa de interés % E.A. (opcional)"
             style={textInputStyle()}
           />
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: -6 }}>
+            E.A. = Efectivo Anual, la tasa de interés por un año completo. Aparece en tu extracto o contrato — déjalo vacío si no la conoces.
+          </div>
           <div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 700 }}>
               ¿CUÁNDO LA ADQUIRISTE? (OPCIONAL — PARA SABER CUÁNTOS MESES LLEVAS)
