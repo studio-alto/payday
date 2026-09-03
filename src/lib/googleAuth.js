@@ -13,6 +13,9 @@
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 const SCOPES = ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/calendar.events'];
 const TOKEN_KEY = 'payday_google_token';
+// Survives across sessions (unlike the token itself) so a later reconnect knows
+// it can try silently first instead of assuming this is a first-ever connect.
+const CONNECTED_BEFORE_KEY = 'payday_google_connected_before';
 
 export const googleConfigured = !!CLIENT_ID;
 
@@ -46,22 +49,71 @@ export function disconnectGoogle() {
   sessionStorage.removeItem(TOKEN_KEY);
 }
 
+// True once someone has ever completed the real (visible) consent screen on
+// this device — lets a later reconnect (once the ~1h token expires) try a
+// silent, invisible re-auth first instead of always showing Google's screen.
+export function hasConnectedBefore() {
+  try {
+    return localStorage.getItem(CONNECTED_BEFORE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 // Call once when the app boots (before anything reads getAccessToken) — picks the
 // access token out of the URL fragment Google appends after redirecting back, and
-// strips it from the visible URL.
+// strips it from the visible URL. Also records the outcome (for a silent attempt's
+// caller to check after the page reload it causes) — see consumeRedirectResult().
 export function consumeGoogleRedirect() {
-  if (!window.location.hash.includes('access_token=')) return;
-  const params = new URLSearchParams(window.location.hash.slice(1));
-  const accessToken = params.get('access_token');
-  const expiresIn = params.get('expires_in');
-  if (accessToken) saveToken(accessToken, expiresIn);
-  history.replaceState(null, '', window.location.pathname + window.location.search);
+  if (window.location.hash.includes('access_token=')) {
+    const params = new URLSearchParams(window.location.hash.slice(1));
+    const accessToken = params.get('access_token');
+    const expiresIn = params.get('expires_in');
+    if (accessToken) {
+      saveToken(accessToken, expiresIn);
+      try {
+        localStorage.setItem(CONNECTED_BEFORE_KEY, '1');
+      } catch {
+        // best-effort only — worst case, the next reconnect just isn't tried silently
+      }
+    }
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+    try {
+      sessionStorage.setItem('payday_google_redirect_result', 'connected');
+    } catch {
+      // best-effort
+    }
+  } else if (window.location.hash.includes('error=')) {
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+    try {
+      sessionStorage.setItem('payday_google_redirect_result', 'error');
+    } catch {
+      // best-effort
+    }
+  }
+}
+
+// One-time read of what the most recent redirect round-trip produced — 'connected',
+// 'error', or null (nothing pending). Consumes it so a later render doesn't act on
+// a stale result.
+export function consumeRedirectResult() {
+  try {
+    const value = sessionStorage.getItem('payday_google_redirect_result');
+    if (value) sessionStorage.removeItem('payday_google_redirect_result');
+    return value;
+  } catch {
+    return null;
+  }
 }
 
 // Navigates the whole page to Google's consent screen — never returns (the app
 // reloads fresh when Google redirects back). Call hasValidToken() first; only
-// call this when it's false.
-export function connectGoogle() {
+// call this when it's false. Pass `silent: true` to try reconnecting invisibly
+// (prompt=none) — works only if the browser's Google session and this app's
+// prior grant are both still valid; otherwise Google redirects straight back
+// with an error and no visible screen at all, so the caller should fall back
+// to a normal (non-silent) connectGoogle() when consumeRedirectResult() is 'error'.
+export function connectGoogle({ silent = false } = {}) {
   if (!googleConfigured) throw new Error('Google no está configurado todavía (falta VITE_GOOGLE_CLIENT_ID).');
   const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
   url.searchParams.set('client_id', CLIENT_ID);
@@ -69,5 +121,6 @@ export function connectGoogle() {
   url.searchParams.set('response_type', 'token');
   url.searchParams.set('scope', SCOPES.join(' '));
   url.searchParams.set('include_granted_scopes', 'true');
+  if (silent) url.searchParams.set('prompt', 'none');
   window.location.href = url.toString();
 }

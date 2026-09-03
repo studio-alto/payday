@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { todayISO, formatFullDate } from '../lib/dates';
 import { referenceIncome } from '../lib/incomeStats';
 import { fetchLiveExchangeRates } from '../lib/exchangeRates';
@@ -6,7 +6,7 @@ import { fmt } from '../lib/format';
 import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import { hashPin } from '../lib/pin';
 import { sendBackupEmail, sendReportLinkEmail, emailBackupConfigured } from '../lib/emailBackup';
-import { googleConfigured, hasValidToken, getAccessToken, connectGoogle } from '../lib/googleAuth';
+import { googleConfigured, hasValidToken, hasConnectedBefore, consumeRedirectResult, getAccessToken, connectGoogle } from '../lib/googleAuth';
 import { uploadReportToDrive } from '../lib/googleDrive';
 import { syncFinancialEventsToCalendar } from '../lib/googleCalendar';
 import NumberInput from '../components/NumberInput';
@@ -207,13 +207,25 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
   const [calendarStatus, setCalendarStatus] = useState('idle'); // idle | loading | synced | error
   const [calendarError, setCalendarError] = useState('');
   const connectedToGoogle = hasValidToken();
+  // If a silent reconnect attempt (see startGoogleConnect below) just failed —
+  // Google bounced back with an error instead of a token — say so, since
+  // otherwise it looks like the button silently did nothing.
+  const [silentReconnectFailed, setSilentReconnectFailed] = useState(false);
+  useEffect(() => {
+    if (consumeRedirectResult() === 'error') setSilentReconnectFailed(true);
+  }, []);
   const startGoogleConnect = () => {
     // Remember where we were — connectGoogle() leaves the app entirely (Google's
     // consent screen, then back), so the next load needs to know to land back on
     // this tab instead of the default Home screen.
     sessionStorage.setItem('payday_return_tab', 'config');
     sessionStorage.setItem('payday_return_section', 'datos');
-    connectGoogle();
+    setSilentReconnectFailed(false);
+    // Once connected before, the ~1h token expiring shouldn't mean re-approving
+    // by hand every time — try an invisible reconnect first (works as long as
+    // the browser's own Google session is still active) before falling back to
+    // the real consent screen.
+    connectGoogle({ silent: hasConnectedBefore() });
   };
   const sendToDrive = async () => {
     setDriveStatus('loading');
@@ -669,9 +681,10 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
                 <button type="button" onClick={startGoogleConnect} style={actionRowStyle}>
                   Conectar con Google
                 </button>
-                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: -4 }}>
-                  Te lleva a Google para autorizar, y vuelve aquí. Solo puede ver y crear archivos que suba esta app en Drive, y crear/editar
-                  eventos en tu Calendar — nada más de tu cuenta.
+                <div style={{ fontSize: 11, color: silentReconnectFailed ? 'var(--danger-text)' : 'var(--text-secondary)', marginTop: -4 }}>
+                  {silentReconnectFailed
+                    ? 'No se pudo reconectar en silencio (puede que también haya que iniciar sesión de nuevo en Google) — toca el botón para autorizar otra vez.'
+                    : 'Te lleva a Google para autorizar, y vuelve aquí. Solo puede ver y crear archivos que suba esta app en Drive, y crear/editar eventos en tu Calendar — nada más de tu cuenta.'}
                 </div>
               </>
             ) : (
