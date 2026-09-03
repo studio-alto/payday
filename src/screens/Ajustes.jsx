@@ -402,6 +402,24 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
               />
             </button>
           </div>
+
+          <div style={labelStyle}>AYUDA</div>
+          <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <button
+              type="button"
+              onClick={() => window.open('https://claude.ai/code/artifact/80b6d8ee-ce43-454a-9116-d0a82792a636', '_blank', 'noopener,noreferrer')}
+              style={actionRowStyle}
+            >
+              Guía de uso
+            </button>
+            <button
+              type="button"
+              onClick={() => window.open('https://claude.ai/code/artifact/e3ca2e18-7982-4aad-b8db-4c4e5e514c30', '_blank', 'noopener,noreferrer')}
+              style={actionRowStyle}
+            >
+              Política de privacidad
+            </button>
+          </div>
         </>
       )}
 
