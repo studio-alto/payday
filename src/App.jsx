@@ -10,6 +10,7 @@ import Welcome from './components/Welcome';
 import AppLock from './components/AppLock';
 import BottomNav from './components/BottomNav';
 import UpdateToast from './components/UpdateToast';
+import ScreenLoader from './components/ScreenLoader';
 import MonthlyRecap from './components/MonthlyRecap';
 // Dashboard loads eagerly since it's the very first screen shown; every other
 // screen is only fetched the moment the person actually navigates to it, so the
@@ -185,7 +186,7 @@ export default function App() {
       <UpdateToast />
 
       <div className="app-scroll" style={{ width: '100%', maxWidth: 640, padding: '0 20px var(--nav-clearance) 20px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <Suspense fallback={<div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--text-secondary)', fontSize: 13 }}>Cargando…</div>}>
+        <Suspense fallback={<ScreenLoader />}>
           {activeTab === 'dashboard' && <Dashboard data={data} setData={setData} onNavigate={navigate} />}
           {activeTab === 'registrar' && (
             <Registrar data={data} setData={setData} onNavigate={navigate} editingIncome={editingIncome} onDoneEditing={() => setEditingIncome(null)} />

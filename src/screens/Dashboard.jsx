@@ -285,7 +285,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
             {fmt(totalMonth, user.currency)}
           </div>
           <div style={{ fontSize: 12, color: 'var(--text)', marginTop: 6 }}>
-            Esta semana <span style={{ color: 'var(--accent-text)', fontWeight: 700 }}>{fmt(weeklyTotal, user.currency)} ↑</span>
+            Esta semana <span style={{ color: 'var(--good-text)', fontWeight: 700 }}>{fmt(weeklyTotal, user.currency)} ↑</span>
           </div>
         </div>
         <div role="img" aria-label={weekBarsLabel} style={{ display: 'flex', alignItems: 'flex-end', gap: 5, height: 70 }}>
@@ -399,10 +399,9 @@ export default function Dashboard({ data, setData, onNavigate }) {
               </button>
             </>
           )}
-          <div style={{ height: 1, background: 'var(--divider)' }} />
-          <div>
-            <div style={labelStyle}>DISPONIBLE</div>
-            <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)', marginTop: 3 }}>{fmt(disponible, user.currency)}</div>
+          <div style={{ background: 'var(--good-soft-bg)', borderRadius: 14, padding: '10px 12px', marginTop: 2 }}>
+            <div style={{ ...labelStyle, color: 'var(--good-text)' }}>DISPONIBLE</div>
+            <div style={{ fontWeight: 800, fontSize: 20, color: 'var(--good-text)', marginTop: 3, letterSpacing: '-0.01em' }}>{fmt(disponible, user.currency)}</div>
           </div>
         </div>
       </div>
