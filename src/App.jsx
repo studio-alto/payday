@@ -24,6 +24,7 @@ const Deudas = lazy(() => import('./screens/Deudas'));
 const DeudaDetalle = lazy(() => import('./screens/DeudaDetalle'));
 const Ingresos = lazy(() => import('./screens/Ingresos'));
 const Ajustes = lazy(() => import('./screens/Ajustes'));
+const RestaurarDatos = lazy(() => import('./screens/RestaurarDatos'));
 
 // Must run before the first render — if Google just redirected back after a
 // connect, this parses the access token out of the URL hash (see
@@ -201,8 +202,9 @@ export default function App() {
           )}
           {activeTab === 'ingresos' && <Ingresos data={data} setData={setData} onNavigate={navigate} onEdit={startEditIncome} />}
           {activeTab === 'config' && (
-            <Ajustes data={data} setData={setData} canInstall={!!installPrompt} isInstalled={isInstalled} onInstall={requestInstall} />
+            <Ajustes data={data} setData={setData} canInstall={!!installPrompt} isInstalled={isInstalled} onInstall={requestInstall} onNavigate={navigate} />
           )}
+          {activeTab === 'restaurar' && <RestaurarDatos data={data} setData={setData} onNavigate={navigate} />}
         </Suspense>
       </div>
 

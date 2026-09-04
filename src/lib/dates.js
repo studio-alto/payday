@@ -67,6 +67,20 @@ export function monthsSince(startDateStr, ref = new Date()) {
   return Math.max(0, months);
 }
 
+// "Hace X" for a full ISO datetime (not one of this file's date-only strings) —
+// for things that happen at a specific moment, like a backup, rather than on a day.
+export function formatRelativeTime(isoTimestamp, now = new Date()) {
+  const minutes = Math.floor((now - new Date(isoTimestamp)) / 60000);
+  if (minutes < 1) return 'Hace un momento';
+  if (minutes < 60) return `Hace ${minutes} ${minutes === 1 ? 'minuto' : 'minutos'}`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `Hace ${hours} ${hours === 1 ? 'hora' : 'horas'}`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `Hace ${days} ${days === 1 ? 'día' : 'días'}`;
+  const months = Math.floor(days / 30);
+  return `Hace ${months} ${months === 1 ? 'mes' : 'meses'}`;
+}
+
 export function daysInMonth(date = new Date()) {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
 }

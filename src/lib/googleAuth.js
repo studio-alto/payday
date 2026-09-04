@@ -45,8 +45,30 @@ export function hasValidToken() {
   return !!getAccessToken();
 }
 
-export function disconnectGoogle() {
+// Actually revokes the grant with Google (not just forgetting the token locally) —
+// otherwise hasConnectedBefore() would stay true and a later "Conectar" could
+// silently reconnect via prompt=none without ever showing the consent screen again.
+// Only possible while the ~1h access token is still valid, since the implicit flow
+// never gives this app a refresh token to revoke with once that expires — in that
+// case this still clears every local trace, it just can't reach Google to confirm.
+export async function disconnectGoogle() {
+  const accessToken = getAccessToken();
+  if (accessToken) {
+    try {
+      await fetch(`https://oauth2.googleapis.com/revoke?token=${encodeURIComponent(accessToken)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      });
+    } catch {
+      // best-effort — even offline, still forget the connection below
+    }
+  }
   sessionStorage.removeItem(TOKEN_KEY);
+  try {
+    localStorage.removeItem(CONNECTED_BEFORE_KEY);
+  } catch {
+    // best-effort only
+  }
 }
 
 // True once someone has ever completed the real (visible) consent screen on

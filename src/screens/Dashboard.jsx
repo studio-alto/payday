@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { fmt } from '../lib/format';
-import { WEEKDAY_LETTERS, dayTypeLabel, daysUntilPayday, formatShortDate, isSameMonth, last7Days, remainingDaysInMonth, todayISO } from '../lib/dates';
+import { WEEKDAY_LETTERS, dayTypeLabel, daysInMonth, daysUntilPayday, formatShortDate, isSameMonth, last7Days, remainingDaysInMonth, todayISO } from '../lib/dates';
 import { cardStyle, labelStyle } from '../lib/styles';
 import { averageRecentIncome, getPendingConfirmations } from '../lib/incomeStats';
 import { applyIncomeEffects } from '../lib/debt';
 import FixedHeader from '../components/FixedHeader';
 import ProgressRing from '../components/ProgressRing';
 import SummaryIcon from '../components/SummaryIcon';
+import BackupStatusCard from '../components/BackupStatusCard';
+import MonthComparisonCard from '../components/MonthComparisonCard';
 
 // One color per "Resumen general" row — a small, fixed palette (not the Variables
 // donut's per-category one, which grows/cycles) used purely to make each account
@@ -16,6 +19,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
   const { user, incomes, goals, cards, expenses, gastosVariables } = data;
   const today = todayISO();
   const week = last7Days();
+  const [pessimistic, setPessimistic] = useState(false);
 
   const confirmedIncomes = incomes.filter((i) => i.estado !== 'proyectado');
   const projectedIncomes = incomes.filter((i) => i.estado === 'proyectado');
@@ -85,7 +89,19 @@ export default function Dashboard({ data, setData, onNavigate }) {
   // Projecting "avg daily x remaining days" only makes sense for variable/gig
   // income — a fixed monthly salary doesn't grow by more days passing, so the
   // month total is already whatever's been registered.
-  const projectedTotal = user.incomeMode !== 'fijo' && avgDailyIncome > 0 ? totalMonth + avgDailyIncome * remainingDaysInMonth() : null;
+  const projectionEligible = user.incomeMode !== 'fijo' && avgDailyIncome > 0;
+  // "What if I earn 30% less than average for the rest of the month" — only the
+  // still-to-come days are uncertain, so the discount applies to them alone; what's
+  // already been earned this month is a fact, not a guess, in either scenario.
+  const remainingIncomeEstimate = avgDailyIncome * remainingDaysInMonth() * (pessimistic ? 0.7 : 1);
+  const projectedTotal = projectionEligible ? totalMonth + remainingIncomeEstimate : null;
+  // Reuses the same "ahorro + deudas" budget rule shown when registering an income
+  // (Ajustes → Finanzas) — there's no separate pure-savings-only setting, so this
+  // earmarks money for both, same as that rule already means everywhere else.
+  const budgetAhorro = user.budgetAhorro ?? 20;
+  const metaAhorroProjected = projectedTotal !== null ? Math.round(projectedTotal * (budgetAhorro / 100)) : 0;
+  const disponibleFinal = projectedTotal !== null ? Math.round(projectedTotal - totalGastos - metaAhorroProjected) : null;
+  const lastDayOfMonth = daysInMonth();
   const paydayDays = daysUntilPayday(user.payDayOfMonth);
   const paydayLabel = paydayDays === 0 ? 'Hoy' : paydayDays === 1 ? 'En 1 día' : `En ${paydayDays} días`;
 
@@ -271,7 +287,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
               onClick={() => onNavigate('ingresos')}
               style={{ fontSize: 12, fontWeight: 700, color: 'white', cursor: 'pointer', textAlign: 'left' }}
             >
-              +{pendingConfirmations.length - 3} más — ver todos
+              +{pendingConfirmations.length - 3} más, ver todos
             </button>
           )}
         </div>
@@ -328,22 +344,59 @@ export default function Dashboard({ data, setData, onNavigate }) {
         </button>
       )}
 
-      {/* Proyección del mes + Próximo pago */}
+      {/* Proyección del mes: si sigues ganando el promedio, qué te queda libre al
+          cerrar el mes una vez separado lo de gastos fijos y tu regla de ahorro. */}
+      {projectionEligible && (
+        <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={labelStyle}>PROYECCIÓN DEL MES</div>
+          <div>
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)' }}>
+              {pessimistic ? 'Si ganas 30% menos que el promedio:' : 'Si ganas el promedio actual:'}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap', marginTop: 2 }}>
+              <div style={{ fontWeight: 800, fontSize: 30, letterSpacing: '-0.02em', color: disponibleFinal < 0 ? 'var(--danger-text)' : 'var(--text)' }}>
+                {fmt(disponibleFinal, user.currency)}
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-secondary)' }}>disponible al {lastDayOfMonth}</div>
+            </div>
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+            Esto asume {fmt(totalGastos, user.currency)} de gastos fijos + {fmt(metaAhorroProjected, user.currency)} para ahorro y deudas (tu
+            regla del {budgetAhorro}%).
+          </div>
+          {disponibleFinal < 0 && (
+            <div style={{ background: 'var(--danger-soft-bg)', borderRadius: 12, padding: 10 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--danger-text)' }}>
+                ⚠️ Con {pessimistic ? 'ese ritmo' : 'el promedio actual'}, te faltará dinero este mes.
+              </div>
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => setPessimistic((v) => !v)}
+            style={{
+              alignSelf: 'flex-start',
+              fontSize: 12,
+              fontWeight: 700,
+              color: 'var(--accent-text)',
+              cursor: 'pointer',
+              border: 'none',
+              background: 'none',
+              padding: 0,
+            }}
+          >
+            {pessimistic ? '‹ Ver con el promedio normal' : '¿Y si gano 30% menos?'}
+          </button>
+        </div>
+      )}
+
       <button
         type="button"
         onClick={() => onNavigate('ingresos')}
-        style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16, border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%' }}
+        style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%' }}
       >
-        {projectedTotal !== null && (
-          <div>
-            <div style={labelStyle}>PROYECCIÓN DEL MES</div>
-            <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)', marginTop: 3 }}>{fmt(projectedTotal, user.currency)}</div>
-          </div>
-        )}
-        <div style={{ textAlign: projectedTotal !== null ? 'right' : 'left' }}>
-          <div style={labelStyle}>PRÓXIMO PAGO</div>
-          <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)', marginTop: 3 }}>{paydayLabel}</div>
-        </div>
+        <div style={labelStyle}>PRÓXIMO PAGO</div>
+        <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)' }}>{paydayLabel}</div>
       </button>
 
       {projectedIncomes.length > 0 && (
@@ -595,6 +648,10 @@ export default function Dashboard({ data, setData, onNavigate }) {
           <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--accent-text)', flexShrink: 0 }}>{fmt(disponible, user.currency)}</div>
         </div>
       </div>
+
+      <MonthComparisonCard data={data} />
+
+      <BackupStatusCard data={data} setData={setData} />
     </div>
   );
 }

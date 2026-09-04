@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { todayISO, formatFullDate } from '../lib/dates';
 import { referenceIncome } from '../lib/incomeStats';
 import { fetchLiveExchangeRates } from '../lib/exchangeRates';
@@ -6,46 +6,16 @@ import { fmt } from '../lib/format';
 import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import { hashPin } from '../lib/pin';
 import { sendBackupEmail, sendReportLinkEmail, emailBackupConfigured } from '../lib/emailBackup';
-import { googleConfigured, hasValidToken, hasConnectedBefore, consumeRedirectResult, getAccessToken, connectGoogle } from '../lib/googleAuth';
-import { uploadReportToDrive } from '../lib/googleDrive';
+import { googleConfigured, hasValidToken, hasConnectedBefore, consumeRedirectResult, getAccessToken, connectGoogle, disconnectGoogle } from '../lib/googleAuth';
+import { backupSummaryToDrive, backupJsonToDrive } from '../lib/googleDrive';
+import { buildBackupPayload, downloadBackupJson } from '../lib/backup';
 import { syncFinancialEventsToCalendar } from '../lib/googleCalendar';
 import NumberInput from '../components/NumberInput';
 import FixedHeader from '../components/FixedHeader';
 import BottomSheet from '../components/BottomSheet';
 import PinPad from '../components/PinPad';
 
-// Guards against restoring a file that parses as JSON but doesn't have the shape
-// the rest of the app assumes (e.g. hand-edited, or exported by a future version
-// with a different schema) — those would otherwise crash later on a missing field.
-function isValidBackup(parsed) {
-  if (!parsed || typeof parsed !== 'object') return false;
-  for (const key of ['incomes', 'goals', 'cards', 'expenses', 'gastosVariables']) {
-    if (parsed[key] !== undefined && !Array.isArray(parsed[key])) return false;
-  }
-  if (Array.isArray(parsed.incomes)) {
-    for (const i of parsed.incomes) {
-      if (typeof i.amount !== 'number' || typeof i.date !== 'string' || typeof i.distribution !== 'object' || i.distribution === null) return false;
-    }
-  }
-  if (Array.isArray(parsed.goals)) {
-    for (const g of parsed.goals) {
-      if (typeof g.target !== 'number' || typeof g.current !== 'number') return false;
-    }
-  }
-  if (Array.isArray(parsed.cards)) {
-    for (const c of parsed.cards) {
-      if (typeof c.balance !== 'number' || !Array.isArray(c.history)) return false;
-    }
-  }
-  if (Array.isArray(parsed.expenses)) {
-    for (const e of parsed.expenses) {
-      if (typeof e.amount !== 'number' || !Array.isArray(e.history)) return false;
-    }
-  }
-  return true;
-}
-
-export default function Ajustes({ data, setData, canInstall, isInstalled, onInstall }) {
+export default function Ajustes({ data, setData, canInstall, isInstalled, onInstall, onNavigate }) {
   const { user } = data;
   const dark = user.theme === 'oscuro';
   // Restores the "Datos" tab after a Google connect redirect bounces the
@@ -60,9 +30,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
   const incomeMode = user.incomeMode || 'variable';
   const setIncomeMode = (mode) => setData((s) => ({ ...s, user: { ...s.user, incomeMode: mode } }));
   const avgRecentIncome = referenceIncome(data.incomes, incomeMode);
-  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
   const [ratesStatus, setRatesStatus] = useState('idle');
-  const fileInputRef = useRef(null);
 
   const [pinFlow, setPinFlow] = useState(null);
   const [pinResetSignal, setPinResetSignal] = useState(0);
@@ -128,35 +96,10 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
     setData((s) => ({ ...s, user: { ...s.user, theme: s.user.theme === 'oscuro' ? 'light' : 'oscuro' } }));
   };
 
-  const exportData = () => {
-    const payload = {
-      user: data.user,
-      incomes: data.incomes,
-      goals: data.goals,
-      cards: data.cards,
-      expenses: data.expenses,
-      gastosVariables: data.gastosVariables,
-      exportedAt: todayISO(),
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `payday-datos-${todayISO()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
+  const exportData = () => downloadBackupJson(data);
 
   const shareBackup = async () => {
-    const payload = {
-      user: data.user,
-      incomes: data.incomes,
-      goals: data.goals,
-      cards: data.cards,
-      expenses: data.expenses,
-      gastosVariables: data.gastosVariables,
-      exportedAt: todayISO(),
-    };
+    const payload = buildBackupPayload(data);
     const file = new File([JSON.stringify(payload, null, 2)], `payday-datos-${todayISO()}.json`, { type: 'application/json' });
     if (navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
@@ -227,14 +170,30 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
     // the real consent screen.
     connectGoogle({ silent: hasConnectedBefore() });
   };
+
+  const [disconnectStatus, setDisconnectStatus] = useState('idle'); // idle | loading | done | error
+  const disconnectGoogleAccount = async () => {
+    setDisconnectStatus('loading');
+    try {
+      await disconnectGoogle();
+      setDisconnectStatus('done');
+    } catch {
+      setDisconnectStatus('error');
+    }
+  };
+
   const sendToDrive = async () => {
     setDriveStatus('loading');
     setDriveError('');
     try {
       const accessToken = getAccessToken();
-      const { buildSummaryWorkbook } = await import('../lib/exportExcel');
-      const blob = await buildSummaryWorkbook(data);
-      const link = await uploadReportToDrive(accessToken, blob, `payday-resumen-${todayISO()}.xlsx`);
+      const link = await backupSummaryToDrive(accessToken, data);
+      // Alongside the human-readable Excel: a machine-readable JSON backup, so
+      // "Restaurar datos → Sincronizar con Google Drive" has something real to list.
+      await backupJsonToDrive(accessToken, data);
+      // Same field the Home screen's backup status card reads — syncing from either
+      // place should update the same "última sincronización" the person sees there.
+      setData((s) => ({ ...s, user: { ...s.user, lastDriveSyncAt: new Date().toISOString() } }));
       if (user.backupEmail) {
         await sendReportLinkEmail(link, user.backupEmail);
         setDriveStatus('emailed');
@@ -259,59 +218,9 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
     }
   };
 
-  const restoreFromParsed = (parsed) => {
-    setData((s) => ({
-      user: parsed.user || s.user,
-      incomes: parsed.incomes || [],
-      goals: parsed.goals || [],
-      cards: parsed.cards || [],
-      expenses: parsed.expenses || [],
-      gastosVariables: parsed.gastosVariables || [],
-    }));
-  };
-
-  const triggerRestore = () => fileInputRef.current?.click();
-  const handleRestoreFile = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        const parsed = JSON.parse(reader.result);
-        if (!isValidBackup(parsed)) {
-          alert('Este archivo no tiene el formato de un respaldo de Payday.');
-          return;
-        }
-        restoreFromParsed(parsed);
-      } catch {
-        alert('Archivo inválido');
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  };
-
-  const [pasteText, setPasteText] = useState('');
-  const [pasteOpen, setPasteOpen] = useState(false);
-  const restoreFromPaste = () => {
-    try {
-      const parsed = JSON.parse(pasteText);
-      if (!isValidBackup(parsed)) {
-        alert('Este texto no tiene el formato de un respaldo de Payday.');
-        return;
-      }
-      restoreFromParsed(parsed);
-      setPasteText('');
-      setPasteOpen(false);
-    } catch {
-      alert('Texto inválido. Revisa que lo hayas copiado completo.');
-    }
-  };
-
-  const confirmReset = () => {
-    setData((s) => ({ ...s, incomes: [], goals: [], cards: [], expenses: [], gastosVariables: [] }));
-    setResetConfirmOpen(false);
-  };
+  // Restoring and wiping data now live in their own screen (Ajustes → Datos →
+  // "Restaurar datos"), reached via onNavigate('restaurar') below — see
+  // screens/RestaurarDatos.jsx.
 
   const actionRowStyle = {
     padding: 12,
@@ -482,7 +391,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
             {incomeMode === 'fijo'
               ? 'Para cuando recibes un sueldo fijo una vez al mes, en vez de ingresos variables día a día.'
-              : 'Para pagos que varían — turnos, domingos, festivos, etc.'}
+              : 'Para pagos que varían: turnos, domingos, festivos, etc.'}
           </div>
         </div>
         <div>
@@ -494,8 +403,8 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
             {incomeMode === 'fijo'
-              ? 'Es el último ingreso que registraste — se actualiza solo cuando registras el del mes siguiente.'
-              : 'Se calcula solo, del promedio de tus últimos 10 ingresos — no lo escribes tú, porque tu pago varía día a día.'}{' '}
+              ? 'Es el último ingreso que registraste. Se actualiza solo cuando registras el del mes siguiente.'
+              : 'Se calcula solo, del promedio de tus últimos 10 ingresos. No lo escribes tú, porque tu pago varía día a día.'}{' '}
             Se usa para sugerir el monto al registrar y para proyectar tu mes en el Dashboard.
           </div>
         </div>
@@ -598,7 +507,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
           </div>
         </div>
         <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-          Se usa como sugerencia al registrar un ingreso y como referencia en el Dashboard — no limita lo que realmente hagas.
+          Se usa como sugerencia al registrar un ingreso y como referencia en el Dashboard. No limita lo que realmente hagas.
         </div>
       </div>
       </>
@@ -615,7 +524,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
               desbloqueado.
             </div>
             <div style={{ fontSize: 12, color: 'var(--danger-text)', background: 'var(--danger-soft-bg)', padding: 10, borderRadius: 12 }}>
-              Si olvidas el PIN, la única forma de volver a entrar es borrar todos tus datos — no hay recuperación. Te
+              Si olvidas el PIN, la única forma de volver a entrar es borrar todos tus datos. No hay recuperación. Te
               recomendamos hacer un respaldo antes de activarlo.
             </div>
             <button type="button" onClick={shareBackup} style={actionRowStyle}>
@@ -633,6 +542,67 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
             </button>
             <button type="button" onClick={startPinDisable} style={{ ...actionRowStyle, color: 'var(--danger-text)' }}>
               Desactivar bloqueo
+            </button>
+          </>
+        )}
+      </div>
+
+      <div style={labelStyle}>PRIVACIDAD Y SEGURIDAD</div>
+      <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ fontSize: 16, flexShrink: 0 }}>🔒</div>
+          <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.4 }}>
+            Tus datos viven en este dispositivo, no en un servidor nuestro. Solo si tú decides respaldar, se sube una
+            copia a tu propio Google Drive.
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ fontSize: 16, flexShrink: 0 }}>🔒</div>
+          <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.4 }}>
+            Payday no ve nada de tu Drive o Calendar hasta que tú autorizas la conexión, y solo accede a lo que esta
+            app misma crea, nunca al resto de tus archivos.
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ fontSize: 16, flexShrink: 0 }}>🔒</div>
+          <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.4 }}>
+            Puedes desconectar tu cuenta de Google cuando quieras, y volver a conectarla después sin perder nada.
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <div style={{ fontSize: 16, flexShrink: 0 }}>🔒</div>
+          <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.4 }}>
+            Tus respaldos quedan en una carpeta "Payday" dentro de tu Drive. Puedes abrirlos o borrarlos ahí mismo
+            cuando quieras.
+          </div>
+        </div>
+
+        {googleConfigured && (hasConnectedBefore() || disconnectStatus === 'done') && (
+          <>
+            <div style={{ height: 1, background: 'var(--divider)' }} />
+            {disconnectStatus !== 'done' ? (
+              <button
+                type="button"
+                onClick={disconnectGoogleAccount}
+                disabled={disconnectStatus === 'loading'}
+                style={{ ...actionRowStyle, color: 'var(--danger-text)', opacity: disconnectStatus === 'loading' ? 0.5 : 1 }}
+              >
+                {disconnectStatus === 'loading' ? 'Desconectando…' : 'Desconectar Google Drive'}
+              </button>
+            ) : (
+              <div style={{ fontSize: 12, color: 'var(--accent-text)', fontWeight: 700 }}>
+                Desconectado. Tus datos en Google Drive permanecen intactos.
+              </div>
+            )}
+            {disconnectStatus === 'error' && (
+              <div style={{ fontSize: 11, color: 'var(--danger-text)' }}>No se pudo desconectar. Intenta de nuevo.</div>
+            )}
+            <button
+              type="button"
+              onClick={() => window.open('https://myaccount.google.com/permissions', '_blank')}
+              style={{ fontSize: 11, color: 'var(--text-secondary)', cursor: 'pointer', textAlign: 'left', border: 'none', background: 'none', padding: 0 }}
+            >
+              También puedes revisar o quitar el acceso desde tu cuenta de Google →
             </button>
           </>
         )}
@@ -662,14 +632,14 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
         </button>
         <div style={{ fontSize: 11, color: excelStatus === 'error' ? 'var(--danger-text)' : 'var(--text-secondary)', marginTop: -4 }}>
           {excelStatus === 'error'
-            ? 'No se pudo generar el archivo — intenta de nuevo.'
+            ? 'No se pudo generar el archivo. Intenta de nuevo.'
             : 'Un Excel con una hoja de resumen y una hoja por cada sección: ingresos, metas, deudas y gastos.'}
         </div>
         <button type="button" onClick={shareBackup} style={actionRowStyle}>
           Compartir respaldo (JSON)
         </button>
         <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: -4 }}>
-          Mándalo a Drive, correo o donde prefieras guardarlo — luego se puede restaurar en la app.
+          Mándalo a Drive, correo o donde prefieras guardarlo. Luego se puede restaurar en la app.
         </div>
 
         {googleConfigured && (
@@ -683,8 +653,8 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
                 </button>
                 <div style={{ fontSize: 11, color: silentReconnectFailed ? 'var(--danger-text)' : 'var(--text-secondary)', marginTop: -4 }}>
                   {silentReconnectFailed
-                    ? 'No se pudo reconectar en silencio (puede que también haya que iniciar sesión de nuevo en Google) — toca el botón para autorizar otra vez.'
-                    : 'Te lleva a Google para autorizar, y vuelve aquí. Solo puede ver y crear archivos que suba esta app en Drive, y crear/editar eventos en tu Calendar — nada más de tu cuenta.'}
+                    ? 'No se pudo reconectar en silencio (puede que también haya que iniciar sesión de nuevo en Google). Toca el botón para autorizar otra vez.'
+                    : 'Te lleva a Google para autorizar, y vuelve aquí. Solo puede ver y crear archivos que suba esta app en Drive, y crear/editar eventos en tu Calendar, nada más de tu cuenta.'}
                 </div>
               </>
             ) : (
@@ -705,9 +675,9 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
                   {driveStatus === 'error'
                     ? driveError
                     : driveStatus === 'emailed'
-                      ? 'Listo — se subió a tu Drive (carpeta "Payday") y te mandamos el enlace por correo.'
+                      ? 'Listo, se subió a tu Drive (carpeta "Payday") y te mandamos el enlace por correo.'
                       : driveStatus === 'uploaded'
-                        ? 'Listo — se subió a tu Drive, en una carpeta llamada "Payday".'
+                        ? 'Listo, se subió a tu Drive, en una carpeta llamada "Payday".'
                         : 'Ya conectado a Google.'}
                 </div>
                 <button
@@ -722,7 +692,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
                   {calendarStatus === 'error'
                     ? calendarError
                     : calendarStatus === 'synced'
-                      ? 'Listo — se crearon/actualizaron los eventos de tus deudas, gastos fijos e ingresos esperados en tu Calendar.'
+                      ? 'Listo, se crearon/actualizaron los eventos de tus deudas, gastos fijos e ingresos esperados en tu Calendar.'
                       : 'Crea un evento por cada deuda (próximo pago), gasto fijo (próximo vencimiento) e ingreso esperado. Vuelve a tocar el botón cuando quieras que se actualicen.'}
                 </div>
               </>
@@ -751,7 +721,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
             </button>
             <div style={{ fontSize: 11, color: emailStatus === 'error' ? 'var(--danger-text)' : 'var(--text-secondary)', marginTop: -4 }}>
               {emailStatus === 'sent'
-                ? 'Enviado. Te llega como texto en el correo — para restaurar, cópialo y usa "Pegar para restaurar" abajo.'
+                ? 'Enviado. Te llega como texto en el correo. Para restaurar, cópialo y pégalo en "Restaurar datos" abajo.'
                 : emailStatus === 'error'
                   ? 'No se pudo enviar. Revisa tu internet e intenta de nuevo.'
                   : 'Te llega como texto dentro del correo (no como archivo adjunto).'}
@@ -759,65 +729,20 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
           </>
         )}
 
-        <input type="file" ref={fileInputRef} accept="application/json" onChange={handleRestoreFile} style={{ display: 'none' }} />
-        <button type="button" onClick={triggerRestore} style={actionRowStyle}>
-          Restaurar datos (archivo)
+        <div style={{ height: 1, background: 'var(--divider)', margin: '4px 0' }} />
+        <button
+          type="button"
+          onClick={() => {
+            sessionStorage.setItem('payday_return_section', 'datos');
+            onNavigate('restaurar');
+          }}
+          style={actionRowStyle}
+        >
+          Restaurar datos
         </button>
-
-        {emailBackupConfigured && (
-          <>
-            <button type="button" onClick={() => setPasteOpen((v) => !v)} style={actionRowStyle}>
-              {pasteOpen ? 'Cancelar' : 'Pegar para restaurar (desde el correo)'}
-            </button>
-            {pasteOpen && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <textarea
-                  value={pasteText}
-                  onChange={(e) => setPasteText(e.target.value)}
-                  placeholder="Pega aquí el texto del correo de respaldo"
-                  rows={5}
-                  style={{ ...textInputStyle(), padding: 12, borderRadius: 12, resize: 'vertical', fontFamily: 'monospace', fontSize: 12 }}
-                />
-                <button
-                  type="button"
-                  onClick={restoreFromPaste}
-                  disabled={!pasteText.trim()}
-                  style={{ ...actionRowStyle, background: 'var(--accent)', color: 'white', opacity: pasteText.trim() ? 1 : 0.5 }}
-                >
-                  Restaurar desde texto
-                </button>
-              </div>
-            )}
-          </>
-        )}
-        <button type="button" onClick={() => setResetConfirmOpen(true)} style={{ ...actionRowStyle, color: 'var(--danger-text)' }}>
-          Limpiar todo
-        </button>
-
-        {resetConfirmOpen && (
-          <div style={{ padding: 14, borderRadius: 14, background: 'var(--input-bg)', display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ fontSize: 12, color: 'var(--text)' }}>
-              Esto borrará tus ingresos, metas, deudas y gastos fijos. Tus ajustes (moneda, tema, tasas de cambio, etc.) se
-              conservan. ¿Continuar?
-            </div>
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                type="button"
-                onClick={confirmReset}
-                style={{ flex: 1, padding: 10, borderRadius: 12, background: 'var(--danger)', color: 'white', textAlign: 'center', fontSize: 12, fontWeight: 700, cursor: 'pointer', border: 'none' }}
-              >
-                Sí, borrar
-              </button>
-              <button
-                type="button"
-                onClick={() => setResetConfirmOpen(false)}
-                style={{ flex: 1, padding: 10, borderRadius: 12, background: 'var(--card-bg)', textAlign: 'center', fontSize: 12, fontWeight: 700, color: 'var(--text)', cursor: 'pointer', border: 'none' }}
-              >
-                Cancelar
-              </button>
-            </div>
-          </div>
-        )}
+        <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: -4 }}>
+          Importar un archivo, restaurar desde Google Drive, o borrar todo y empezar de cero.
+        </div>
       </div>
       </>
       )}
