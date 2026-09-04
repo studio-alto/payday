@@ -55,7 +55,7 @@ export default function MonthlyRecap({ recap, currency, onClose }) {
 
         {recap.topCategory && (
           <div style={{ fontSize: 12, color: 'var(--text-secondary)', textAlign: 'center' }}>
-            Lo que más gastaste fue en <b style={{ color: 'var(--text)' }}>{recap.topCategory.name}</b> — {fmt(recap.topCategory.total, currency)}
+            Lo que más gastaste fue en <b style={{ color: 'var(--text)' }}>{recap.topCategory.name}</b>, {fmt(recap.topCategory.total, currency)}
           </div>
         )}
 

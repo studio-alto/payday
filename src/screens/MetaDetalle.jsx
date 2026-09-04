@@ -41,7 +41,7 @@ export default function MetaDetalle({ data, setData, goalId, onNavigate, onEditI
           </button>
         </FixedHeader>
         <div style={cardStyle}>
-          <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Esta meta ya no existe — puede que la hayas eliminado.</div>
+          <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Esta meta ya no existe. Puede que la hayas eliminado.</div>
         </div>
       </div>
     );
@@ -143,7 +143,7 @@ export default function MetaDetalle({ data, setData, goalId, onNavigate, onEditI
       {dateProjection?.overdue && (
         <div style={{ ...cardStyle, background: 'var(--danger)' }}>
           <div style={{ fontSize: 13, color: 'white', fontWeight: 700 }}>
-            La fecha objetivo ({formatFullDate(goal.fechaObjetivo)}) ya pasó — edita la meta para ponerle una nueva fecha.
+            La fecha objetivo ({formatFullDate(goal.fechaObjetivo)}) ya pasó. Edita la meta para ponerle una nueva fecha.
           </div>
         </div>
       )}
@@ -215,8 +215,8 @@ export default function MetaDetalle({ data, setData, goalId, onNavigate, onEditI
                 Aportando {fmt(simAmountNum, currency)} cada {freqDef.noun}, completarías la meta en{' '}
                 <span style={{ fontWeight: 800, color: 'var(--accent-text)' }}>
                   {simProjection.periods} {simProjection.periods === 1 ? freqDef.noun : freqDef.nounPlural}
-                </span>{' '}
-                — alrededor del <span style={{ fontWeight: 800, color: 'var(--accent-text)' }}>{formatFullDate(simProjection.completionDate)}</span>.
+                </span>
+                , alrededor del <span style={{ fontWeight: 800, color: 'var(--accent-text)' }}>{formatFullDate(simProjection.completionDate)}</span>.
               </div>
             </div>
           ) : (
@@ -267,7 +267,7 @@ export default function MetaDetalle({ data, setData, goalId, onNavigate, onEditI
         )}
         {sortedHistory.some((h) => h.incomeId) && (
           <ExplainerNote>
-            Los aportes marcados "Desde un ingreso" se editan o eliminan desde ese ingreso — usa "Editar ingreso" para ir directo.
+            Los aportes marcados "Desde un ingreso" se editan o eliminan desde ese ingreso. Usa "Editar ingreso" para ir directo.
           </ExplainerNote>
         )}
       </div>

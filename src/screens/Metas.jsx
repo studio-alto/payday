@@ -170,7 +170,7 @@ export default function Metas({ data, setData, onViewDetail }) {
           <div style={labelStyle}>AHORRO SIN META</div>
           <div style={{ fontWeight: 800, fontSize: 22, color: 'var(--text)', marginTop: 4, letterSpacing: '-0.02em' }}>{fmt(unassignedTotal, currency)}</div>
           <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 6 }}>
-            De ingresos donde elegiste "Sin meta", o de una meta que eliminaste — cuenta en tu ahorro total de Inicio, pero no en el
+            De ingresos donde elegiste "Sin meta", o de una meta que eliminaste. Cuenta en tu ahorro total de Inicio, pero no en el
             progreso de ninguna meta hasta que lo asignes.
           </div>
           {goals.length > 0 ? (
@@ -217,7 +217,7 @@ export default function Metas({ data, setData, onViewDetail }) {
         <div style={{ ...cardStyle, textAlign: 'center' }}>
           <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>Aún no tienes metas</div>
           <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 6 }}>
-            Crea una para separar dinero de tus ingresos — un fondo de emergencia, un viaje, lo que quieras ahorrar.
+            Crea una para separar dinero de tus ingresos: un fondo de emergencia, un viaje, lo que quieras ahorrar.
           </div>
           <button
             type="button"
@@ -322,7 +322,7 @@ export default function Metas({ data, setData, onViewDetail }) {
               >
                 {projection.overdue ? (
                   <div style={{ fontSize: 12, color: 'white', fontWeight: 700 }}>
-                    La fecha objetivo ({formatFullDate(g.fechaObjetivo)}) ya pasó — edita la meta para ponerle una nueva fecha.
+                    La fecha objetivo ({formatFullDate(g.fechaObjetivo)}) ya pasó. Edita la meta para ponerle una nueva fecha.
                   </div>
                 ) : (
                   <>

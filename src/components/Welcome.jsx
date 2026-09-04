@@ -22,7 +22,7 @@ export default function Welcome({ onFinish }) {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, textAlign: 'center' }}>
         <div style={{ fontWeight: 800, fontSize: 30, color: 'var(--text)', letterSpacing: '-0.02em' }}>¡Bienvenido a Payday!</div>
         <div style={{ fontSize: 14, color: 'var(--text-secondary)', maxWidth: 300 }}>
-          Registra lo que ganas cada día, separa para tus metas y deudas, y lleva el control de tus gastos fijos — todo en un
+          Registra lo que ganas cada día, separa para tus metas y deudas, y lleva el control de tus gastos fijos, todo en un
           solo lugar.
         </div>
       </div>

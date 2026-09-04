@@ -39,7 +39,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
           </button>
         </FixedHeader>
         <div style={cardStyle}>
-          <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Esta deuda ya no existe — puede que la hayas eliminado.</div>
+          <div style={{ fontSize: 14, color: 'var(--text-secondary)' }}>Esta deuda ya no existe. Puede que la hayas eliminado.</div>
         </div>
       </div>
     );
@@ -198,7 +198,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
         <BottomSheet onClose={() => setCuotaModalOpen(false)}>
           <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>Cuota mensual</div>
           <ExplainerNote>
-            El pago mínimo que debes hacer cada mes por esta deuda. En tarjetas de crédito suele cambiar de un mes a otro — actualízalo aquí cuando cambie.
+            El pago mínimo que debes hacer cada mes por esta deuda. En tarjetas de crédito suele cambiar de un mes a otro. Actualízalo aquí cuando cambie.
           </ExplainerNote>
           <NumberInput value={cuotaText} onChange={(e) => setCuotaText(e.target.value)} placeholder="Ej: 400.000" style={textInputStyle()} />
           <button
@@ -212,9 +212,9 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
       )}
 
       <ExplainerNote>
-        El círculo muestra qué tanto de esta deuda ya pagaste ({pct}%) — entre más lleno, más cerca estás de terminarla.
+        El círculo muestra qué tanto de esta deuda ya pagaste ({pct}%): entre más lleno, más cerca estás de terminarla.
         {card.interestRate > 0 &&
-          ` Lo rojo es lo que te cuesta cada mes solo por tenerla — no reduce lo que debes, es dinero extra que pagas por no haberla saldado todavía. "E.A." significa Efectivo Anual: es la tasa de interés que cobran por un año completo — la misma que suele aparecer en tu extracto o contrato.`}
+          ` Lo rojo es lo que te cuesta cada mes solo por tenerla. No reduce lo que debes, es dinero extra que pagas por no haberla saldado todavía. "E.A." significa Efectivo Anual: es la tasa de interés que cobran por un año completo, la misma que suele aparecer en tu extracto o contrato.`}
         {months !== null && ` Llevas ${months === 0 ? 'menos de un mes' : months === 1 ? '1 mes' : `${months} meses`} con esta deuda.`}
       </ExplainerNote>
 
@@ -222,7 +222,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
       <div style={cardStyle}>
         <div style={labelStyle}>¿CUÁNTO PAGARÍAS EN INTERESES EN TOTAL?</div>
         <ExplainerNote>
-          Esto proyecta hacia adelante, desde el saldo de hoy — no es lo que ya pagaste, es lo que pagarías si sigues el plan que elijas.
+          Esto proyecta hacia adelante, desde el saldo de hoy. No es lo que ya pagaste, es lo que pagarías si sigues el plan que elijas.
         </ExplainerNote>
 
         <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
@@ -231,7 +231,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
             {baseline.stuck ? (
               <div style={{ fontSize: 12, color: 'var(--danger-text)', marginTop: 4 }}>
                 {minGap > 0 ? (
-                  <>El mínimo ({fmt(card.minPayment || 0, currency)}) no cubre el interés mensual ({fmt(interestCost, currency)}) — te faltan {fmt(minGap, currency)} más al mes solo para que deje de crecer.</>
+                  <>El mínimo ({fmt(card.minPayment || 0, currency)}) no cubre el interés mensual ({fmt(interestCost, currency)}). Te faltan {fmt(minGap, currency)} más al mes solo para que deje de crecer.</>
                 ) : (
                   <>No tienes un pago mínimo que reduzca esta deuda, así que el saldo nunca baja por sí solo.</>
                 )}
@@ -248,9 +248,9 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
             {withExtra.stuck ? (
               <div style={{ fontSize: 12, color: 'var(--danger-text)', marginTop: 4 }}>
                 {extra > 0 ? (
-                  <>Con el mínimo + este extra ({fmt((card.minPayment || 0) + extra, currency)}) sigues sin cubrir el interés ({fmt(interestCost, currency)}) — te faltan {fmt(extraGap, currency)} más al mes.</>
+                  <>Con el mínimo + este extra ({fmt((card.minPayment || 0) + extra, currency)}) sigues sin cubrir el interés ({fmt(interestCost, currency)}). Te faltan {fmt(extraGap, currency)} más al mes.</>
                 ) : (
-                  <>Agrega un abono extra arriba — ahora mismo el mínimo no cubre el interés.</>
+                  <>Agrega un abono extra arriba. Ahora mismo el mínimo no cubre el interés.</>
                 )}
               </div>
             ) : (
@@ -291,7 +291,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
         {hasSurplus && (
           <div style={{ marginTop: 12, background: 'var(--accent-soft-bg)', borderRadius: 14, padding: 12 }}>
             <div style={{ fontSize: 13, color: 'var(--text)' }}>
-              {fmt(extra, currency)} es más de lo que esta deuda necesita — con eso la <b>saldas por completo este mes</b> y te sobran{' '}
+              {fmt(extra, currency)} es más de lo que esta deuda necesita. Con eso la <b>saldas por completo este mes</b> y te sobran{' '}
               <span style={{ fontWeight: 800, color: 'var(--accent-text)' }}>{fmt(withExtra.surplus, currency)}</span> que podrías destinar a tus otras deudas o metas.
             </div>
           </div>
@@ -300,7 +300,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
         {!hasSurplus && extraRescuesFromStuck && (
           <div style={{ marginTop: 12, background: 'var(--accent-soft-bg)', borderRadius: 14, padding: 12 }}>
             <div style={{ fontSize: 13, color: 'var(--text)' }}>
-              Con el mínimo solo, esta deuda <b>nunca se termina de pagar</b> — el interés crece más rápido de lo que abonas. Pero con{' '}
+              Con el mínimo solo, esta deuda <b>nunca se termina de pagar</b>. El interés crece más rápido de lo que abonas. Pero con{' '}
               {fmt(extra, currency)} extra al mes, sí la terminarías de pagar, en{' '}
               <span style={{ fontWeight: 800, color: 'var(--accent-text)' }}>{formatMonthsLabel(withExtra.monthsToPayoff)}</span>.
             </div>
@@ -328,7 +328,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
 
         <ExplainerNote>
           Si solo pagas el mínimo, el interés se sigue sumando cada mes sobre lo que debes, así que terminas pagando más en total. Cada peso
-          extra que abonas reduce el saldo sobre el que se calcula el interés del mes siguiente — por eso pagas menos intereses y terminas antes.
+          extra que abonas reduce el saldo sobre el que se calcula el interés del mes siguiente, por eso pagas menos intereses y terminas antes.
         </ExplainerNote>
       </div>
 
@@ -386,7 +386,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
         )}
         {sortedHistory.some((h) => h.incomeId) && (
           <ExplainerNote>
-            Los abonos marcados "Desde un ingreso" se editan o eliminan desde ese ingreso — usa "Editar ingreso" para ir directo.
+            Los abonos marcados "Desde un ingreso" se editan o eliminan desde ese ingreso. Usa "Editar ingreso" para ir directo.
           </ExplainerNote>
         )}
         <button

@@ -205,7 +205,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
           >
             <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>Variable (día a día)</div>
             <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
-              Para pagos que varían — turnos, domingos, festivos, etc.
+              Para pagos que varían: turnos, domingos, festivos, etc.
             </div>
           </button>
           <button
@@ -622,7 +622,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
               )}
               {debtWaterfall.leftover > 0 && (
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                  Sobran {fmt(debtWaterfall.leftover, currency)} sin deudas a las que aplicarlos — ese monto se queda como disponible, no se resta de tus cuentas.
+                  Sobran {fmt(debtWaterfall.leftover, currency)} sin deudas a las que aplicarlos. Ese monto se queda como disponible, no se resta de tus cuentas.
                 </div>
               )}
             </div>

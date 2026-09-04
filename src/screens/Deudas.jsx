@@ -638,7 +638,7 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
                 </div>
                 {payoffPlan.surplus > 0 && (
                   <div style={{ fontSize: 12, color: 'var(--accent-text)', marginTop: 4 }}>
-                    Tu extra mensual es más de lo que tus deudas necesitan — te sobran {fmt(payoffPlan.surplus, currency)} al mes sin aplicar a ninguna, que podrías destinar a tus metas o ahorro.
+                    Tu extra mensual es más de lo que tus deudas necesitan. Te sobran {fmt(payoffPlan.surplus, currency)} al mes sin aplicar a ninguna, que podrías destinar a tus metas o ahorro.
                   </div>
                 )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
@@ -839,11 +839,11 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
             style={textInputStyle()}
           />
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: -6 }}>
-            E.A. = Efectivo Anual, la tasa de interés por un año completo. Aparece en tu extracto o contrato — déjalo vacío si no la conoces.
+            E.A. = Efectivo Anual, la tasa de interés por un año completo. Aparece en tu extracto o contrato. Déjalo vacío si no la conoces.
           </div>
           <div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 700 }}>
-              ¿CUÁNDO LA ADQUIRISTE? (OPCIONAL — PARA SABER CUÁNTOS MESES LLEVAS)
+              ¿CUÁNDO LA ADQUIRISTE? (OPCIONAL: PARA SABER CUÁNTOS MESES LLEVAS)
             </div>
             <DateField value={form.startDate} onChange={setField('startDate')} style={textInputStyle()} />
           </div>
@@ -894,7 +894,7 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
             <div style={{ ...cardStyle, textAlign: 'center' }}>
               <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>Aún no tienes gastos fijos</div>
               <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 6 }}>
-                Agrega tus pagos mensuales — arriendo, servicios, suscripciones — para saber cuándo vencen.
+                Agrega tus pagos mensuales (arriendo, servicios, suscripciones) para saber cuándo vencen.
               </div>
               <button
                 type="button"
