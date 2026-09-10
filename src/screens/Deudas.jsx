@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { fmt } from '../lib/format';
 import { formatShortDate, todayISO, isSameMonth, daysUntilPayday } from '../lib/dates';
 import { uid } from '../lib/id';
-import { cardStyle, textInputStyle, primaryButtonStyle } from '../lib/styles';
+import { cardStyle, labelStyle, textInputStyle, primaryButtonStyle } from '../lib/styles';
 import BottomSheet from '../components/BottomSheet';
 import InlineConfirm from '../components/InlineConfirm';
 import NumberInput from '../components/NumberInput';
@@ -378,6 +378,20 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
   // shows all of them too, so this total shouldn't silently exclude an untracked one.
   const totalVariableMonth = thisMonthVariables.reduce((a, g) => a + g.amount, 0);
 
+  // "Todos" tab: gastos fijos ya pagados este mes (desde el historial de cada gasto,
+  // la misma fuente que monthlyRecap.js usa para "gastos fijos" — no el monto mensual
+  // recurrente) más los gastos variables, combinados en una sola lista por fecha.
+  const fixedPaidThisMonth = expenses.flatMap((e) =>
+    (e.history || [])
+      .filter((h) => isSameMonth(h.date))
+      .map((h) => ({ date: h.date, amount: h.amount, name: e.name, categoria: e.categoria, kind: 'fijo' })),
+  );
+  const totalFixedPaidMonth = fixedPaidThisMonth.reduce((a, h) => a + h.amount, 0);
+  const allExpensesThisMonth = [...fixedPaidThisMonth, ...thisMonthVariables.map((g) => ({ ...g, kind: 'variable' }))].sort((a, b) =>
+    b.date.localeCompare(a.date),
+  );
+  const totalAllExpensesMonth = totalFixedPaidMonth + totalVariableMonth;
+
   const variableMonthly = monthlyVariableTotals(gastosVariables, 6);
   const maxVariableMonthly = Math.max(1, ...variableMonthly.map((m) => m.total));
   const variableMonthlyLabel = `Gastado por mes: ${variableMonthly.map((m) => `${m.label} ${fmt(m.total, currency)}`).join(', ')}`;
@@ -465,31 +479,34 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', letterSpacing: '-0.02em' }}>Gastos</div>
-            <button
-              type="button"
-              onClick={section === 'deudas' ? openNewModal : section === 'gastos' ? openNewExpenseModal : openNewVariableModal}
-              aria-label={section === 'deudas' ? 'Nueva deuda' : section === 'gastos' ? 'Nuevo gasto' : 'Nuevo gasto variable'}
-              style={{
-                width: 40,
-                height: 40,
-                borderRadius: '50%',
-                background: 'var(--text)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                border: 'none',
-                flexShrink: 0,
-              }}
-            >
-              <PlusIcon color="var(--page-bg)" />
-            </button>
+            {section !== 'todos' && (
+              <button
+                type="button"
+                onClick={section === 'deudas' ? openNewModal : section === 'gastos' ? openNewExpenseModal : openNewVariableModal}
+                aria-label={section === 'deudas' ? 'Nueva deuda' : section === 'gastos' ? 'Nuevo gasto' : 'Nuevo gasto variable'}
+                style={{
+                  width: 40,
+                  height: 40,
+                  borderRadius: '50%',
+                  background: 'var(--text)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  border: 'none',
+                  flexShrink: 0,
+                }}
+              >
+                <PlusIcon color="var(--page-bg)" />
+              </button>
+            )}
           </div>
           <div style={{ display: 'flex', gap: 8 }}>
             {[
               { key: 'deudas', label: 'Deudas' },
               { key: 'gastos', label: 'Gastos fijos' },
               { key: 'variables', label: 'Variables' },
+              { key: 'todos', label: 'Todos' },
             ].map((s) => {
               const active = section === s.key;
               return (
@@ -1406,6 +1423,41 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
               </button>
             </BottomSheet>
           )}
+        </>
+      )}
+
+      {section === 'todos' && (
+        <>
+          <div style={cardStyle}>
+            <div style={labelStyle}>TOTAL GASTADO ESTE MES</div>
+            <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', marginTop: 4, letterSpacing: '-0.02em' }}>
+              {fmt(totalAllExpensesMonth, currency)}
+            </div>
+            {totalAllExpensesMonth > 0 && (
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
+                {fmt(totalFixedPaidMonth, currency)} en gastos fijos + {fmt(totalVariableMonth, currency)} en variables
+              </div>
+            )}
+          </div>
+
+          <div style={cardStyle}>
+            <div style={labelStyle}>ESTE MES</div>
+            {allExpensesThisMonth.length === 0 ? (
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 8 }}>Sin gastos registrados este mes.</div>
+            ) : (
+              allExpensesThisMonth.map((item, idx) => (
+                <div key={`${item.kind}-${idx}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 0', borderTop: idx === 0 ? 'none' : '1px solid var(--divider)' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{item.name || item.categoria}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                      {item.kind === 'fijo' ? 'Gasto fijo' : item.categoria} · {formatShortDate(item.date)}
+                    </div>
+                  </div>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)', flexShrink: 0 }}>{fmt(item.amount, currency)}</div>
+                </div>
+              ))
+            )}
+          </div>
         </>
       )}
     </div>
