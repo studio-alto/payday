@@ -29,6 +29,31 @@ export function downloadBackupJson(data) {
   URL.revokeObjectURL(url);
 }
 
+// The no-account, works-everywhere backup path: hands the file to whatever the OS
+// offers (Files/iCloud Drive on iOS, Drive/WhatsApp/"Save to device" on Android,
+// AirDrop, Notes...) via the native share sheet, so nobody has to know what a JSON
+// file is or where their browser puts downloads. `navigator.canShare` with a `files`
+// entry is the real feature check (Web Share API Level 2) — supported on iOS Safari
+// and Android Chrome/Samsung Internet, not on most desktop browsers or old Android
+// WebViews, so downloadBackupJson() is the fallback there and whenever the sheet
+// itself fails (not just a user cancel, which also lands in the catch).
+export async function shareBackupJson(data) {
+  const payload = buildBackupPayload(data);
+  const file = new File([JSON.stringify(payload, null, 2)], `payday-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`, {
+    type: 'application/json',
+  });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'Respaldo de Payday' });
+      return 'shared';
+    } catch {
+      // cancelled or failed — fall back to a plain download below
+    }
+  }
+  downloadBackupJson(data);
+  return 'downloaded';
+}
+
 // Guards against restoring a file that parses as JSON but doesn't have the shape
 // the rest of the app assumes (e.g. hand-edited, or exported by a future version
 // with a different schema) — those would otherwise crash later on a missing field.

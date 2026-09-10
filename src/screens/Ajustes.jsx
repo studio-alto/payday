@@ -8,7 +8,7 @@ import { hashPin } from '../lib/pin';
 import { sendBackupEmail, sendReportLinkEmail, emailBackupConfigured } from '../lib/emailBackup';
 import { googleConfigured, hasValidToken, hasConnectedBefore, consumeRedirectResult, getAccessToken, connectGoogle, disconnectGoogle } from '../lib/googleAuth';
 import { backupSummaryToDrive, backupJsonToDrive } from '../lib/googleDrive';
-import { buildBackupPayload, downloadBackupJson } from '../lib/backup';
+import { shareBackupJson } from '../lib/backup';
 import { syncFinancialEventsToCalendar } from '../lib/googleCalendar';
 import NumberInput from '../components/NumberInput';
 import FixedHeader from '../components/FixedHeader';
@@ -96,21 +96,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
     setData((s) => ({ ...s, user: { ...s.user, theme: s.user.theme === 'oscuro' ? 'light' : 'oscuro' } }));
   };
 
-  const exportData = () => downloadBackupJson(data);
-
-  const shareBackup = async () => {
-    const payload = buildBackupPayload(data);
-    const file = new File([JSON.stringify(payload, null, 2)], `payday-datos-${todayISO()}.json`, { type: 'application/json' });
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({ files: [file], title: 'Respaldo de Payday' });
-        return;
-      } catch {
-        // person cancelled the share sheet, or it failed — fall back to a plain download
-      }
-    }
-    exportData();
-  };
+  const shareBackup = () => shareBackupJson(data);
 
   const [emailStatus, setEmailStatus] = useState('idle');
   const sendEmailBackup = async () => {
