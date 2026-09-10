@@ -3,10 +3,15 @@ const MONTH_LABELS_FULL = [
   'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre',
 ];
 
-function inMonth(dateStr, year, month) {
+// `throughDay` (optional) caps the range to the 1st through that day-of-month —
+// used to compare a month-in-progress against the *same* stretch of an earlier
+// month, instead of against that month's full total (which makes any partial
+// month look artificially worse on income and worse on spending alike).
+function inMonth(dateStr, year, month, throughDay = null) {
   if (!dateStr) return false;
   const d = new Date(dateStr + 'T00:00:00');
-  return d.getFullYear() === year && d.getMonth() === month;
+  if (d.getFullYear() !== year || d.getMonth() !== month) return false;
+  return throughDay == null || d.getDate() <= throughDay;
 }
 
 export function monthKey(year, month) {
@@ -21,16 +26,17 @@ export function previousMonth(year, month) {
 // feature's own history log (income dates, goal/card/expense `history` entries) —
 // no separate ledger to keep in sync, so it's always consistent with what those
 // screens themselves show.
-export function computeMonthlyRecap(data, year, month) {
+export function computeMonthlyRecap(data, year, month, throughDay = null) {
   const { incomes, goals, cards, expenses, gastosVariables } = data;
+  const within = (dateStr) => inMonth(dateStr, year, month, throughDay);
 
-  const monthIncomes = incomes.filter((i) => i.estado !== 'proyectado' && inMonth(i.date, year, month));
+  const monthIncomes = incomes.filter((i) => i.estado !== 'proyectado' && within(i.date));
   const totalIncome = monthIncomes.reduce((a, i) => a + i.amount, 0);
 
-  const fixedPaid = expenses.flatMap((e) => (e.history || []).filter((h) => inMonth(h.date, year, month)));
+  const fixedPaid = expenses.flatMap((e) => (e.history || []).filter((h) => within(h.date)));
   const totalFixed = fixedPaid.reduce((a, h) => a + h.amount, 0);
 
-  const monthVariables = (gastosVariables || []).filter((g) => inMonth(g.date, year, month));
+  const monthVariables = (gastosVariables || []).filter((g) => within(g.date));
   const totalVariables = monthVariables.reduce((a, g) => a + g.amount, 0);
   const categoryTotals = {};
   monthVariables.forEach((g) => {
@@ -39,21 +45,21 @@ export function computeMonthlyRecap(data, year, month) {
   const topCategoryEntry = Object.entries(categoryTotals).sort((a, b) => b[1] - a[1])[0];
   const topCategory = topCategoryEntry ? { name: topCategoryEntry[0], total: topCategoryEntry[1] } : null;
 
-  const goalContribs = goals.flatMap((g) => (g.history || []).filter((h) => inMonth(h.date, year, month)));
+  const goalContribs = goals.flatMap((g) => (g.history || []).filter((h) => within(h.date)));
   const totalSavedToGoals = goalContribs.reduce((a, h) => a + h.amount, 0);
   // Ahorro from an income never assigned to a goal doesn't show up in any goal's
   // history — count it here too, same treatment as the dashboard gives it.
   const unassignedAhorro = monthIncomes.reduce((a, i) => a + (!i.distribution?.goalId ? i.distribution?.ahorro || 0 : 0), 0);
   const totalAhorro = totalSavedToGoals + unassignedAhorro;
 
-  const debtPayments = cards.flatMap((c) => (c.history || []).filter((h) => inMonth(h.date, year, month)));
+  const debtPayments = cards.flatMap((c) => (c.history || []).filter((h) => within(h.date)));
   const totalDebtPaid = debtPayments.reduce((a, h) => a + h.amount, 0);
 
   const goalsCompleted = goals
-    .filter((g) => g.current >= g.target && (g.history || []).some((h) => inMonth(h.date, year, month)))
+    .filter((g) => g.current >= g.target && (g.history || []).some((h) => within(h.date)))
     .map((g) => g.name);
   const debtsCleared = cards
-    .filter((c) => c.balance <= 0 && (c.history || []).some((h) => inMonth(h.date, year, month)))
+    .filter((c) => c.balance <= 0 && (c.history || []).some((h) => within(h.date)))
     .map((c) => c.name);
 
   const netBalance = totalIncome - totalFixed - totalVariables - totalAhorro - totalDebtPaid;

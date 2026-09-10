@@ -72,10 +72,18 @@ export default function MonthComparisonCard({ data }) {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth();
+  const today = now.getDate();
   const prev = previousMonth(year, month);
+  // A month in progress only has data through today — comparing it against the
+  // *whole* previous month makes every partial month look worse on income and
+  // worse on spending alike, just because it hasn't finished yet. Capping the
+  // previous month at the same day-of-month makes it a fair, same-length comparison.
+  const daysInPrevMonth = new Date(prev.year, prev.month + 1, 0).getDate();
+  const cutoff = Math.min(today, daysInPrevMonth);
+  const isPartialMonth = today < new Date(year, month + 1, 0).getDate();
 
   const current = computeMonthlyRecap(data, year, month);
-  const previousRecap = computeMonthlyRecap(data, prev.year, prev.month);
+  const previousRecap = computeMonthlyRecap(data, prev.year, prev.month, cutoff);
 
   if (!current.hasActivity && !previousRecap.hasActivity) return null;
 
@@ -111,6 +119,12 @@ export default function MonthComparisonCard({ data }) {
         </div>
       </div>
 
+      {isPartialMonth && (
+        <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+          Comparando los primeros {today} días de cada mes, para que sea justo mientras {currentLabel} no termina.
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: 16 }}>
         <BarPair label="INGRESOS" current={current.totalIncome} previous={previousRecap.totalIncome} max={maxIncome} currency={currency} />
         <BarPair label="GASTOS" current={gastosActual} previous={gastosAnterior} max={maxExpense} currency={currency} />
@@ -134,6 +148,11 @@ export default function MonthComparisonCard({ data }) {
           <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>
             {currentLabel} vs. {previousLabel}
           </div>
+          {isPartialMonth && (
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: -4 }}>
+              Primeros {today} días de cada mes.
+            </div>
+          )}
           <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 0.8fr', gap: 8, paddingBottom: 8 }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.04em' }}>MÉTRICA</div>
             <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)', textAlign: 'right' }}>{currentLabel.toUpperCase()}</div>
