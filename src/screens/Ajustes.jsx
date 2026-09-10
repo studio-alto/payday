@@ -5,7 +5,6 @@ import { fetchLiveExchangeRates } from '../lib/exchangeRates';
 import { fmt } from '../lib/format';
 import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import { hashPin } from '../lib/pin';
-import { sendBackupEmail, sendReportLinkEmail, emailBackupConfigured } from '../lib/emailBackup';
 import { googleConfigured, hasValidToken, hasConnectedBefore, consumeRedirectResult, getAccessToken, connectGoogle, disconnectGoogle } from '../lib/googleAuth';
 import { backupSummaryToDrive, backupJsonToDrive } from '../lib/googleDrive';
 import { shareBackupJson } from '../lib/backup';
@@ -98,18 +97,6 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
 
   const shareBackup = () => shareBackupJson(data);
 
-  const [emailStatus, setEmailStatus] = useState('idle');
-  const sendEmailBackup = async () => {
-    if (!user.backupEmail) return;
-    setEmailStatus('loading');
-    try {
-      await sendBackupEmail(data, user.backupEmail);
-      setEmailStatus('sent');
-    } catch {
-      setEmailStatus('error');
-    }
-  };
-
   const [excelStatus, setExcelStatus] = useState('idle');
   const exportExcel = async () => {
     setExcelStatus('loading');
@@ -173,19 +160,12 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
     setDriveError('');
     try {
       const accessToken = getAccessToken();
-      const link = await backupSummaryToDrive(accessToken, data);
+      await backupSummaryToDrive(accessToken, data);
       // Alongside the human-readable Excel: a machine-readable JSON backup, so
       // "Restaurar datos → Sincronizar con Google Drive" has something real to list.
       await backupJsonToDrive(accessToken, data);
-      // Same field the Home screen's backup status card reads — syncing from either
-      // place should update the same "última sincronización" the person sees there.
       setData((s) => ({ ...s, user: { ...s.user, lastDriveSyncAt: new Date().toISOString() } }));
-      if (user.backupEmail) {
-        await sendReportLinkEmail(link, user.backupEmail);
-        setDriveStatus('emailed');
-      } else {
-        setDriveStatus('uploaded');
-      }
+      setDriveStatus('uploaded');
     } catch (err) {
       setDriveError(err.message || 'Algo salió mal.');
       setDriveStatus('error');
@@ -651,20 +631,14 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
                   disabled={driveStatus === 'loading'}
                   style={{ ...actionRowStyle, opacity: driveStatus === 'loading' ? 0.5 : 1 }}
                 >
-                  {driveStatus === 'loading'
-                    ? 'Subiendo…'
-                    : user.backupEmail
-                      ? 'Subir Excel a Drive y enviar el enlace por correo'
-                      : 'Subir Excel a Drive'}
+                  {driveStatus === 'loading' ? 'Subiendo…' : 'Subir Excel a Drive'}
                 </button>
                 <div style={{ fontSize: 11, color: driveStatus === 'error' ? 'var(--danger-text)' : 'var(--text-secondary)', marginTop: -4 }}>
                   {driveStatus === 'error'
                     ? driveError
-                    : driveStatus === 'emailed'
-                      ? 'Listo, se subió a tu Drive (carpeta "Payday") y te mandamos el enlace por correo.'
-                      : driveStatus === 'uploaded'
-                        ? 'Listo, se subió a tu Drive, en una carpeta llamada "Payday".'
-                        : 'Ya conectado a Google.'}
+                    : driveStatus === 'uploaded'
+                      ? 'Listo, se subió a tu Drive, en una carpeta llamada "Payday".'
+                      : 'Ya conectado a Google.'}
                 </div>
                 <button
                   type="button"
@@ -683,35 +657,6 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
                 </div>
               </>
             )}
-          </>
-        )}
-
-        {emailBackupConfigured && (
-          <>
-            <div style={{ height: 1, background: 'var(--divider)', margin: '4px 0' }} />
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>ENVIAR RESPALDO POR CORREO</div>
-            <input
-              type="email"
-              value={user.backupEmail || ''}
-              onChange={setUserField('backupEmail')}
-              placeholder="tu@correo.com"
-              style={textInputStyle()}
-            />
-            <button
-              type="button"
-              onClick={sendEmailBackup}
-              disabled={!user.backupEmail || emailStatus === 'loading'}
-              style={{ ...actionRowStyle, opacity: !user.backupEmail || emailStatus === 'loading' ? 0.5 : 1 }}
-            >
-              {emailStatus === 'loading' ? 'Enviando…' : 'Enviar ahora'}
-            </button>
-            <div style={{ fontSize: 11, color: emailStatus === 'error' ? 'var(--danger-text)' : 'var(--text-secondary)', marginTop: -4 }}>
-              {emailStatus === 'sent'
-                ? 'Enviado. Te llega como texto en el correo. Para restaurar, cópialo y pégalo en "Restaurar datos" abajo.'
-                : emailStatus === 'error'
-                  ? 'No se pudo enviar. Revisa tu internet e intenta de nuevo.'
-                  : 'Te llega como texto dentro del correo (no como archivo adjunto).'}
-            </div>
           </>
         )}
 

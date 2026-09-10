@@ -152,8 +152,8 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.user.onboarded]);
 
-  const finishOnboarding = (backupEmail) => {
-    setData((s) => ({ ...s, user: { ...s.user, onboarded: true, ...(backupEmail ? { backupEmail } : {}) } }));
+  const finishOnboarding = () => {
+    setData((s) => ({ ...s, user: { ...s.user, onboarded: true } }));
   };
 
   const requestInstall = async () => {

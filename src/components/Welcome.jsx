@@ -1,9 +1,4 @@
-import { useState } from 'react';
-import { emailBackupConfigured } from '../lib/emailBackup';
-
 export default function Welcome({ onFinish }) {
-  const [email, setEmail] = useState('');
-
   return (
     <div
       style={{
@@ -27,37 +22,9 @@ export default function Welcome({ onFinish }) {
         </div>
       </div>
 
-      {emailBackupConfigured && (
-        <div style={{ width: '100%', maxWidth: 320, display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div style={{ fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700, letterSpacing: '0.03em' }}>
-            CORREO PARA RESPALDOS (OPCIONAL)
-          </div>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="tu@correo.com"
-            style={{
-              width: '100%',
-              padding: 13,
-              borderRadius: 14,
-              border: 'none',
-              fontSize: 16,
-              background: 'var(--input-bg)',
-              color: 'var(--text)',
-              boxSizing: 'border-box',
-            }}
-          />
-          <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-            Así puedes mandarte tus datos por correo cuando quieras, desde Ajustes. Puedes dejarlo en blanco y configurarlo
-            después.
-          </div>
-        </div>
-      )}
-
       <button
         type="button"
-        onClick={() => onFinish(email.trim())}
+        onClick={onFinish}
         style={{
           width: '100%',
           maxWidth: 320,

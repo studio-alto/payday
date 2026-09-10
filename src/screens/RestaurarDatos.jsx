@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { formatFullDate } from '../lib/dates';
-import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
+import { cardStyle, labelStyle } from '../lib/styles';
 import { isValidBackup, summarizeBackup, applyRestoredBackup } from '../lib/backup';
 import { googleConfigured, hasConnectedBefore, getAccessToken, connectGoogle } from '../lib/googleAuth';
 import { listJsonBackupsInDrive, downloadJsonBackupFromDrive } from '../lib/googleDrive';
@@ -50,8 +50,6 @@ export default function RestaurarDatos({ data, setData, onNavigate }) {
   const [filePreview, setFilePreview] = useState(null); // { parsed, summary }
   const [fileError, setFileError] = useState('');
   const [confirmFileImport, setConfirmFileImport] = useState(false);
-  const [pasteOpen, setPasteOpen] = useState(false);
-  const [pasteText, setPasteText] = useState('');
 
   const readAndPreview = (text) => {
     try {
@@ -81,8 +79,6 @@ export default function RestaurarDatos({ data, setData, onNavigate }) {
     finishRestore(filePreview.parsed);
     setFilePreview(null);
     setConfirmFileImport(false);
-    setPasteText('');
-    setPasteOpen(false);
   };
 
   // --- 2. Sincronizar con Google Drive ---
@@ -162,28 +158,6 @@ export default function RestaurarDatos({ data, setData, onNavigate }) {
         <button type="button" onClick={triggerFilePick} style={actionRowStyle}>
           Elegir archivo de respaldo
         </button>
-        <button type="button" onClick={() => setPasteOpen((v) => !v)} style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer', textAlign: 'left' }}>
-          {pasteOpen ? 'Cancelar' : 'O pega el texto de un correo de respaldo'}
-        </button>
-        {pasteOpen && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <textarea
-              value={pasteText}
-              onChange={(e) => setPasteText(e.target.value)}
-              placeholder="Pega aquí el texto del correo de respaldo"
-              rows={5}
-              style={{ ...textInputStyle(), padding: 12, borderRadius: 12, resize: 'vertical', fontFamily: 'monospace', fontSize: 12 }}
-            />
-            <button
-              type="button"
-              onClick={() => readAndPreview(pasteText)}
-              disabled={!pasteText.trim()}
-              style={{ ...actionRowStyle, background: 'var(--accent)', color: 'white', opacity: pasteText.trim() ? 1 : 0.5 }}
-            >
-              Leer texto
-            </button>
-          </div>
-        )}
 
         {fileError && <div style={{ fontSize: 12, color: 'var(--danger-text)' }}>{fileError}</div>}
 
@@ -236,7 +210,7 @@ export default function RestaurarDatos({ data, setData, onNavigate }) {
               )}
               {driveState === 'loaded' && backups.length === 0 && (
                 <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                  Todavía no tienes respaldos en Drive. Sube uno desde el Inicio o Ajustes → Datos ("Respaldar ahora" / "Subir Excel a Drive").
+                  Todavía no tienes respaldos en Drive. Sube uno desde Ajustes → Datos ("Subir Excel a Drive").
                 </div>
               )}
               {driveState === 'loaded' &&
