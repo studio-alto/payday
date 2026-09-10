@@ -7,7 +7,6 @@ import { applyIncomeEffects } from '../lib/debt';
 import FixedHeader from '../components/FixedHeader';
 import ProgressRing from '../components/ProgressRing';
 import SummaryIcon from '../components/SummaryIcon';
-import BackupStatusCard from '../components/BackupStatusCard';
 import MonthComparisonCard from '../components/MonthComparisonCard';
 
 // One color per "Resumen general" row — a small, fixed palette (not the Variables
@@ -650,8 +649,6 @@ export default function Dashboard({ data, setData, onNavigate }) {
       </div>
 
       <MonthComparisonCard data={data} />
-
-      <BackupStatusCard data={data} setData={setData} />
     </div>
   );
 }
