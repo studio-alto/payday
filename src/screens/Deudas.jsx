@@ -1086,8 +1086,25 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
 
       {section === 'variables' && (
         <>
+          {gastosVariables.length === 0 && (
+            <div style={{ ...cardStyle, textAlign: 'center' }}>
+              <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>Aún no tienes gastos variables</div>
+              <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 6 }}>
+                Registra tus compras del día a día (mercado, transporte, salidas) para ver en qué se te va la plata.
+              </div>
+              <button
+                type="button"
+                onClick={openNewVariableModal}
+                style={{ ...primaryButtonStyle(), marginTop: 14, padding: '10px 20px', borderRadius: 20, display: 'inline-block', width: 'auto' }}
+              >
+                + Nuevo gasto variable
+              </button>
+            </div>
+          )}
+
           {gastosVariables.length > 0 && (
-            <div style={cardStyle}>
+            <>
+          <div style={cardStyle}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em', marginBottom: 12 }}>GASTADO POR MES</div>
               <div role="img" aria-label={variableMonthlyLabel} style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 90 }}>
                 {variableMonthly.map((m) => (
@@ -1107,7 +1124,6 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
                 ))}
               </div>
             </div>
-          )}
 
           <div style={cardStyle}>
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em' }}>GASTADO ESTE MES</div>
@@ -1269,6 +1285,8 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
               ))
             )}
           </div>
+            </>
+          )}
 
           {variableModalOpen && (
             <BottomSheet onClose={closeVariableModal}>
