@@ -29,6 +29,8 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
   const [extraText, setExtraText] = useState('');
   const [cuotaModalOpen, setCuotaModalOpen] = useState(false);
   const [cuotaText, setCuotaText] = useState('');
+  const [interesModalOpen, setInteresModalOpen] = useState(false);
+  const [interesText, setInteresText] = useState('');
 
   if (!card) {
     return (
@@ -48,6 +50,11 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
   const paidToDate = card.history.reduce((a, h) => a + h.amount, 0);
   const pct = paidToDate + card.balance > 0 ? Math.round((paidToDate / (paidToDate + card.balance)) * 100) : 0;
   const months = card.startDate ? monthsSince(card.startDate) : null;
+  // Real cost this month is whatever the person types from their own statement — a rate
+  // times the balance rarely matches it exactly (cycle dates, promos, minimum interest
+  // charges). The scenario comparison below still projects forward from the rate, since
+  // that's explicitly about "what would happen if", not "what did this actually cost".
+  const interesManual = card.interesMensual || 0;
   const interestCost = monthlyInterestCost(card);
 
   const extra = Number(extraText) || 0;
@@ -127,6 +134,18 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
     setCuotaModalOpen(false);
   };
 
+  // What the debt actually cost this month, straight from the statement — a typed-in
+  // number instead of a rate-based estimate, same reasoning as cuota mensual above.
+  const openInteresModal = () => {
+    setInteresText(card.interesMensual > 0 ? String(card.interesMensual) : '');
+    setInteresModalOpen(true);
+  };
+  const saveInteres = () => {
+    const interesMensual = Number(interesText) || 0;
+    setData((s) => ({ ...s, cards: s.cards.map((c) => (c.id === card.id ? { ...c, interesMensual } : c)) }));
+    setInteresModalOpen(false);
+  };
+
   const scenarioCardStyle = { background: 'var(--input-bg)', borderRadius: 16, padding: 14, flex: 1, display: 'flex', flexDirection: 'column', gap: 4 };
   const heroTileStyle = { ...cardStyle, flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textAlign: 'center', minWidth: 0 };
   const statTileStyle = { ...cardStyle, flex: 1, minWidth: 0 };
@@ -160,11 +179,19 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
         </div>
 
         {card.interestRate > 0 && (
-          <div style={{ ...heroTileStyle, background: 'var(--danger)' }}>
+          <button
+            type="button"
+            onClick={openInteresModal}
+            style={{ ...heroTileStyle, background: 'var(--danger)', border: 'none', cursor: 'pointer' }}
+          >
             <div style={{ fontSize: 11, fontWeight: 700, color: 'rgba(255,255,255,0.85)', letterSpacing: '0.06em' }}>TE CUESTA CADA MES</div>
-            <div style={{ fontWeight: 800, fontSize: 26, color: 'white', marginTop: 10, letterSpacing: '-0.02em' }}>{fmt(interestCost, currency)}</div>
-            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 4, fontWeight: 700 }}>en intereses</div>
-          </div>
+            <div style={{ fontWeight: 800, fontSize: 26, color: 'white', marginTop: 10, letterSpacing: '-0.02em' }}>
+              {interesManual > 0 ? fmt(interesManual, currency) : 'No configurado'}
+            </div>
+            <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 4, fontWeight: 700 }}>
+              {interesManual > 0 ? 'en intereses · Editar' : 'Toca para ingresarlo'}
+            </div>
+          </button>
         )}
       </div>
 
@@ -211,10 +238,29 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
         </BottomSheet>
       )}
 
+      {interesModalOpen && (
+        <BottomSheet onClose={() => setInteresModalOpen(false)}>
+          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>Interés de este mes</div>
+          <ExplainerNote>
+            Cuánto te cobraron en intereses este mes, según tu extracto o app del banco. Cada tarjeta calcula esto un
+            poco distinto (fechas de corte, promociones, cobros mínimos), así que es más confiable copiarlo de ahí que
+            calcularlo con la tasa.
+          </ExplainerNote>
+          <NumberInput value={interesText} onChange={(e) => setInteresText(e.target.value)} placeholder="Ej: 15.000" style={textInputStyle()} />
+          <button
+            type="button"
+            onClick={saveInteres}
+            style={{ height: 50, borderRadius: 25, background: 'var(--accent)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, cursor: 'pointer', border: 'none' }}
+          >
+            Guardar
+          </button>
+        </BottomSheet>
+      )}
+
       <ExplainerNote>
         El círculo muestra qué tanto de esta deuda ya pagaste ({pct}%): entre más lleno, más cerca estás de terminarla.
         {card.interestRate > 0 &&
-          ` Lo rojo es lo que te cuesta cada mes solo por tenerla. No reduce lo que debes, es dinero extra que pagas por no haberla saldado todavía. "E.A." significa Efectivo Anual: es la tasa de interés que cobran por un año completo, la misma que suele aparecer en tu extracto o contrato.`}
+          ` Lo rojo es lo que te cuesta cada mes solo por tenerla (tú lo ingresas desde tu extracto). No reduce lo que debes, es dinero extra que pagas por no haberla saldado todavía. "E.A." significa Efectivo Anual: es la tasa de interés que cobran por un año completo, la misma que suele aparecer en tu extracto o contrato.`}
         {months !== null && ` Llevas ${months === 0 ? 'menos de un mes' : months === 1 ? '1 mes' : `${months} meses`} con esta deuda.`}
       </ExplainerNote>
 

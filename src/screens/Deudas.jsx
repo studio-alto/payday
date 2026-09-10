@@ -13,7 +13,7 @@ import CategoryIcon from '../components/CategoryIcon';
 import FixedHeader from '../components/FixedHeader';
 import CardMenu from '../components/CardMenu';
 import ProgressRing from '../components/ProgressRing';
-import { sortDebtsByPriority, simulatePayoffPlan, formatMonthsLabel, monthlyPaidTotals, monthlyInterestCost, METHODS } from '../lib/debt';
+import { sortDebtsByPriority, simulatePayoffPlan, formatMonthsLabel, monthlyPaidTotals, METHODS } from '../lib/debt';
 import { VARIABLE_CATEGORIES, monthlyCategoryTotals, monthlyVariableTotals } from '../lib/variableExpenses';
 import { CHART_COLORS as CATEGORY_CHART_COLORS } from '../lib/colors';
 
@@ -661,7 +661,6 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
         const paidToDate = c.history.reduce((a, h) => a + h.amount, 0);
         const pct = paidToDate + c.balance > 0 ? Math.round((paidToDate / (paidToDate + c.balance)) * 100) : 0;
         const isOverdue = c.nextPayment < today && c.balance > 0;
-        const interestCost = monthlyInterestCost(c);
         const numAbonos = c.history.length;
 
         return (
@@ -702,7 +701,7 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
             </div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
               Cuota: {c.minPayment > 0 ? fmt(c.minPayment, currency) : 'No configurada'}
-              {interestCost > 0 && ` · Interés: ${fmt(interestCost, currency)}/mes`}
+              {c.interesMensual > 0 && ` · Interés: ${fmt(c.interesMensual, currency)}/mes`}
             </div>
             <div style={{ height: 7, background: 'var(--divider)', borderRadius: 6, overflow: 'hidden', marginTop: 10 }}>
               <div style={{ height: '100%', width: `${pct}%`, background: 'var(--accent)', borderRadius: 6, transition: 'width 0.5s ease' }} />
