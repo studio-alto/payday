@@ -653,14 +653,14 @@ export default function Dashboard({ data, setData, onNavigate }) {
           <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)', flexShrink: 0 }}>{fmt(totalVariablesMonth, user.currency)}</div>
         </button>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: 'var(--accent-soft-bg)', borderRadius: 16, padding: '10px 12px' }}>
-          <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, background: disponible < 0 ? 'var(--danger-soft-bg)' : 'var(--accent-soft-bg)', borderRadius: 16, padding: '10px 12px' }}>
+          <div style={{ width: 38, height: 38, borderRadius: '50%', background: disponible < 0 ? 'var(--danger)' : 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <SummaryIcon name="disponible" size={18} color="white" />
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Disponible</div>
           </div>
-          <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--accent-text)', flexShrink: 0 }}>{fmt(disponible, user.currency)}</div>
+          <div style={{ fontWeight: 800, fontSize: 18, color: disponible < 0 ? 'var(--danger-text)' : 'var(--accent-text)', flexShrink: 0 }}>{fmt(disponible, user.currency)}</div>
         </div>
       </div>
 
