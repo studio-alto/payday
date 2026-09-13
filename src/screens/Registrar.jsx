@@ -45,9 +45,12 @@ function formFromIncome(income) {
 export default function Registrar({ data, setData, onNavigate, editingIncome, onDoneEditing }) {
   const isEditing = !!editingIncome;
   const incomeMode = data.user.incomeMode || 'variable';
+  // A new income can only be earmarked for a goal still in use — an archived one
+  // (see Metas.jsx) stays out of the default pick and the picker below.
+  const activeGoals = data.goals.filter((g) => !g.archived);
   const [step, setStep] = useState(1);
   const [form, setForm] = useState(() =>
-    isEditing ? formFromIncome(editingIncome) : emptyForm(referenceIncome(data.incomes, incomeMode), data.goals, incomeMode),
+    isEditing ? formFromIncome(editingIncome) : emptyForm(referenceIncome(data.incomes, incomeMode), activeGoals, incomeMode),
   );
   const [ahorroPctText, setAhorroPctText] = useState('');
   const [tarjetaPctText, setTarjetaPctText] = useState('');
@@ -494,11 +497,11 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
             </div>
           </div>
           <div style={{ fontSize: 13, color: 'var(--accent-text)', fontWeight: 700 }}>Ahorro: {fmt(ahorroMonto, currency)}</div>
-          {data.goals.length > 0 && ahorroMonto > 0 && (
+          {activeGoals.length > 0 && ahorroMonto > 0 && (
             <div>
               <div style={fieldLabelStyle}>¿A QUÉ META VA ESTE AHORRO?</div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {data.goals.map((g) => {
+                {activeGoals.map((g) => {
                   const active = form.goalId === g.id;
                   return (
                     <button

@@ -138,6 +138,15 @@ function MonthSwitcher({ label, isCurrentMonth, onPrev, onNext }) {
 
 export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
   const { cards, expenses } = data;
+  // "Eliminar" archives a card/gasto fijo that has payment history instead of removing
+  // it outright (see confirmDelete/confirmDeleteExpense below) — otherwise past months'
+  // totals (monthlyPaidTotals, monthlyRecap, the "mes pasado" views) would shrink
+  // retroactively every time someone deletes a paid-off debt or a cancelled
+  // subscription. Archived ones just drop out of every "current" list/total here —
+  // everything that reads the full `cards`/`expenses` arrays for a specific month
+  // keeps seeing them.
+  const activeCards = cards.filter((c) => !c.archived);
+  const activeExpenses = expenses.filter((e) => !e.archived);
   const gastosVariables = data.gastosVariables || [];
   const { currency } = data.user;
   const debtMethod = data.user.debtMethod || 'bola_nieve';
@@ -165,19 +174,21 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
   const extraMensual = Number(data.user.extraDeudaMensual) || 0;
   const setExtraMensual = (e) => setData((s) => ({ ...s, user: { ...s.user, extraDeudaMensual: Number(e.target.value) || 0 } }));
 
-  const sortedCards = sortDebtsByPriority(cards, debtMethod);
+  const sortedCards = sortDebtsByPriority(activeCards, debtMethod);
   const priorityId = sortedCards.find((c) => c.balance > 0)?.id;
-  const payoffPlan = simulatePayoffPlan(cards, debtMethod, extraMensual);
+  const payoffPlan = simulatePayoffPlan(activeCards, debtMethod, extraMensual);
 
-  const totalBalance = cards.reduce((a, c) => a + c.balance, 0);
-  const totalPaidAllTime = cards.reduce((a, c) => a + c.history.reduce((h, x) => h + x.amount, 0), 0);
+  const totalBalance = activeCards.reduce((a, c) => a + c.balance, 0);
+  const totalPaidAllTime = activeCards.reduce((a, c) => a + c.history.reduce((h, x) => h + x.amount, 0), 0);
   const pctPaidGlobal = totalPaidAllTime + totalBalance > 0 ? Math.round((totalPaidAllTime / (totalPaidAllTime + totalBalance)) * 100) : 0;
+  // Full `cards` (not activeCards) — an archived debt's past abonos should still show
+  // up in the month they actually happened, same reasoning as the comment above.
   const monthlyPaid = monthlyPaidTotals(cards, 6);
   const maxMonthlyPaid = Math.max(1, ...monthlyPaid.map((m) => m.total));
   const monthlyPaidLabel = `Abonado por mes: ${monthlyPaid.map((m) => `${m.label} ${fmt(m.total, currency)}`).join(', ')}`;
 
-  const sortedExpenses = [...expenses].sort((a, b) => daysUntilPayday(a.dueDay) - daysUntilPayday(b.dueDay));
-  const totalExpenses = expenses.reduce((a, e) => a + e.amount, 0);
+  const sortedExpenses = [...activeExpenses].sort((a, b) => daysUntilPayday(a.dueDay) - daysUntilPayday(b.dueDay));
+  const totalExpenses = activeExpenses.reduce((a, e) => a + e.amount, 0);
   // Precomputed once so both the "ESTE MES" summary and each card agree on the same
   // paid/overdue read — overdue means "past this month's due day and still unpaid"
   // (daysUntilPayday always looks forward to the *next* occurrence, so it alone can't tell us that).
@@ -187,15 +198,15 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
     return { ...e, paidThisMonth, isOverdue: !paidThisMonth && todayDayOfMonth > e.dueDay };
   });
   const paidCount = expensesWithStatus.filter((e) => e.paidThisMonth).length;
-  const pendingCount = expenses.length - paidCount;
-  const paidPct = expenses.length > 0 ? Math.round((paidCount / expenses.length) * 100) : 0;
+  const pendingCount = activeExpenses.length - paidCount;
+  const paidPct = activeExpenses.length > 0 ? Math.round((paidCount / activeExpenses.length) * 100) : 0;
   // Three distinct, real readings of the same month's bills — how many are checked off,
   // how much of the money is actually covered (a paid big bill moves this more than a
   // paid small one), and how much of it is overdue. Not the same metric three times.
   const paidAmount = expensesWithStatus.filter((e) => e.paidThisMonth).reduce((a, e) => a + e.amount, 0);
   const paidAmountPct = totalExpenses > 0 ? Math.round((paidAmount / totalExpenses) * 100) : 0;
   const overdueCount = expensesWithStatus.filter((e) => e.isOverdue).length;
-  const overduePct = expenses.length > 0 ? Math.round((overdueCount / expenses.length) * 100) : 0;
+  const overduePct = activeExpenses.length > 0 ? Math.round((overdueCount / activeExpenses.length) * 100) : 0;
   const nextDueId = expensesWithStatus.find((e) => !e.paidThisMonth && !e.isOverdue)?.id;
 
   const [expenseModalOpen, setExpenseModalOpen] = useState(false);
@@ -243,8 +254,17 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
 
   const askDeleteExpense = (id) => setConfirmDeleteExpenseId(id);
   const cancelDeleteExpense = () => setConfirmDeleteExpenseId(null);
+  // Archives instead of removing once there's payment history to lose — otherwise
+  // cancelling a subscription and deleting it here would also erase every month it
+  // was ever paid from monthlyRecap, the payoff charts and the "mes pasado" views.
+  // A never-paid gasto fijo has nothing to preserve, so it's just removed outright.
   const confirmDeleteExpense = (id) => {
-    setData((s) => ({ ...s, expenses: s.expenses.filter((e) => e.id !== id) }));
+    setData((s) => ({
+      ...s,
+      expenses: s.expenses
+        .map((e) => (e.id === id && e.history.length > 0 ? { ...e, archived: true } : e))
+        .filter((e) => e.id !== id || e.archived),
+    }));
     setConfirmDeleteExpenseId(null);
   };
 
@@ -349,10 +369,15 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
 
   const askDelete = (id) => setConfirmDeleteId(id);
   const cancelDelete = () => setConfirmDeleteId(null);
+  // Archives instead of removing once there's payment history to lose — same
+  // reasoning as confirmDeleteExpense above, so paying off (or writing off) a debt
+  // and deleting it doesn't erase its abonos from monthlyPaidTotals/monthlyRecap.
   const confirmDelete = (id) => {
     setData((s) => ({
       ...s,
-      cards: s.cards.filter((c) => c.id !== id),
+      cards: s.cards
+        .map((c) => (c.id === id && c.history.length > 0 ? { ...c, archived: true } : c))
+        .filter((c) => c.id !== id || c.archived),
       // Fall back linked expenses to efectivo so they don't keep pointing at a card
       // that no longer exists (they'd silently stop showing its name/tasa otherwise).
       expenses: s.expenses.map((e) => (e.medioPago === id ? { ...e, medioPago: 'efectivo' } : e)),
@@ -583,7 +608,7 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
         </div>
       </FixedHeader>
 
-      {section === 'deudas' && cards.length === 0 && (
+      {section === 'deudas' && activeCards.length === 0 && (
         <div style={{ ...cardStyle, textAlign: 'center' }}>
           <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>Aún no tienes deudas registradas</div>
           <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 6 }}>
@@ -599,7 +624,7 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
         </div>
       )}
 
-      {section === 'deudas' && cards.length > 0 && (
+      {section === 'deudas' && activeCards.length > 0 && (
         <div style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: 20 }}>
           <ProgressRing pct={pctPaidGlobal} size={88}>
             <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{pctPaidGlobal}%</div>
@@ -617,7 +642,7 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
         </div>
       )}
 
-      {section === 'deudas' && cards.length > 0 && totalPaidAllTime > 0 && (
+      {section === 'deudas' && activeCards.length > 0 && totalPaidAllTime > 0 && (
         <div style={cardStyle}>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em', marginBottom: 12 }}>ABONADO POR MES</div>
           <div role="img" aria-label={monthlyPaidLabel} style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 90 }}>
@@ -640,7 +665,7 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
         </div>
       )}
 
-      {section === 'deudas' && cards.length > 0 && (
+      {section === 'deudas' && activeCards.length > 0 && (
         <div style={cardStyle}>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em', marginBottom: 10 }}>
             MÉTODO PARA SALIR DE DEUDAS
@@ -954,7 +979,7 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
 
       {section === 'gastos' && (
         <>
-          {expenses.length === 0 && (
+          {activeExpenses.length === 0 && (
             <div style={{ ...cardStyle, textAlign: 'center' }}>
               <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>Aún no tienes gastos fijos</div>
               <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 6 }}>
@@ -970,11 +995,11 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
             </div>
           )}
 
-          {expenses.length > 0 && (
+          {activeExpenses.length > 0 && (
             <MonthSwitcher label={viewMonthLabel} isCurrentMonth={isCurrentViewMonth} onPrev={goPrevViewMonth} onNext={goNextViewMonth} />
           )}
 
-          {expenses.length > 0 && isCurrentViewMonth && (
+          {activeExpenses.length > 0 && isCurrentViewMonth && (
             <div style={cardStyle}>
               <div
                 style={{

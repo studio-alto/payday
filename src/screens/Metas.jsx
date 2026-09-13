@@ -23,6 +23,11 @@ function emptyForm() {
 
 export default function Metas({ data, setData, onViewDetail }) {
   const { goals } = data;
+  // "Eliminar" archives a goal that already has contributions instead of removing it
+  // outright (see confirmDelete below) — otherwise every month it received savings
+  // would lose that amount from monthlyRecap and the "mes pasado" views the moment
+  // someone finishes (or abandons) it and cleans up their goal list.
+  const activeGoals = goals.filter((g) => !g.archived);
   const { currency } = data.user;
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -108,16 +113,27 @@ export default function Metas({ data, setData, onViewDetail }) {
 
   const askDelete = (id) => setConfirmDeleteId(id);
   const cancelDelete = () => setConfirmDeleteId(null);
+  // Archives a goal with contributions instead of removing it (see the activeGoals
+  // comment above) — the goal stays around, just hidden from every "current" list,
+  // so incomes still linked to it keep resolving correctly instead of needing their
+  // goalId cleared. A goal nobody ever contributed to has nothing to preserve, so
+  // it's removed outright, same as before.
   const confirmDelete = (id) => {
-    setData((s) => ({
-      ...s,
-      goals: s.goals.filter((g) => g.id !== id),
-      // Clear the dangling reference so editing/deleting one of these incomes later
-      // doesn't silently no-op the ahorro reversal against a goal that no longer exists.
-      incomes: s.incomes.map((i) =>
-        i.distribution.goalId === id ? { ...i, distribution: { ...i.distribution, goalId: null } } : i,
-      ),
-    }));
+    setData((s) => {
+      const goal = s.goals.find((g) => g.id === id);
+      if ((goal?.history || []).length > 0) {
+        return { ...s, goals: s.goals.map((g) => (g.id === id ? { ...g, archived: true } : g)) };
+      }
+      return {
+        ...s,
+        goals: s.goals.filter((g) => g.id !== id),
+        // Clear the dangling reference so editing/deleting one of these incomes later
+        // doesn't silently no-op the ahorro reversal against a goal that no longer exists.
+        incomes: s.incomes.map((i) =>
+          i.distribution.goalId === id ? { ...i, distribution: { ...i.distribution, goalId: null } } : i,
+        ),
+      };
+    });
     setConfirmDeleteId(null);
   };
 
@@ -173,13 +189,13 @@ export default function Metas({ data, setData, onViewDetail }) {
             De ingresos donde elegiste "Sin meta", o de una meta que eliminaste. Cuenta en tu ahorro total de Inicio, pero no en el
             progreso de ninguna meta hasta que lo asignes.
           </div>
-          {goals.length > 0 ? (
+          {activeGoals.length > 0 ? (
             <>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.03em', marginTop: 12 }}>
                 ASIGNAR A
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 6 }}>
-                {goals.map((g) => (
+                {activeGoals.map((g) => (
                   <button
                     key={g.id}
                     type="button"
@@ -201,7 +217,7 @@ export default function Metas({ data, setData, onViewDetail }) {
               </div>
               {claimTarget && (
                 <InlineConfirm
-                  message={`¿Asignar ${fmt(unassignedTotal, currency)} a "${goals.find((g) => g.id === claimTarget)?.name}"?`}
+                  message={`¿Asignar ${fmt(unassignedTotal, currency)} a "${activeGoals.find((g) => g.id === claimTarget)?.name}"?`}
                   onConfirm={() => claimUnassigned(claimTarget)}
                   onCancel={() => setClaimTarget('')}
                 />
@@ -213,7 +229,7 @@ export default function Metas({ data, setData, onViewDetail }) {
         </div>
       )}
 
-      {goals.length === 0 && (
+      {activeGoals.length === 0 && (
         <div style={{ ...cardStyle, textAlign: 'center' }}>
           <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>Aún no tienes metas</div>
           <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginTop: 6 }}>
@@ -229,7 +245,7 @@ export default function Metas({ data, setData, onViewDetail }) {
         </div>
       )}
 
-      {goals.map((g) => {
+      {activeGoals.map((g) => {
         const pct = Math.min(100, Math.round((g.current / g.target) * 100));
         const completed = g.current >= g.target;
         const projection = computeSavingsProjection(g.target - g.current, g.fechaObjetivo);

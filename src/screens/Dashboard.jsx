@@ -16,6 +16,13 @@ const SUMMARY_COLORS = { ahorro: '#00c45b', deudas: '#476bff', gastosFijos: '#ff
 
 export default function Dashboard({ data, setData, onNavigate }) {
   const { user, incomes, goals, cards, expenses, gastosVariables } = data;
+  // Archived goals/cards/gastos fijos (see Metas.jsx/Deudas.jsx — "eliminar" archives
+  // one that already has history instead of removing it) still hold their real past
+  // contributions/abonos/pagos, but shouldn't count toward what's currently owed,
+  // saved, or due — every "right now" total here is scoped to the active ones.
+  const activeGoals = goals.filter((g) => !g.archived);
+  const activeCards = cards.filter((c) => !c.archived);
+  const activeExpenses = expenses.filter((e) => !e.archived);
   const today = todayISO();
   const week = last7Days();
   const [pessimistic, setPessimistic] = useState(false);
@@ -27,7 +34,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
   const totalMonth = incomesThisMonth.reduce((a, i) => a + i.amount, 0);
   const ahorroMonth = incomesThisMonth.reduce((a, i) => a + (i.distribution.ahorro || 0), 0);
   const tarjetaMonth = incomesThisMonth.reduce((a, i) => a + (i.distribution.tarjeta || 0), 0);
-  const totalGastos = expenses.reduce((a, e) => a + e.amount, 0);
+  const totalGastos = activeExpenses.reduce((a, e) => a + e.amount, 0);
   const variablesThisMonth = (gastosVariables || []).filter((g) => isSameMonth(g.date));
   const totalVariablesMonth = variablesThisMonth.reduce((a, g) => a + g.amount, 0);
   const disponible = totalMonth - ahorroMonth - tarjetaMonth - totalGastos - totalVariablesMonth;
@@ -38,8 +45,8 @@ export default function Dashboard({ data, setData, onNavigate }) {
   // Ahorro saved before any goal existed (or since reassigned/deleted) still lives on
   // the income record itself — count it here so it isn't invisible on the dashboard.
   const unassignedAhorro = confirmedIncomes.reduce((a, i) => a + (!i.distribution.goalId ? i.distribution.ahorro || 0 : 0), 0);
-  const totalAhorro = goals.reduce((a, g) => a + g.current, 0) + unassignedAhorro;
-  const totalDeuda = cards.reduce((a, c) => a + c.balance, 0);
+  const totalAhorro = activeGoals.reduce((a, g) => a + g.current, 0) + unassignedAhorro;
+  const totalDeuda = activeCards.reduce((a, c) => a + c.balance, 0);
   const totalProyectado = projectedIncomes.reduce((a, i) => a + i.amount, 0);
 
   const incomeByDate = {};
@@ -75,7 +82,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
   });
   const weekBarsLabel = `Ingresos de los últimos 7 días: ${weekBars.map((wb) => `${wb.letter} ${fmt(wb.amt, user.currency)}`).join(', ')}`;
 
-  const goalsWithPct = goals.map((g) => ({ ...g, pct: Math.min(100, Math.round((g.current / g.target) * 100)) }));
+  const goalsWithPct = activeGoals.map((g) => ({ ...g, pct: Math.min(100, Math.round((g.current / g.target) * 100)) }));
   const nextGoal = goalsWithPct.find((g) => g.pct < 100) || goalsWithPct[0] || { name: 'Sin metas', current: 0, target: 1, pct: 0 };
 
   const sortedIncomes = [...confirmedIncomes].sort((a, b) => b.date.localeCompare(a.date));
@@ -106,12 +113,12 @@ export default function Dashboard({ data, setData, onNavigate }) {
 
   const dueSoonLabel = (daysLeft) => (daysLeft < 0 ? 'vencido' : daysLeft === 0 ? 'vence hoy' : daysLeft === 1 ? 'vence en 1 día' : `vence en ${daysLeft} días`);
 
-  const urgentExpenses = expenses
+  const urgentExpenses = activeExpenses
     .filter((e) => !e.history.some((h) => isSameMonth(h.date)))
     .map((e) => ({ id: e.id, name: e.name, daysLeft: daysUntilPayday(e.dueDay) }))
     .filter((e) => e.daysLeft <= 3);
 
-  const urgentDebts = cards
+  const urgentDebts = activeCards
     .filter((c) => c.balance > 0)
     .map((c) => ({ id: c.id, name: c.name, daysLeft: Math.round((new Date(c.nextPayment + 'T00:00:00') - new Date(today + 'T00:00:00')) / 86400000) }))
     .filter((c) => c.daysLeft <= 3);
@@ -596,7 +603,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Ahorro</div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 1 }}>
-              {goals.length === 0 ? 'Sin metas' : goals.length === 1 ? '1 meta' : `${goals.length} metas`}
+              {activeGoals.length === 0 ? 'Sin metas' : activeGoals.length === 1 ? '1 meta' : `${activeGoals.length} metas`}
             </div>
           </div>
           <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)', flexShrink: 0 }}>{fmt(totalAhorro, user.currency)}</div>
@@ -613,7 +620,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Deudas</div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 1 }}>
-              {cards.length === 0 ? 'Sin deudas' : cards.length === 1 ? '1 deuda' : `${cards.length} deudas`}
+              {activeCards.length === 0 ? 'Sin deudas' : activeCards.length === 1 ? '1 deuda' : `${activeCards.length} deudas`}
             </div>
           </div>
           <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)', flexShrink: 0 }}>{fmt(totalDeuda, user.currency)}</div>
@@ -630,7 +637,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Gastos fijos</div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 1 }}>
-              {expenses.length === 0 ? 'Sin gastos fijos' : expenses.length === 1 ? '1 gasto fijo' : `${expenses.length} gastos fijos`}
+              {activeExpenses.length === 0 ? 'Sin gastos fijos' : activeExpenses.length === 1 ? '1 gasto fijo' : `${activeExpenses.length} gastos fijos`}
             </div>
           </div>
           <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)', flexShrink: 0 }}>{fmt(totalGastos, user.currency)}</div>
