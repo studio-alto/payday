@@ -465,38 +465,52 @@ export default function Dashboard({ data, setData, onNavigate }) {
       {/* Accesos directos */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-            <div>
-              <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--text)' }}>Ingresos</div>
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>Registra y distribuye</div>
-            </div>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--text)' }}>Ingresos</div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>Registra y distribuye</div>
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
             <button
               type="button"
               onClick={() => onNavigate('ingresos')}
-              style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer', flexShrink: 0 }}
+              style={{
+                height: 46,
+                borderRadius: 23,
+                background: 'var(--text)',
+                color: 'var(--page-bg)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 700,
+                fontSize: 14,
+                cursor: 'pointer',
+                flex: 1,
+              }}
             >
               Ver
             </button>
+            <button
+              type="button"
+              onClick={() => onNavigate('registrar')}
+              aria-label="Registrar ingreso"
+              style={{
+                width: 46,
+                height: 46,
+                borderRadius: 23,
+                background: 'var(--accent)',
+                color: 'white',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 700,
+                fontSize: 20,
+                cursor: 'pointer',
+                flexShrink: 0,
+              }}
+            >
+              +
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => onNavigate('registrar')}
-            style={{
-              height: 46,
-              borderRadius: 23,
-              background: 'var(--text)',
-              color: 'var(--page-bg)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 700,
-              fontSize: 14,
-              cursor: 'pointer',
-              width: '100%',
-            }}
-          >
-            Registrar
-          </button>
         </div>
         <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
