@@ -455,9 +455,11 @@ export default function Dashboard({ data, setData, onNavigate }) {
               </button>
             </>
           )}
-          <div style={{ background: 'var(--good-soft-bg)', borderRadius: 14, padding: '10px 12px', marginTop: 2 }}>
-            <div style={{ ...labelStyle, color: 'var(--good-text)' }}>DISPONIBLE</div>
-            <div style={{ fontWeight: 800, fontSize: 20, color: 'var(--good-text)', marginTop: 3, letterSpacing: '-0.01em' }}>{fmt(disponible, user.currency)}</div>
+          <div style={{ background: disponible < 0 ? 'var(--danger-soft-bg)' : 'var(--good-soft-bg)', borderRadius: 14, padding: '10px 12px', marginTop: 2 }}>
+            <div style={{ ...labelStyle, color: disponible < 0 ? 'var(--danger-text)' : 'var(--good-text)' }}>DISPONIBLE</div>
+            <div style={{ fontWeight: 800, fontSize: 20, color: disponible < 0 ? 'var(--danger-text)' : 'var(--good-text)', marginTop: 3, letterSpacing: '-0.01em' }}>
+              {fmt(disponible, user.currency)}
+            </div>
           </div>
         </div>
       </div>

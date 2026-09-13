@@ -4,6 +4,19 @@ import { cardStyle, labelStyle } from '../lib/styles';
 import { computeMonthlyRecap, previousMonth } from '../lib/monthlyRecap';
 import BottomSheet from './BottomSheet';
 
+function nextMonth(year, month) {
+  return month === 11 ? { year: year + 1, month: 0 } : { year, month: month + 1 };
+}
+
+function BreakdownRow({ label, value, currency, color }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderTop: '1px solid var(--divider)' }}>
+      <div style={{ fontSize: 13, color: 'var(--text)' }}>{label}</div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: color || 'var(--text)' }}>{fmt(value, currency)}</div>
+    </div>
+  );
+}
+
 function capitalize(s) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
@@ -48,20 +61,6 @@ function BarPair({ label, current, previous, max, currency }) {
   );
 }
 
-function TableRow({ label, current, previous, currency, risesAreGood }) {
-  const pct = pctChange(current, previous);
-  const label2 = pct === null ? '—' : `${pct > 0 ? '+' : ''}${pct}%`;
-  const color = pct === null || pct === 0 ? 'var(--text-secondary)' : (pct > 0) === risesAreGood ? 'var(--good-text)' : 'var(--danger-text)';
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 0.8fr', gap: 8, padding: '10px 0', borderTop: '1px solid var(--divider)', alignItems: 'center' }}>
-      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>{label}</div>
-      <div style={{ fontSize: 12, color: 'var(--text)', textAlign: 'right' }}>{fmt(current, currency)}</div>
-      <div style={{ fontSize: 12, color: 'var(--text-secondary)', textAlign: 'right' }}>{fmt(previous, currency)}</div>
-      <div style={{ fontSize: 12, fontWeight: 700, color, textAlign: 'right' }}>{label2}</div>
-    </div>
-  );
-}
-
 // This card's own "Gastos" and "Balance" are a simpler read than the end-of-month
 // recap popup's netBalance (which also nets out ahorro and abonos a deudas) — here
 // Gastos is just fixed + variable spending, and Balance = Ingresos − Gastos, so the
@@ -74,6 +73,14 @@ export default function MonthComparisonCard({ data }) {
   const month = now.getMonth();
   const today = now.getDate();
   const prev = previousMonth(year, month);
+  // Independent of the current/previous comparison above — lets the person page
+  // back (or forward, up to the current month) through any month's own breakdown.
+  const [browseMonth, setBrowseMonth] = useState({ year, month });
+  const isBrowsingCurrentMonth = browseMonth.year === year && browseMonth.month === month;
+  const goPrevMonth = () => setBrowseMonth((s) => previousMonth(s.year, s.month));
+  const goNextMonth = () => setBrowseMonth((s) => nextMonth(s.year, s.month));
+  const browseRecap = computeMonthlyRecap(data, browseMonth.year, browseMonth.month);
+  const browseLabel = capitalize(browseRecap.label);
   // A month in progress only has data through today — comparing it against the
   // *whole* previous month makes every partial month look worse on income and
   // worse on spending alike, just because it hasn't finished yet. Capping the
@@ -92,8 +99,6 @@ export default function MonthComparisonCard({ data }) {
 
   const gastosActual = current.totalFixed + current.totalVariables;
   const gastosAnterior = previousRecap.totalFixed + previousRecap.totalVariables;
-  const balanceActual = current.totalIncome - gastosActual;
-  const balanceAnterior = previousRecap.totalIncome - gastosAnterior;
 
   const incomeChange = changeSentence('ganaste', pctChange(current.totalIncome, previousRecap.totalIncome), previousLabel, { risesAreGood: true });
   const expenseChange = changeSentence('gastaste', pctChange(gastosActual, gastosAnterior), previousLabel, { risesAreGood: false });
@@ -137,7 +142,10 @@ export default function MonthComparisonCard({ data }) {
 
       <button
         type="button"
-        onClick={() => setDetailOpen(true)}
+        onClick={() => {
+          setBrowseMonth({ year, month });
+          setDetailOpen(true);
+        }}
         style={{ alignSelf: 'flex-start', fontSize: 12, fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer', border: 'none', background: 'none', padding: 0 }}
       >
         Ver detalles
@@ -145,26 +153,64 @@ export default function MonthComparisonCard({ data }) {
 
       {detailOpen && (
         <BottomSheet onClose={() => setDetailOpen(false)}>
-          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>
-            {currentLabel} vs. {previousLabel}
+          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>Desglose mensual</div>
+
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <button
+              type="button"
+              onClick={goPrevMonth}
+              aria-label="Mes anterior"
+              style={{ width: 32, height: 32, borderRadius: 16, background: 'var(--input-bg)', color: 'var(--text)', fontSize: 16, fontWeight: 700, border: 'none', cursor: 'pointer' }}
+            >
+              ‹
+            </button>
+            <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{browseLabel}</div>
+            <button
+              type="button"
+              onClick={goNextMonth}
+              disabled={isBrowsingCurrentMonth}
+              aria-label="Mes siguiente"
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                background: 'var(--input-bg)',
+                color: 'var(--text)',
+                fontSize: 16,
+                fontWeight: 700,
+                border: 'none',
+                cursor: isBrowsingCurrentMonth ? 'default' : 'pointer',
+                opacity: isBrowsingCurrentMonth ? 0.3 : 1,
+              }}
+            >
+              ›
+            </button>
           </div>
-          {isPartialMonth && (
-            <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: -4 }}>
-              Primeros {today} días de cada mes.
+
+          {!browseRecap.hasActivity ? (
+            <div style={{ fontSize: 13, color: 'var(--text-secondary)', textAlign: 'center', padding: '12px 0' }}>
+              Sin movimientos registrados en {browseLabel.toLowerCase()}.
+            </div>
+          ) : (
+            <div>
+              <BreakdownRow label="Ingresos" value={browseRecap.totalIncome} currency={currency} color="var(--good-text)" />
+              <BreakdownRow label="Ahorro" value={browseRecap.totalAhorro} currency={currency} />
+              <BreakdownRow label="Gastos fijos" value={browseRecap.totalFixed} currency={currency} />
+              <BreakdownRow label="Gastos variables" value={browseRecap.totalVariables} currency={currency} />
+              {browseRecap.totalDebtPaid > 0 && (
+                <BreakdownRow label="Abonos a deudas" value={browseRecap.totalDebtPaid} currency={currency} />
+              )}
+              <BreakdownRow
+                label="Balance del mes"
+                value={browseRecap.netBalance}
+                currency={currency}
+                color={browseRecap.netBalance < 0 ? 'var(--danger-text)' : 'var(--good-text)'}
+              />
             </div>
           )}
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr 0.8fr', gap: 8, paddingBottom: 8 }}>
-            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.04em' }}>MÉTRICA</div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)', textAlign: 'right' }}>{currentLabel.toUpperCase()}</div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)', textAlign: 'right' }}>{previousLabel.toUpperCase()}</div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-secondary)', textAlign: 'right' }}>CAMBIO</div>
-          </div>
-          <TableRow label="Ingresos" current={current.totalIncome} previous={previousRecap.totalIncome} currency={currency} risesAreGood />
-          <TableRow label="Gastos" current={gastosActual} previous={gastosAnterior} currency={currency} risesAreGood={false} />
-          <TableRow label="Balance" current={balanceActual} previous={balanceAnterior} currency={currency} risesAreGood />
+
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 10, lineHeight: 1.5 }}>
-            Balance = Ingresos − Gastos (fijos + variables). No incluye lo que separaste para ahorro o deudas. Para
-            ver el mes completo con eso, mira el resumen que aparece al empezar cada mes.
+            Balance = Ingresos − Ahorro − Gastos fijos − Gastos variables − Abonos a deudas.
           </div>
         </BottomSheet>
       )}
