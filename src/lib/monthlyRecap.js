@@ -18,6 +18,11 @@ export function monthKey(year, month) {
   return `${year}-${String(month + 1).padStart(2, '0')}`;
 }
 
+export function monthLabel(year, month) {
+  const name = MONTH_LABELS_FULL[month];
+  return `${name.charAt(0).toUpperCase()}${name.slice(1)} ${year}`;
+}
+
 export function previousMonth(year, month) {
   return month === 0 ? { year: year - 1, month: 11 } : { year, month: month - 1 };
 }

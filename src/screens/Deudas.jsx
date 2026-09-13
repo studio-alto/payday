@@ -16,6 +16,7 @@ import ProgressRing from '../components/ProgressRing';
 import { sortDebtsByPriority, simulatePayoffPlan, formatMonthsLabel, monthlyPaidTotals, METHODS } from '../lib/debt';
 import { VARIABLE_CATEGORIES, monthlyCategoryTotals, monthlyVariableTotals } from '../lib/variableExpenses';
 import { CHART_COLORS as CATEGORY_CHART_COLORS } from '../lib/colors';
+import { monthLabel } from '../lib/monthlyRecap';
 
 const TIPOS = ['Tarjeta de crédito', 'Préstamo', 'Otro'];
 const CATEGORIAS = ['Suscripción', 'Servicios', 'Transporte', 'Vivienda', 'Tarjeta de crédito', 'Otro'];
@@ -96,6 +97,45 @@ function emptyVariableForm(today, defaultCategoria) {
   return { name: '', categoria: defaultCategoria, amount: '', date: today };
 }
 
+// Lets a section page back through past months (and forward again up to the
+// current one) instead of only ever showing "now" — used by Gastos fijos,
+// Variables and Todos, all driven by the same `viewMonth` state.
+function MonthSwitcher({ label, isCurrentMonth, onPrev, onNext }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <button
+        type="button"
+        onClick={onPrev}
+        aria-label="Mes anterior"
+        style={{ width: 32, height: 32, borderRadius: 16, background: 'var(--input-bg)', color: 'var(--text)', fontSize: 16, fontWeight: 700, border: 'none', cursor: 'pointer' }}
+      >
+        ‹
+      </button>
+      <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{label}</div>
+      <button
+        type="button"
+        onClick={onNext}
+        disabled={isCurrentMonth}
+        aria-label="Mes siguiente"
+        style={{
+          width: 32,
+          height: 32,
+          borderRadius: 16,
+          background: 'var(--input-bg)',
+          color: 'var(--text)',
+          fontSize: 16,
+          fontWeight: 700,
+          border: 'none',
+          cursor: isCurrentMonth ? 'default' : 'pointer',
+          opacity: isCurrentMonth ? 0.3 : 1,
+        }}
+      >
+        ›
+      </button>
+    </div>
+  );
+}
+
 export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
   const { cards, expenses } = data;
   const gastosVariables = data.gastosVariables || [];
@@ -107,6 +147,19 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
   const currentMonth = todayDate.getMonth();
 
   const [section, setSection] = useState('deudas');
+
+  // Shared by "Gastos fijos", "Variables" and "Todos" — lets the person page back
+  // through past months instead of only ever seeing the current one. Capped at the
+  // current month going forward since there's nothing to show past "now".
+  const [viewMonth, setViewMonth] = useState({ year: currentYear, month: currentMonth });
+  const isCurrentViewMonth = viewMonth.year === currentYear && viewMonth.month === currentMonth;
+  const goPrevViewMonth = () => setViewMonth((s) => (s.month === 0 ? { year: s.year - 1, month: 11 } : { year: s.year, month: s.month - 1 }));
+  const goNextViewMonth = () => setViewMonth((s) => (s.month === 11 ? { year: s.year + 1, month: 0 } : { year: s.year, month: s.month + 1 }));
+  const inViewMonth = (dateStr) => {
+    const d = new Date(dateStr + 'T00:00:00');
+    return d.getFullYear() === viewMonth.year && d.getMonth() === viewMonth.month;
+  };
+  const viewMonthLabel = isCurrentViewMonth ? 'Este mes' : monthLabel(viewMonth.year, viewMonth.month);
 
   const setDebtMethod = (key) => setData((s) => ({ ...s, user: { ...s.user, debtMethod: key } }));
   const extraMensual = Number(data.user.extraDeudaMensual) || 0;
@@ -365,25 +418,20 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
   const trackedCategories = data.user.gastoVariableCategorias || [];
   const allAvailableCategories = [...new Set([...VARIABLE_CATEGORIES, ...trackedCategories])];
 
-  // Budget-vs-actual per category, for the current calendar month only — matches
-  // how the rest of the app (gastos fijos, deudas) always reasons in "this month" terms.
-  const categoryTotals = monthlyCategoryTotals(gastosVariables, trackedCategories, currentYear, currentMonth);
-  const thisMonthVariables = [...gastosVariables]
-    .filter((g) => {
-      const d = new Date(g.date + 'T00:00:00');
-      return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
-    })
-    .sort((a, b) => b.date.localeCompare(a.date));
-  // Sums every gasto this month, tracked category or not — the itemized list below
-  // shows all of them too, so this total shouldn't silently exclude an untracked one.
+  // Budget-vs-actual per category, for whichever month `viewMonth` is currently
+  // showing (defaults to the current one, but the person can page back).
+  const categoryTotals = monthlyCategoryTotals(gastosVariables, trackedCategories, viewMonth.year, viewMonth.month);
+  const thisMonthVariables = [...gastosVariables].filter((g) => inViewMonth(g.date)).sort((a, b) => b.date.localeCompare(a.date));
+  // Sums every gasto in the viewed month, tracked category or not — the itemized list
+  // below shows all of them too, so this total shouldn't silently exclude an untracked one.
   const totalVariableMonth = thisMonthVariables.reduce((a, g) => a + g.amount, 0);
 
-  // "Todos" tab: gastos fijos ya pagados este mes (desde el historial de cada gasto,
-  // la misma fuente que monthlyRecap.js usa para "gastos fijos" — no el monto mensual
-  // recurrente) más los gastos variables, combinados en una sola lista por fecha.
+  // "Todos" tab: gastos fijos ya pagados en el mes visto (desde el historial de cada
+  // gasto, la misma fuente que monthlyRecap.js usa para "gastos fijos" — no el monto
+  // mensual recurrente) más los gastos variables, combinados en una sola lista por fecha.
   const fixedPaidThisMonth = expenses.flatMap((e) =>
     (e.history || [])
-      .filter((h) => isSameMonth(h.date))
+      .filter((h) => inViewMonth(h.date))
       .map((h) => ({ date: h.date, amount: h.amount, name: e.name, categoria: e.categoria, kind: 'fijo' })),
   );
   const totalFixedPaidMonth = fixedPaidThisMonth.reduce((a, h) => a + h.amount, 0);
@@ -921,7 +969,12 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
               </button>
             </div>
           )}
+
           {expenses.length > 0 && (
+            <MonthSwitcher label={viewMonthLabel} isCurrentMonth={isCurrentViewMonth} onPrev={goPrevViewMonth} onNext={goNextViewMonth} />
+          )}
+
+          {expenses.length > 0 && isCurrentViewMonth && (
             <div style={cardStyle}>
               <div
                 style={{
@@ -984,7 +1037,35 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
             </div>
           )}
 
-          {expensesWithStatus.map((e) => {
+          {!isCurrentViewMonth && (
+            <div style={cardStyle}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em' }}>
+                PAGADO EN {viewMonthLabel.toUpperCase()}
+              </div>
+              <div style={{ fontWeight: 800, fontSize: 24, color: 'var(--text)', marginTop: 4, letterSpacing: '-0.02em' }}>
+                {fmt(totalFixedPaidMonth, currency)}
+              </div>
+              {fixedPaidThisMonth.length === 0 ? (
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 10 }}>Sin gastos fijos pagados ese mes.</div>
+              ) : (
+                [...fixedPaidThisMonth]
+                  .sort((a, b) => b.date.localeCompare(a.date))
+                  .map((h, idx) => (
+                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 0', borderTop: '1px solid var(--divider)' }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{h.name}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                          {h.categoria} · {formatShortDate(h.date)}
+                        </div>
+                      </div>
+                      <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)', flexShrink: 0 }}>{fmt(h.amount, currency)}</div>
+                    </div>
+                  ))
+              )}
+            </div>
+          )}
+
+          {isCurrentViewMonth && expensesWithStatus.map((e) => {
             const daysLeft = daysUntilPayday(e.dueDay);
             const linkedCard = e.medioPago !== 'efectivo' ? cards.find((c) => c.id === e.medioPago) : null;
             const highlighted = e.isOverdue || e.id === nextDueId;
@@ -1120,6 +1201,8 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
 
           {gastosVariables.length > 0 && (
             <>
+          <MonthSwitcher label={viewMonthLabel} isCurrentMonth={isCurrentViewMonth} onPrev={goPrevViewMonth} onNext={goNextViewMonth} />
+
           <div style={cardStyle}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em', marginBottom: 12 }}>GASTADO POR MES</div>
               <div role="img" aria-label={variableMonthlyLabel} style={{ display: 'flex', alignItems: 'flex-end', gap: 8, height: 90 }}>
@@ -1142,14 +1225,14 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
             </div>
 
           <div style={cardStyle}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em' }}>GASTADO ESTE MES</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em' }}>GASTADO {viewMonthLabel.toUpperCase()}</div>
             <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', marginTop: 4, letterSpacing: '-0.02em' }}>{fmt(totalVariableMonth, currency)}</div>
           </div>
 
           <div style={cardStyle}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em' }}>
-                PRESUPUESTO POR CATEGORÍA (ESTE MES)
+                PRESUPUESTO POR CATEGORÍA ({viewMonthLabel.toUpperCase()})
               </div>
               <button
                 type="button"
@@ -1225,7 +1308,7 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
             return (
               <div style={cardStyle}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em', marginBottom: 14 }}>
-                  GASTO POR CATEGORÍA (ESTE MES)
+                  GASTO POR CATEGORÍA ({viewMonthLabel.toUpperCase()})
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'center' }}>
                   <div style={{ position: 'relative', width: 140, height: 140 }}>
@@ -1270,9 +1353,11 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
           })()}
 
           <div style={cardStyle}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em', marginBottom: 4 }}>ESTE MES</div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em', marginBottom: 4 }}>{viewMonthLabel.toUpperCase()}</div>
             {thisMonthVariables.length === 0 ? (
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', paddingTop: 8 }}>Sin gastos variables registrados este mes.</div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', paddingTop: 8 }}>
+                Sin gastos variables registrados {isCurrentViewMonth ? 'este mes' : `en ${viewMonthLabel.toLowerCase()}`}.
+              </div>
             ) : (
               thisMonthVariables.map((g) => (
                 <div key={g.id} style={{ padding: '11px 0', borderTop: '1px solid var(--divider)', background: 'var(--card-bg)' }}>
@@ -1428,8 +1513,10 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
 
       {section === 'todos' && (
         <>
+          <MonthSwitcher label={viewMonthLabel} isCurrentMonth={isCurrentViewMonth} onPrev={goPrevViewMonth} onNext={goNextViewMonth} />
+
           <div style={cardStyle}>
-            <div style={labelStyle}>TOTAL GASTADO ESTE MES</div>
+            <div style={labelStyle}>TOTAL GASTADO {viewMonthLabel.toUpperCase()}</div>
             <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', marginTop: 4, letterSpacing: '-0.02em' }}>
               {fmt(totalAllExpensesMonth, currency)}
             </div>
@@ -1441,9 +1528,11 @@ export default function Deudas({ data, setData, onViewDetail, onEditIncome }) {
           </div>
 
           <div style={cardStyle}>
-            <div style={labelStyle}>ESTE MES</div>
+            <div style={labelStyle}>{viewMonthLabel.toUpperCase()}</div>
             {allExpensesThisMonth.length === 0 ? (
-              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 8 }}>Sin gastos registrados este mes.</div>
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 8 }}>
+                Sin gastos registrados {isCurrentViewMonth ? 'este mes' : `en ${viewMonthLabel.toLowerCase()}`}.
+              </div>
             ) : (
               allExpensesThisMonth.map((item, idx) => (
                 <div key={`${item.kind}-${idx}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 0', borderTop: idx === 0 ? 'none' : '1px solid var(--divider)' }}>
