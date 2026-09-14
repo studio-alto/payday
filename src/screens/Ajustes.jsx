@@ -163,7 +163,13 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
     setData((s) => ({ ...s, user: { ...s.user, theme: s.user.theme === 'oscuro' ? 'light' : 'oscuro' } }));
   };
 
-  const shareBackup = () => shareBackupJson(data);
+  // Stamps the same `user.lastBackupAt` regardless of which method succeeded (local
+  // share/download here, or Drive below) — one shared "last backed up" answer, not
+  // two that could disagree. Read by the Inicio reminder (lib/backup.js).
+  const shareBackup = async () => {
+    await shareBackupJson(data);
+    setData((s) => ({ ...s, user: { ...s.user, lastBackupAt: new Date().toISOString() } }));
+  };
 
   const [excelStatus, setExcelStatus] = useState('idle');
   const exportExcel = async () => {
@@ -232,7 +238,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
       // Alongside the human-readable Excel: a machine-readable JSON backup, so
       // "Restaurar datos → Sincronizar con Google Drive" has something real to list.
       await backupJsonToDrive(accessToken, data);
-      setData((s) => ({ ...s, user: { ...s.user, lastDriveSyncAt: new Date().toISOString() } }));
+      setData((s) => ({ ...s, user: { ...s.user, lastBackupAt: new Date().toISOString() } }));
       setDriveStatus('uploaded');
     } catch (err) {
       setDriveError(err.message || 'Algo salió mal.');

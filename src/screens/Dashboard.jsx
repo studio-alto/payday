@@ -4,10 +4,12 @@ import { WEEKDAY_LETTERS, dayTypeLabel, daysInMonth, daysUntilPayday, formatShor
 import { cardStyle, labelStyle } from '../lib/styles';
 import { averageRecentIncome, getPendingConfirmations, effectiveIncomeMode } from '../lib/incomeStats';
 import { applyIncomeEffects } from '../lib/debt';
+import { shouldShowBackupReminder } from '../lib/backup';
 import FixedHeader from '../components/FixedHeader';
 import ProgressRing from '../components/ProgressRing';
 import SummaryIcon from '../components/SummaryIcon';
 import MonthComparisonCard from '../components/MonthComparisonCard';
+import BackupReminder from '../components/BackupReminder';
 
 // One color per "Resumen general" row — a small, fixed palette (not the Variables
 // donut's per-category one, which grows/cycles) used purely to make each account
@@ -298,6 +300,8 @@ export default function Dashboard({ data, setData, onNavigate }) {
           )}
         </div>
       )}
+
+      {shouldShowBackupReminder(data) && <BackupReminder data={data} setData={setData} onNavigate={onNavigate} />}
 
       {/* Ganado este mes */}
       <button

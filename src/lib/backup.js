@@ -1,4 +1,26 @@
-import { todayISO } from './dates';
+import { todayISO, daysSince } from './dates';
+
+const REMINDER_THRESHOLD_DAYS = 14;
+
+// Whether Inicio should nudge about backing up — only when there's real data worth
+// protecting (nothing registered yet means nothing to lose), and only once 14 days
+// have passed since whichever happened more recently: the last successful backup
+// (by any method — local share/download or Drive, both stamp the same
+// `user.lastBackupAt`) or the last time the reminder itself was dismissed. A single
+// shared field instead of separately-tracked "Drive status" — see the removed
+// BackupStatusCard, which broke exactly because its own status could disagree with
+// Ajustes → Datos.
+export function shouldShowBackupReminder(data, now = new Date()) {
+  const { incomes, goals, cards, expenses, gastosVariables } = data;
+  const hasData = incomes.length > 0 || goals.length > 0 || cards.length > 0 || expenses.length > 0 || (gastosVariables || []).length > 0;
+  if (!hasData) return false;
+
+  const { lastBackupAt, backupReminderDismissedAt } = data.user;
+  const candidates = [lastBackupAt, backupReminderDismissedAt].filter(Boolean);
+  if (candidates.length === 0) return true;
+  const mostRecent = candidates.reduce((a, b) => (new Date(a) > new Date(b) ? a : b));
+  return daysSince(mostRecent, now) >= REMINDER_THRESHOLD_DAYS;
+}
 
 // The one shape every export/restore path agrees on — used by the JSON download,
 // the share-sheet backup, and (via isValidBackup in Ajustes) what gets read back in.

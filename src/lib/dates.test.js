@@ -1,5 +1,22 @@
 import { describe, it, expect } from 'vitest';
-import { daysInMonth, remainingDaysInMonth, isSameMonth, daysUntilPayday, isWithinDays, isoOffset, monthsSince } from './dates';
+import { daysInMonth, remainingDaysInMonth, isSameMonth, daysUntilPayday, isWithinDays, isoOffset, monthsSince, daysSince } from './dates';
+
+describe('daysSince', () => {
+  it('counts whole days elapsed since a precise timestamp', () => {
+    const ref = new Date(2026, 8, 15, 10, 0);
+    expect(daysSince(new Date(2026, 8, 1, 10, 0).toISOString(), ref)).toBe(14);
+  });
+
+  it('rounds down instead of up for a partial day', () => {
+    const ref = new Date(2026, 8, 15, 9, 0);
+    expect(daysSince(new Date(2026, 8, 1, 10, 0).toISOString(), ref)).toBe(13);
+  });
+
+  it('is 0 for a timestamp from earlier today', () => {
+    const ref = new Date(2026, 8, 15, 18, 0);
+    expect(daysSince(new Date(2026, 8, 15, 8, 0).toISOString(), ref)).toBe(0);
+  });
+});
 
 describe('monthsSince', () => {
   it('is 0 for a start date less than a month ago', () => {

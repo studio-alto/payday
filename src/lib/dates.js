@@ -67,6 +67,12 @@ export function monthsSince(startDateStr, ref = new Date()) {
   return Math.max(0, months);
 }
 
+// Whole days elapsed since a precise ISO timestamp (not just a calendar date) —
+// used by the backup reminder, where `lastBackupAt` is a moment in time, not a day.
+export function daysSince(isoTimestamp, ref = new Date()) {
+  return Math.floor((ref - new Date(isoTimestamp)) / 86400000);
+}
+
 export function daysInMonth(date = new Date()) {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
 }
