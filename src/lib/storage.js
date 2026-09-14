@@ -14,6 +14,7 @@ function seedData() {
     cards: [],
     expenses: [],
     gastosVariables: [],
+    sueldosFijos: [],
   };
 }
 
@@ -66,6 +67,7 @@ function loadInitial() {
       cards: parsed.cards || [],
       expenses: parsed.expenses || [],
       gastosVariables: parsed.gastosVariables || [],
+      sueldosFijos: parsed.sueldosFijos || [],
     });
   } catch {
     // Corrupted JSON — preserve the raw string under a separate key before falling

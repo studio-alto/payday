@@ -7,7 +7,7 @@ import NumberInput from '../components/NumberInput';
 import DateField from '../components/DateField';
 import FixedHeader from '../components/FixedHeader';
 import { METHODS, computeDebtWaterfall, reverseIncomeEffects, applyIncomeEffects } from '../lib/debt';
-import { referenceIncome } from '../lib/incomeStats';
+import { referenceIncome, effectiveIncomeMode } from '../lib/incomeStats';
 
 const AHORRO_PCTS = [0, 0.1, 0.2, 0.3, 0.4, 0.5];
 const TARJETA_PCTS = [0, 0.1, 0.15, 0.2, 0.3, 0.4];
@@ -44,13 +44,18 @@ function formFromIncome(income) {
 
 export default function Registrar({ data, setData, onNavigate, editingIncome, onDoneEditing }) {
   const isEditing = !!editingIncome;
-  const incomeMode = data.user.incomeMode || 'variable';
+  // Automatically "fijo" once a sueldo fijo recurrente is configured (Ajustes →
+  // Finanzas) — see lib/incomeStats.js. The manual toggle below only matters for
+  // someone who hasn't set one up.
+  const incomeMode = effectiveIncomeMode(data);
   // A new income can only be earmarked for a goal still in use — an archived one
   // (see Metas.jsx) stays out of the default pick and the picker below.
   const activeGoals = data.goals.filter((g) => !g.archived);
   const [step, setStep] = useState(1);
   const [form, setForm] = useState(() =>
-    isEditing ? formFromIncome(editingIncome) : emptyForm(referenceIncome(data.incomes, incomeMode), activeGoals, incomeMode),
+    isEditing
+      ? formFromIncome(editingIncome)
+      : emptyForm(referenceIncome(data.incomes, incomeMode, data.sueldosFijos), activeGoals, incomeMode),
   );
   const [ahorroPctText, setAhorroPctText] = useState('');
   const [tarjetaPctText, setTarjetaPctText] = useState('');
@@ -162,6 +167,10 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
         note: form.note,
         estado: form.esFuturo ? 'proyectado' : 'confirmado',
         distribution: { ahorro: ahorroMonto, tarjeta: tarjetaMonto, goalId: form.goalId || null },
+        // Keeps this income tied to whichever sueldo fijo generated it (see
+        // lib/recurringIncome.js) — dropping it here would make the next app load
+        // think this cycle was never covered and generate a duplicate.
+        ...(isEditing && editingIncome.recurringId ? { recurringId: editingIncome.recurringId } : {}),
       };
 
       // Money not yet received shouldn't move into goals/debts yet — that happens once
@@ -189,8 +198,9 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
   // Gated on "no incomes yet" too, not just "incomeMode unset" — otherwise
   // everyone who was already using the app under the old implicit "variable"
   // default would suddenly get interrupted by this the next time they registered
-  // one, instead of only truly first-time people ever seeing it.
-  if (!isEditing && !data.user.incomeMode && data.incomes.length === 0) {
+  // one, instead of only truly first-time people ever seeing it. Also skipped once
+  // a sueldo fijo recurrente exists — that already answers the question.
+  if (!isEditing && !data.user.incomeMode && data.incomes.length === 0 && (data.sueldosFijos || []).length === 0) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16, paddingTop: 'var(--header-h, 110px)' }}>
         <FixedHeader>

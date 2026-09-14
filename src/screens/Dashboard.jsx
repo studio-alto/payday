@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { fmt } from '../lib/format';
 import { WEEKDAY_LETTERS, dayTypeLabel, daysInMonth, daysUntilPayday, formatShortDate, isSameMonth, last7Days, remainingDaysInMonth, todayISO } from '../lib/dates';
 import { cardStyle, labelStyle } from '../lib/styles';
-import { averageRecentIncome, getPendingConfirmations } from '../lib/incomeStats';
+import { averageRecentIncome, getPendingConfirmations, effectiveIncomeMode } from '../lib/incomeStats';
 import { applyIncomeEffects } from '../lib/debt';
 import FixedHeader from '../components/FixedHeader';
 import ProgressRing from '../components/ProgressRing';
@@ -95,7 +95,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
   // Projecting "avg daily x remaining days" only makes sense for variable/gig
   // income — a fixed monthly salary doesn't grow by more days passing, so the
   // month total is already whatever's been registered.
-  const projectionEligible = user.incomeMode !== 'fijo' && avgDailyIncome > 0;
+  const projectionEligible = effectiveIncomeMode(data) !== 'fijo' && avgDailyIncome > 0;
   // "What if I earn 30% less than average for the rest of the month" — only the
   // still-to-come days are uncertain, so the discount applies to them alone; what's
   // already been earned this month is a fact, not a guess, in either scenario.

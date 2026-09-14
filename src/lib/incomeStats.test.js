@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { averageRecentIncome, monthlyBreakdown, getPendingConfirmations, referenceIncome } from './incomeStats';
+import { averageRecentIncome, monthlyBreakdown, getPendingConfirmations, referenceIncome, effectiveIncomeMode } from './incomeStats';
 
 describe('getPendingConfirmations', () => {
   const confirmed = { id: 'c1', date: '2026-08-29', estado: 'confirmado' };
@@ -81,6 +81,25 @@ describe('referenceIncome', () => {
 
   it('returns 0 in fixed mode with no confirmed incomes', () => {
     expect(referenceIncome([], 'fijo')).toBe(0);
+  });
+
+  it('sums sueldos fijos instead of the last entry when a recurring template exists', () => {
+    // The most recent income here is a one-off extra (viáticos), not the salary —
+    // with a sueldo fijo configured, that shouldn't throw off the reference figure.
+    const sueldosFijos = [{ id: 'sf1', amount: 1500000 }, { id: 'sf2', amount: 500000 }];
+    expect(referenceIncome(incomes, 'fijo', sueldosFijos)).toBe(2000000);
+  });
+});
+
+describe('effectiveIncomeMode', () => {
+  it('falls back to the manual toggle with no sueldos fijos', () => {
+    expect(effectiveIncomeMode({ user: { incomeMode: 'variable' }, sueldosFijos: [] })).toBe('variable');
+    expect(effectiveIncomeMode({ user: { incomeMode: 'fijo' }, sueldosFijos: [] })).toBe('fijo');
+    expect(effectiveIncomeMode({ user: {}, sueldosFijos: [] })).toBe('variable');
+  });
+
+  it('is always fijo once at least one sueldo fijo is configured, regardless of the toggle', () => {
+    expect(effectiveIncomeMode({ user: { incomeMode: 'variable' }, sueldosFijos: [{ id: 'sf1', amount: 100 }] })).toBe('fijo');
   });
 });
 

@@ -25,15 +25,29 @@ export function averageRecentIncome(incomes, count = 10) {
 }
 
 // The reference income figure shown while registering/reviewing income — an
-// average of recent entries for variable/gig income, or the most recent
-// confirmed entry for a fixed monthly salary (averaging past months doesn't
-// make sense the same way, especially once the salary changes).
-export function referenceIncome(incomes, mode = 'variable') {
+// average of recent entries for variable/gig income, or the expected fixed salary
+// for a "fijo" earner. With one or more sueldos fijos configured (see
+// lib/recurringIncome.js), that's their combined amount — not just whatever income
+// was registered most recently, which could've been a one-off extra (horas extra,
+// viáticos) registered after the salary and would otherwise throw this off. Without
+// a sueldo fijo template (mode picked by hand, no recurring definition), falls back
+// to the last confirmed entry like before.
+export function referenceIncome(incomes, mode = 'variable', sueldosFijos = []) {
   if (mode === 'fijo') {
+    if (sueldosFijos.length > 0) return sueldosFijos.reduce((a, sf) => a + sf.amount, 0);
     const confirmed = [...incomes].filter((i) => i.estado !== 'proyectado').sort((a, b) => b.date.localeCompare(a.date));
     return confirmed[0]?.amount || 0;
   }
   return averageRecentIncome(incomes);
+}
+
+// Whether a person effectively behaves as "fijo" — either they configured a
+// sueldo fijo recurrente (Ajustes → Finanzas), which makes the manual toggle moot,
+// or they picked "Fijo" by hand with no template. Centralized here so Dashboard,
+// Registrar and Ajustes never disagree about which mode is actually in effect.
+export function effectiveIncomeMode(data) {
+  if ((data.sueldosFijos || []).length > 0) return 'fijo';
+  return data.user.incomeMode || 'variable';
 }
 
 // Per-month totals (ganado, ahorro, deudas) for a given year, January through December.

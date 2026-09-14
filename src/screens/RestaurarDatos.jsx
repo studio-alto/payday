@@ -30,6 +30,7 @@ function summaryLine(s) {
     `${s.cards} ${s.cards === 1 ? 'deuda' : 'deudas'}`,
     `${s.expenses} ${s.expenses === 1 ? 'gasto fijo' : 'gastos fijos'}`,
     `${s.gastosVariables} ${s.gastosVariables === 1 ? 'gasto variable' : 'gastos variables'}`,
+    `${s.sueldosFijos} ${s.sueldosFijos === 1 ? 'sueldo fijo' : 'sueldos fijos'}`,
   ].join(', ');
 }
 
@@ -130,7 +131,7 @@ export default function RestaurarDatos({ data, setData, onNavigate }) {
   // --- 3. Borrar todo ---
   const [wipeStep, setWipeStep] = useState(0);
   const wipeAll = () => {
-    setData((s) => ({ ...s, incomes: [], goals: [], cards: [], expenses: [], gastosVariables: [] }));
+    setData((s) => ({ ...s, incomes: [], goals: [], cards: [], expenses: [], gastosVariables: [], sueldosFijos: [] }));
     setWipeStep(0);
     setToast('✓ Listo, borraste todos tus datos. Empiezas de cero.');
   };

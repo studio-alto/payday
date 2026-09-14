@@ -10,6 +10,7 @@ export function buildBackupPayload(data) {
     cards: data.cards,
     expenses: data.expenses,
     gastosVariables: data.gastosVariables,
+    sueldosFijos: data.sueldosFijos,
     exportedAt: todayISO(),
   };
 }
@@ -60,7 +61,7 @@ export async function shareBackupJson(data) {
 // Shared by every restore entry point: file import, pasted text, and a Drive backup.
 export function isValidBackup(parsed) {
   if (!parsed || typeof parsed !== 'object') return false;
-  for (const key of ['incomes', 'goals', 'cards', 'expenses', 'gastosVariables']) {
+  for (const key of ['incomes', 'goals', 'cards', 'expenses', 'gastosVariables', 'sueldosFijos']) {
     if (parsed[key] !== undefined && !Array.isArray(parsed[key])) return false;
   }
   if (Array.isArray(parsed.incomes)) {
@@ -83,6 +84,11 @@ export function isValidBackup(parsed) {
       if (typeof e.amount !== 'number' || !Array.isArray(e.history)) return false;
     }
   }
+  if (Array.isArray(parsed.sueldosFijos)) {
+    for (const sf of parsed.sueldosFijos) {
+      if (typeof sf.amount !== 'number' || typeof sf.payDayOfMonth !== 'number') return false;
+    }
+  }
   return true;
 }
 
@@ -95,6 +101,7 @@ export function summarizeBackup(parsed) {
     cards: parsed.cards?.length || 0,
     expenses: parsed.expenses?.length || 0,
     gastosVariables: parsed.gastosVariables?.length || 0,
+    sueldosFijos: parsed.sueldosFijos?.length || 0,
   };
 }
 
@@ -112,5 +119,6 @@ export function applyRestoredBackup(parsed, currentUser) {
     cards: parsed.cards || [],
     expenses: parsed.expenses || [],
     gastosVariables: parsed.gastosVariables || [],
+    sueldosFijos: parsed.sueldosFijos || [],
   };
 }

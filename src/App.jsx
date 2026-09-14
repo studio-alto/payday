@@ -5,6 +5,7 @@ import { setExchangeRates } from './lib/format';
 import { fetchLiveExchangeRates } from './lib/exchangeRates';
 import { todayISO } from './lib/dates';
 import { computeMonthlyRecap, monthKey, previousMonth } from './lib/monthlyRecap';
+import { ensureRecurringIncomes } from './lib/recurringIncome';
 import Splash from './components/Splash';
 import Welcome from './components/Welcome';
 import AppLock from './components/AppLock';
@@ -151,6 +152,16 @@ export default function App() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data.user.onboarded]);
+
+  // Makes sure every sueldo fijo (Ajustes → Finanzas) has a pending income for its
+  // current pay cycle — see lib/recurringIncome.js. Re-runs whenever the list of
+  // sueldos fijos itself changes (adding/editing/deleting one in Ajustes), and once
+  // on mount; ensureRecurringIncomes returns the same `data` reference when there's
+  // nothing to add, so this never loops or re-renders needlessly.
+  useEffect(() => {
+    setData((s) => ensureRecurringIncomes(s));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [data.sueldosFijos]);
 
   const finishOnboarding = () => {
     setData((s) => ({ ...s, user: { ...s.user, onboarded: true } }));

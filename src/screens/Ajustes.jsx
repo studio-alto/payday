@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { todayISO, formatFullDate } from '../lib/dates';
-import { referenceIncome } from '../lib/incomeStats';
+import { referenceIncome, effectiveIncomeMode } from '../lib/incomeStats';
 import { fetchLiveExchangeRates } from '../lib/exchangeRates';
 import { fmt } from '../lib/format';
+import { uid } from '../lib/id';
 import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import { hashPin } from '../lib/pin';
 import { googleConfigured, hasValidToken, hasConnectedBefore, consumeRedirectResult, getAccessToken, connectGoogle, disconnectGoogle } from '../lib/googleAuth';
@@ -12,7 +13,15 @@ import { syncFinancialEventsToCalendar } from '../lib/googleCalendar';
 import NumberInput from '../components/NumberInput';
 import FixedHeader from '../components/FixedHeader';
 import BottomSheet from '../components/BottomSheet';
+import InlineConfirm from '../components/InlineConfirm';
 import PinPad from '../components/PinPad';
+
+const AHORRO_PCTS = [0, 10, 20, 30, 40, 50];
+const TARJETA_PCTS = [0, 10, 15, 20, 30, 40];
+
+function emptySueldoForm(defaultGoalId) {
+  return { name: '', amount: '', payDayOfMonth: '1', ahorroPct: '0', tarjetaPct: '0', goalId: defaultGoalId || '' };
+}
 
 export default function Ajustes({ data, setData, canInstall, isInstalled, onInstall, onNavigate }) {
   const { user } = data;
@@ -26,10 +35,69 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
     return pending || 'general';
   });
   const budgetTotal = (user.budgetNecesidades ?? 50) + (user.budgetDeseos ?? 30) + (user.budgetAhorro ?? 20);
-  const incomeMode = user.incomeMode || 'variable';
+  const sueldosFijos = data.sueldosFijos || [];
+  // Automatically "fijo" once at least one sueldo fijo recurrente exists — the
+  // manual toggle below only matters for someone who hasn't configured one.
+  const incomeMode = effectiveIncomeMode(data);
   const setIncomeMode = (mode) => setData((s) => ({ ...s, user: { ...s.user, incomeMode: mode } }));
-  const avgRecentIncome = referenceIncome(data.incomes, incomeMode);
+  const avgRecentIncome = referenceIncome(data.incomes, incomeMode, sueldosFijos);
   const [ratesStatus, setRatesStatus] = useState('idle');
+
+  const activeGoals = data.goals.filter((g) => !g.archived);
+  const [sueldoModalOpen, setSueldoModalOpen] = useState(false);
+  const [editingSueldoId, setEditingSueldoId] = useState(null);
+  const [sueldoForm, setSueldoForm] = useState(emptySueldoForm());
+  const [confirmDeleteSueldoId, setConfirmDeleteSueldoId] = useState(null);
+
+  const openNewSueldoModal = () => {
+    setEditingSueldoId(null);
+    setSueldoForm(emptySueldoForm(activeGoals[0]?.id));
+    setSueldoModalOpen(true);
+  };
+  const openEditSueldoModal = (sf) => {
+    setEditingSueldoId(sf.id);
+    setSueldoForm({
+      name: sf.name,
+      amount: String(sf.amount),
+      payDayOfMonth: String(sf.payDayOfMonth),
+      ahorroPct: String(sf.ahorroPct || 0),
+      tarjetaPct: String(sf.tarjetaPct || 0),
+      goalId: sf.goalId || '',
+    });
+    setSueldoModalOpen(true);
+  };
+  const closeSueldoModal = () => setSueldoModalOpen(false);
+  const setSueldoField = (key) => (e) => setSueldoForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const saveSueldo = () => {
+    if (!sueldoForm.name || !sueldoForm.amount) return;
+    const payDayOfMonth = Math.min(31, Math.max(1, Number(sueldoForm.payDayOfMonth) || 1));
+    const entry = {
+      name: sueldoForm.name,
+      amount: Number(sueldoForm.amount),
+      payDayOfMonth,
+      ahorroPct: Math.min(100, Number(sueldoForm.ahorroPct) || 0),
+      tarjetaPct: Math.min(100, Number(sueldoForm.tarjetaPct) || 0),
+      goalId: sueldoForm.goalId || null,
+    };
+    setData((s) => ({
+      ...s,
+      sueldosFijos: editingSueldoId
+        ? (s.sueldosFijos || []).map((sf) => (sf.id === editingSueldoId ? { ...sf, ...entry } : sf))
+        : [...(s.sueldosFijos || []), { id: uid(), ...entry }],
+    }));
+    setSueldoModalOpen(false);
+  };
+
+  const askDeleteSueldo = (id) => setConfirmDeleteSueldoId(id);
+  const cancelDeleteSueldo = () => setConfirmDeleteSueldoId(null);
+  // Only removes the recurring definition — any income it already generated stays
+  // in the ledger untouched (same "don't erase history" reasoning as archiving a
+  // gasto fijo or una deuda; see Deudas.jsx/Metas.jsx).
+  const confirmDeleteSueldo = (id) => {
+    setData((s) => ({ ...s, sueldosFijos: (s.sueldosFijos || []).filter((sf) => sf.id !== id) }));
+    setConfirmDeleteSueldoId(null);
+  };
 
   const [pinFlow, setPinFlow] = useState(null);
   const [pinResetSignal, setPinResetSignal] = useState(0);
@@ -316,49 +384,58 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
       <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div>
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>TIPO DE INGRESO</div>
-          <div style={{ display: 'flex', gap: 8 }}>
-            <button
-              type="button"
-              onClick={() => setIncomeMode('variable')}
-              style={{
-                flex: 1,
-                padding: '9px 0',
-                borderRadius: 14,
-                textAlign: 'center',
-                fontWeight: 700,
-                fontSize: 13,
-                cursor: 'pointer',
-                background: incomeMode === 'variable' ? 'var(--text)' : 'var(--input-bg)',
-                color: incomeMode === 'variable' ? 'var(--page-bg)' : 'var(--text)',
-                border: 'none',
-              }}
-            >
-              Variable (día a día)
-            </button>
-            <button
-              type="button"
-              onClick={() => setIncomeMode('fijo')}
-              style={{
-                flex: 1,
-                padding: '9px 0',
-                borderRadius: 14,
-                textAlign: 'center',
-                fontWeight: 700,
-                fontSize: 13,
-                cursor: 'pointer',
-                background: incomeMode === 'fijo' ? 'var(--text)' : 'var(--input-bg)',
-                color: incomeMode === 'fijo' ? 'var(--page-bg)' : 'var(--text)',
-                border: 'none',
-              }}
-            >
-              Fijo (mensual)
-            </button>
-          </div>
-          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
-            {incomeMode === 'fijo'
-              ? 'Para cuando recibes un sueldo fijo una vez al mes, en vez de ingresos variables día a día.'
-              : 'Para pagos que varían: turnos, domingos, festivos, etc.'}
-          </div>
+          {sueldosFijos.length > 0 ? (
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+              <b style={{ color: 'var(--text)' }}>Fijo</b> — automático, porque tienes {sueldosFijos.length === 1 ? 'un sueldo fijo configurado' : `${sueldosFijos.length} sueldos fijos configurados`} abajo. Elimínalos todos para volver al modo manual.
+            </div>
+          ) : (
+            <>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => setIncomeMode('variable')}
+                  style={{
+                    flex: 1,
+                    padding: '9px 0',
+                    borderRadius: 14,
+                    textAlign: 'center',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    cursor: 'pointer',
+                    background: incomeMode === 'variable' ? 'var(--text)' : 'var(--input-bg)',
+                    color: incomeMode === 'variable' ? 'var(--page-bg)' : 'var(--text)',
+                    border: 'none',
+                  }}
+                >
+                  Variable (día a día)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIncomeMode('fijo')}
+                  style={{
+                    flex: 1,
+                    padding: '9px 0',
+                    borderRadius: 14,
+                    textAlign: 'center',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    cursor: 'pointer',
+                    background: incomeMode === 'fijo' ? 'var(--text)' : 'var(--input-bg)',
+                    color: incomeMode === 'fijo' ? 'var(--page-bg)' : 'var(--text)',
+                    border: 'none',
+                  }}
+                >
+                  Fijo (mensual)
+                </button>
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
+                {incomeMode === 'fijo'
+                  ? 'Para cuando recibes un sueldo fijo una vez al mes, en vez de ingresos variables día a día.'
+                  : 'Para pagos que varían: turnos, domingos, festivos, etc.'} Si tu sueldo es siempre el mismo monto,
+                configúralo abajo como sueldo fijo en vez de registrarlo cada mes a mano.
+              </div>
+            </>
+          )}
         </div>
         <div>
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>
@@ -369,11 +446,70 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
           </div>
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4 }}>
             {incomeMode === 'fijo'
-              ? 'Es el último ingreso que registraste. Se actualiza solo cuando registras el del mes siguiente.'
+              ? sueldosFijos.length > 0
+                ? 'Es la suma de tus sueldos fijos configurados abajo.'
+                : 'Es el último ingreso que registraste. Se actualiza solo cuando registras el del mes siguiente.'
               : 'Se calcula solo, del promedio de tus últimos 10 ingresos. No lo escribes tú, porque tu pago varía día a día.'}{' '}
             Se usa para sugerir el monto al registrar y para proyectar tu mes en el Dashboard.
           </div>
         </div>
+        <div style={{ height: 1, background: 'var(--divider)', margin: '4px 0' }} />
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.03em' }}>SUELDO FIJO</div>
+          <button
+            type="button"
+            onClick={openNewSueldoModal}
+            style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer', border: 'none', background: 'none', padding: 0 }}
+          >
+            + Agregar
+          </button>
+        </div>
+        {sueldosFijos.length === 0 ? (
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+            Si recibes siempre el mismo monto cada mes, configúralo aquí una vez — la app te lo va a poner listo para
+            confirmar cerca del día de pago, en vez de que lo registres a mano cada vez.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {sueldosFijos.map((sf) => (
+              <div key={sf.id} style={{ background: 'var(--input-bg)', borderRadius: 14, padding: 12 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)' }}>{sf.name}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                      {fmt(sf.amount, user.currency)} · día {sf.payDayOfMonth}
+                      {(sf.ahorroPct > 0 || sf.tarjetaPct > 0) && ` · ${sf.ahorroPct || 0}% ahorro, ${sf.tarjetaPct || 0}% deudas`}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
+                    <button
+                      type="button"
+                      onClick={() => openEditSueldoModal(sf)}
+                      style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer', border: 'none', background: 'none', padding: 0 }}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => askDeleteSueldo(sf.id)}
+                      style={{ fontSize: 11, fontWeight: 700, color: 'var(--danger-text)', cursor: 'pointer', border: 'none', background: 'none', padding: 0 }}
+                    >
+                      Eliminar
+                    </button>
+                  </div>
+                </div>
+                {confirmDeleteSueldoId === sf.id && (
+                  <InlineConfirm
+                    message={`¿Eliminar "${sf.name}"? Los ingresos que ya generó se quedan en tu historial.`}
+                    onConfirm={() => confirmDeleteSueldo(sf.id)}
+                    onCancel={cancelDeleteSueldo}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+        <div style={{ height: 1, background: 'var(--divider)', margin: '4px 0' }} />
         <div>
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>MONEDA</div>
           <select value={user.currency} onChange={setUserField('currency')} style={{ ...textInputStyle(), padding: 12, borderRadius: 12 }}>
@@ -477,6 +613,115 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
         </div>
       </div>
       </>
+      )}
+
+      {sueldoModalOpen && (
+        <BottomSheet onClose={closeSueldoModal}>
+          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{editingSueldoId ? 'Editar sueldo fijo' : 'Nuevo sueldo fijo'}</div>
+          <input
+            type="text"
+            value={sueldoForm.name}
+            onChange={setSueldoField('name')}
+            placeholder="Nombre (ej: Sueldo empresa X)"
+            style={textInputStyle()}
+          />
+          <NumberInput value={sueldoForm.amount} onChange={setSueldoField('amount')} placeholder="Monto mensual" style={textInputStyle()} />
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 700 }}>DÍA DE PAGO DEL MES</div>
+            <NumberInput
+              value={sueldoForm.payDayOfMonth}
+              onChange={(e) => setSueldoForm((f) => ({ ...f, payDayOfMonth: e.target.value }))}
+              style={textInputStyle()}
+            />
+          </div>
+
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 700 }}>% A AHORRO (OPCIONAL)</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {AHORRO_PCTS.map((pct) => (
+                <button
+                  key={pct}
+                  type="button"
+                  onClick={() => setSueldoForm((f) => ({ ...f, ahorroPct: String(pct) }))}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: 20,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    border: 'none',
+                    background: String(pct) === sueldoForm.ahorroPct ? 'var(--text)' : 'var(--input-bg)',
+                    color: String(pct) === sueldoForm.ahorroPct ? 'var(--page-bg)' : 'var(--text)',
+                  }}
+                >
+                  {pct}%
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {activeGoals.length > 0 && Number(sueldoForm.ahorroPct) > 0 && (
+            <div>
+              <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 700 }}>¿A QUÉ META VA ESE AHORRO?</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {activeGoals.map((g) => (
+                  <button
+                    key={g.id}
+                    type="button"
+                    onClick={() => setSueldoForm((f) => ({ ...f, goalId: g.id }))}
+                    style={{
+                      padding: '8px 14px',
+                      borderRadius: 20,
+                      fontSize: 12,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      border: 'none',
+                      background: sueldoForm.goalId === g.id ? 'var(--text)' : 'var(--input-bg)',
+                      color: sueldoForm.goalId === g.id ? 'var(--page-bg)' : 'var(--text)',
+                    }}
+                  >
+                    {g.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div>
+            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 700 }}>% A DEUDAS (OPCIONAL)</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              {TARJETA_PCTS.map((pct) => (
+                <button
+                  key={pct}
+                  type="button"
+                  onClick={() => setSueldoForm((f) => ({ ...f, tarjetaPct: String(pct) }))}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: 20,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    border: 'none',
+                    background: String(pct) === sueldoForm.tarjetaPct ? 'var(--text)' : 'var(--input-bg)',
+                    color: String(pct) === sueldoForm.tarjetaPct ? 'var(--page-bg)' : 'var(--text)',
+                  }}
+                >
+                  {pct}%
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+            Cada vez que se acerque el día de pago, te va a aparecer en Inicio para que confirmes con un toque que ya
+            te llegó — con este reparto ya listo, sin pasar por el formulario completo. Si un mes el monto cambia,
+            puedes editar ese ingreso antes de confirmarlo.
+          </div>
+
+          <button type="button" onClick={saveSueldo} style={{ height: 50, borderRadius: 25, background: 'var(--accent)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, cursor: 'pointer', border: 'none' }}>
+            Guardar
+          </button>
+        </BottomSheet>
       )}
 
       {section === 'seguridad' && (
