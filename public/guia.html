@@ -1,0 +1,353 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Guía de uso de Payday</title>
+<style>
+  :root {
+    --bg: #f5f5f6;
+    --card-bg: #ffffff;
+    --text: #111111;
+    --text-secondary: #6b7280;
+    --divider: #ececec;
+    --accent: #ff5a36;
+    --accent-text: #c1391c;
+    --accent-soft: #fdece6;
+    --blue: #476bff;
+    --blue-soft: #eaefff;
+    --green: #00c45b;
+    --green-soft: #e6f9ee;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141414;
+      --card-bg: #1f1f20;
+      --text: #f5f5f5;
+      --text-secondary: #9ca3af;
+      --divider: #2c2c2e;
+      --accent-text: #ff5a36;
+      --accent-soft: #2b1c16;
+      --blue-soft: #1a2036;
+      --green-soft: #14261c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141414;
+    --card-bg: #1f1f20;
+    --text: #f5f5f5;
+    --text-secondary: #9ca3af;
+    --divider: #2c2c2e;
+    --accent-text: #ff5a36;
+    --accent-soft: #2b1c16;
+    --blue-soft: #1a2036;
+    --green-soft: #14261c;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); margin: 0; padding: 0; }
+  ::selection { background: var(--accent); color: white; }
+
+  .wrap { max-width: 760px; margin: 0 auto; padding: 48px 20px 80px; display: flex; flex-direction: column; gap: 14px; }
+
+  header.top { display: flex; flex-direction: column; gap: 10px; margin-bottom: 6px; }
+  .wordmark { font-weight: 900; font-size: 28px; letter-spacing: -0.02em; color: var(--text); }
+  .wordmark span { color: var(--accent); }
+  h1 { font-weight: 900; font-size: clamp(28px, 5vw, 38px); letter-spacing: -0.02em; text-wrap: balance; margin: 4px 0 0; }
+  .meta { font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-secondary); }
+
+  .callout { background: var(--accent-soft); border-radius: 20px; padding: 20px 22px; font-size: 15px; line-height: 1.6; color: var(--text); }
+  .callout b { color: var(--accent-text); }
+
+  nav.toc { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 0 8px; }
+  nav.toc a {
+    font-size: 12px; font-weight: 700; color: var(--text); background: var(--card-bg);
+    border: 1px solid var(--divider); padding: 8px 14px; border-radius: 20px; text-decoration: none; white-space: nowrap;
+  }
+  nav.toc a:hover { border-color: var(--accent); color: var(--accent-text); }
+  nav.toc a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  section.card { background: var(--card-bg); border-radius: 24px; padding: 26px 26px 28px; scroll-margin-top: 20px; }
+  section.card h2 { font-weight: 800; font-size: 20px; letter-spacing: -0.01em; margin: 0 0 4px; display: flex; align-items: baseline; gap: 10px; }
+  section.card h2 .n { font-size: 12px; font-weight: 700; color: var(--text-secondary); letter-spacing: 0.04em; }
+  section.card > .lede { font-size: 13px; color: var(--text-secondary); margin: 0 0 16px; }
+  section.card p, section.card li { font-size: 15px; line-height: 1.7; color: var(--text); max-width: 64ch; }
+  section.card p + p { margin-top: 10px; }
+  section.card strong { font-weight: 700; }
+
+  .item {
+    display: flex; flex-direction: column; gap: 4px;
+    padding: 14px 0; border-top: 1px solid var(--divider);
+  }
+  .item:first-of-type { border-top: none; padding-top: 0; }
+  .item .name { font-weight: 700; font-size: 14px; color: var(--text); }
+  .item .desc { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+
+  .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 4px; }
+  .pill { font-size: 11px; font-weight: 700; padding: 5px 11px; border-radius: 20px; letter-spacing: 0.01em; }
+  .pill.orange { background: var(--accent-soft); color: var(--accent-text); }
+  .pill.blue { background: var(--blue-soft); color: var(--blue); }
+  .pill.green { background: var(--green-soft); color: var(--green); }
+  .pill.gray { background: var(--divider); color: var(--text-secondary); }
+
+  .steps { display: flex; flex-direction: column; gap: 12px; margin-top: 14px; counter-reset: step; }
+  .step { display: grid; grid-template-columns: 28px 1fr; gap: 12px; }
+  .step .num {
+    counter-increment: step; width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent); color: white; font-weight: 800; font-size: 12px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .step .num::before { content: counter(step); }
+  .step .body { font-size: 14px; line-height: 1.6; color: var(--text); padding-top: 2px; }
+  .step .body b { display: block; font-weight: 700; margin-bottom: 2px; }
+
+  .backup-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+  .backup-col h3 { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-secondary); margin: 0 0 10px; }
+
+  .warn { background: var(--accent-soft); border-radius: 16px; padding: 16px 18px; margin-top: 16px; }
+  .warn p { color: var(--text); font-size: 14px; }
+  .warn b { color: var(--accent-text); }
+
+  .divider-line { height: 1px; background: var(--divider); margin: 4px 0; }
+
+  footer.contact { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; padding: 10px 4px 0; }
+  footer.contact a { color: var(--accent-text); font-weight: 700; text-decoration: none; }
+  footer.contact a:hover { text-decoration: underline; }
+  footer.contact .fine { font-size: 12px; color: var(--text-secondary); }
+
+  @media (max-width: 560px) {
+    .wrap { padding: 32px 16px 64px; }
+    section.card { padding: 22px 18px 24px; }
+    .backup-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="wordmark">Pay<span>day</span></div>
+    <h1>Guía de uso</h1>
+    <div class="meta">Qué hace cada pantalla, botón y ajuste</div>
+  </header>
+
+  <div class="callout">
+    <b>Para qué sirve esta guía:</b> Payday no tiene tutoriales emergentes ni tips que interrumpan — así que aquí está todo explicado en un solo lugar. Búscalo cuando lo necesites: qué significa cada tarjeta del Inicio, cómo se reparte un ingreso, o cómo respaldar tus datos antes de cambiar de celular.
+  </div>
+
+  <nav class="toc" aria-label="Contenido">
+    <a href="#primeros-pasos">Primeros pasos</a>
+    <a href="#inicio">Inicio</a>
+    <a href="#registrar">Registrar</a>
+    <a href="#metas">Metas</a>
+    <a href="#gastos">Gastos</a>
+    <a href="#ingresos">Ingresos</a>
+    <a href="#ajustes">Ajustes</a>
+    <a href="#respaldo">Respaldar y restaurar</a>
+  </nav>
+
+  <section class="card" id="primeros-pasos">
+    <h2><span class="n">01</span> Primeros pasos</h2>
+    <div class="item">
+      <div class="name">Pantalla de bienvenida</div>
+      <div class="desc">La primera vez que abres Payday, todo empieza en cero — sin datos de ejemplo que borrar.</div>
+    </div>
+    <div class="item">
+      <div class="name">Variable o fijo</div>
+      <div class="desc">Al registrar tu primer ingreso, Payday pregunta una sola vez si tu ingreso es <strong>Variable</strong> (día a día — turnos, domingos, festivos) o <strong>Fijo</strong> (un sueldo mensual). Esto ajusta cómo se calculan tus promedios y proyecciones en toda la app. Se puede cambiar cuando quieras desde Ajustes → Finanzas, o se vuelve automático en cuanto configuras un sueldo fijo (ver sección 07).</div>
+    </div>
+  </section>
+
+  <section class="card" id="inicio">
+    <h2><span class="n">02</span> Inicio</h2>
+    <div class="lede">La pantalla principal — un vistazo completo a tu mes.</div>
+
+    <div class="item">
+      <div class="name">Franja de días</div>
+      <div class="desc">Los 7 días más recientes. El círculo se rellena si registraste un ingreso ese día; el de hoy siempre se ve resaltado.</div>
+    </div>
+    <div class="item">
+      <div class="name">Recordatorio de respaldo</div>
+      <div class="desc">Si pasan 14 días sin que hagas un respaldo (o nunca has hecho uno), aparece un aviso arriba invitándote a respaldar tus datos — se puede cerrar con la "×" si no es el momento.</div>
+    </div>
+    <div class="item">
+      <div class="name">"Para estar pendiente"</div>
+      <div class="desc">Aparece solo cuando hay algo por vencer pronto — un gasto fijo o el pago de una deuda.</div>
+    </div>
+    <div class="item">
+      <div class="name">Ingresos por confirmar</div>
+      <div class="desc">Si registraste un ingreso como "futuro" (o tienes un sueldo fijo configurado) y ya llegó o pasó su fecha, aparece aquí para que confirmes que sí lo recibiste — solo entonces se aplica de verdad a tus metas y deudas.</div>
+    </div>
+    <div class="item">
+      <div class="name">Ganado este mes</div>
+      <div class="desc">Total del mes en curso, con las barras de los últimos 7 días al lado. Tócala para ir directo a Ingresos.</div>
+    </div>
+    <div class="item">
+      <div class="name">Meta de ingreso mensual</div>
+      <div class="desc">Solo aparece si configuraste una meta de cuánto quieres ganar al mes (Ajustes → Finanzas). Muestra tu progreso del mes contra esa meta.</div>
+    </div>
+    <div class="item">
+      <div class="name">Proyección del mes / Próximo pago</div>
+      <div class="desc">Una proyección de a cuánto vas a llegar este mes según tu ritmo de ingresos, y en cuántos días es tu próximo día de pago (si tienes un ingreso fijo).</div>
+    </div>
+    <div class="item">
+      <div class="name">Próximos a recibir</div>
+      <div class="desc">Suma de tus ingresos marcados como "futuros" que todavía no confirmas. La misma cifra también aparece arriba en Ingresos, sin importar qué filtro de tiempo tengas elegido ahí.</div>
+    </div>
+    <div class="item">
+      <div class="name">Meta principal</div>
+      <div class="desc">La rosca de color muestra tu meta de ahorro más próxima a completarse (la que tiene el color que tú le diste al crearla).</div>
+    </div>
+    <div class="item">
+      <div class="name">Ahorro / Deudas / Gastos fijos / Disponible</div>
+      <div class="desc">Totales rápidos de cada cuenta — cada uno te lleva a su pantalla correspondiente al tocarlo.</div>
+    </div>
+    <div class="item">
+      <div class="name">Comparación con el mes pasado</div>
+      <div class="desc">Compara lo que llevas ganado y gastado en lo que va del mes contra los mismos primeros días del mes anterior — para que la comparación sea justa mientras el mes actual todavía no termina.</div>
+    </div>
+    <div class="item">
+      <div class="name">Resumen general</div>
+      <div class="desc">Al fondo del Inicio: las mismas cuentas (Ahorro, Deudas, Gastos fijos, Gastos variables, Disponible) en tarjetas con color, para verlas todas juntas de un vistazo.</div>
+    </div>
+  </section>
+
+  <section class="card" id="registrar">
+    <h2><span class="n">03</span> Registrar</h2>
+    <div class="lede">El flujo de 4 pasos para anotar un ingreso nuevo.</div>
+    <div class="steps">
+      <div class="step"><div class="num"></div><div class="body"><b>¿Cuánto ganaste?</b>Monto, nombre, fecha, tipo de día (normal, fin de semana, festivo…) y si es un ingreso que aún no recibes (actívalo y la fecha puede ser futura).</div></div>
+      <div class="step"><div class="num"></div><div class="body"><b>¿Cuánto al ahorro?</b>Elige un porcentaje o un monto. Si tienes más de una meta, escoges a cuál va — o dejarlo "Sin meta" para reclamarlo después (ver sección 04).</div></div>
+      <div class="step"><div class="num"></div><div class="body"><b>¿Cuánto a deudas?</b>Payday reparte ese monto automáticamente entre tus deudas según el método que elegiste (bola de nieve o avalancha) en la pantalla de Gastos.</div></div>
+      <div class="step"><div class="num"></div><div class="body"><b>Resumen</b>Revisa lo que queda disponible para gastar y guarda.</div></div>
+    </div>
+    <p style="margin-top: 16px;">Para editar o eliminar un ingreso que ya guardaste: ve a Ingresos, toca los <strong>tres puntos</strong> junto a ese ingreso.</p>
+  </section>
+
+  <section class="card" id="metas">
+    <h2><span class="n">04</span> Metas</h2>
+    <div class="item">
+      <div class="name">Crear una meta</div>
+      <div class="desc">Nombre, monto objetivo, monto actual (si ya tenías algo ahorrado), fecha opcional, y un color para identificarla en toda la app.</div>
+    </div>
+    <div class="item">
+      <div class="name">+ Agregar</div>
+      <div class="desc">Suma dinero a la meta directamente, sin pasar por un ingreso nuevo — útil si ya lo ahorraste por fuera de la app.</div>
+    </div>
+    <div class="item">
+      <div class="name">Ver detalle</div>
+      <div class="desc">Lo que te falta, cuánto ahorrar por día/semana/mes si le pusiste fecha (o la estimación automática si no le pusiste), el simulador de ritmo de aportes, y la lista de cada aporte registrado — editable o eliminable.</div>
+    </div>
+    <div class="item">
+      <div class="name">Los tres puntos de la meta</div>
+      <div class="desc">Editar o eliminar la meta completa.</div>
+    </div>
+    <div class="item">
+      <div class="name">Ahorro sin meta</div>
+      <div class="desc">Si al registrar un ingreso elegiste "Sin meta" para su ahorro (o eliminaste la meta a la que iba), ese dinero sigue contando en tu ahorro total del Inicio, pero queda aparte hasta que lo asignes. Arriba de tus metas verás una tarjeta "Ahorro sin meta" con el total — toca "Ver ingresos" para ver cada ingreso que lo compone (fecha, monto, de dónde viene) y "Editar ingreso" para corregir cualquiera. También puedes tocar una de tus metas debajo para asignarle todo ese monto de una vez.</div>
+    </div>
+    <p style="margin-top: 4px;">Un aporte que vino de un ingreso (dice "Desde un ingreso") no se edita ahí mismo — el botón <strong>"Editar ingreso"</strong> te lleva directo a ese ingreso, porque cambiarlo ahí es lo que mantiene todo cuadrado.</p>
+  </section>
+
+  <section class="card" id="gastos">
+    <h2><span class="n">05</span> Gastos</h2>
+    <div class="lede">Cuatro pestañas: Deudas, Gastos fijos, Variables, Todos.</div>
+    <div class="pill-row">
+      <span class="pill orange">Deudas</span><span class="pill blue">Gastos fijos</span><span class="pill green">Variables</span><span class="pill gray">Todos</span>
+    </div>
+    <div class="item">
+      <div class="name">Deudas</div>
+      <div class="desc">Elige el método para salir de deudas (bola de nieve prioriza el saldo más pequeño; avalancha prioriza la tasa de interés más alta), agrega un abono extra mensual para ver cuánto tiempo te ahorras, y edita la cuota mensual de cada una cuando cambie. "Ver detalle" te deja ingresar a mano cuánto te cuesta esa deuda en intereses este mes (según tu extracto real, no un cálculo automático) y tiene además un simulador de pago con distintos escenarios.</div>
+    </div>
+    <div class="item">
+      <div class="name">Gastos fijos</div>
+      <div class="desc">Tus gastos que se repiten cada mes (arriendo, suscripciones). "Marcar como pagado" lo registra ese mes; se puede deshacer si te equivocas. Puedes navegar meses anteriores para ver qué pagaste.</div>
+    </div>
+    <div class="item">
+      <div class="name">Variables</div>
+      <div class="desc">Elige qué categorías quieres seguir (Mercado, Transporte, etc. — o crea las tuyas), ponles un presupuesto opcional, y registra cada gasto suelto. La rosca de colores muestra en qué se te fue la plata este mes. También navegable por mes.</div>
+    </div>
+    <div class="item">
+      <div class="name">Todos</div>
+      <div class="desc">Une los gastos fijos que ya pagaste este mes y tus gastos variables en una sola lista ordenada por fecha, con el total combinado — para ver de un vistazo todo lo que salió de tu bolsillo, sin tener que sumar dos pestañas por separado.</div>
+    </div>
+  </section>
+
+  <section class="card" id="ingresos">
+    <h2><span class="n">06</span> Ingresos</h2>
+    <div class="item">
+      <div class="name">Este mes / Últimos 30 días / Todo</div>
+      <div class="desc">Las dos primeras muestran una lista simple. "Todo" abre un calendario completo — toca cualquier día para ver solo lo de ese día, o "Ver todo el mes" para quitar el filtro.</div>
+    </div>
+    <div class="item">
+      <div class="name">Próximos a recibir</div>
+      <div class="desc">El total de tus ingresos futuros/proyectados (sin confirmar todavía), visible sin importar qué filtro de tiempo tengas elegido — porque un ingreso futuro puede caer fuera de "este mes" o de "últimos 30 días".</div>
+    </div>
+    <div class="item">
+      <div class="name">Filtrar y buscar</div>
+      <div class="desc">Filtra por el nombre de un ingreso que se repite (ej. "Turno restaurante") o busca por texto.</div>
+    </div>
+    <div class="item">
+      <div class="name">Los tres puntos de cada ingreso</div>
+      <div class="desc">Editar o eliminar ese ingreso — al eliminarlo, se revierte automáticamente lo que ya se había repartido a metas y deudas.</div>
+    </div>
+  </section>
+
+  <section class="card" id="ajustes">
+    <h2><span class="n">07</span> Ajustes</h2>
+    <div class="item">
+      <div class="name">General</div>
+      <div class="desc">Tema oscuro o claro, e instalar la app en tu celular o computador si tu navegador lo permite.</div>
+    </div>
+    <div class="item">
+      <div class="name">Finanzas</div>
+      <div class="desc">Tipo de ingreso (variable/fijo), sueldo fijo recurrente (configúralo una vez y Payday te lo deja listo para confirmar cada mes cerca del día de pago, con su reparto a ahorro/deudas ya definido), moneda (COP, USD, EUR), día de pago del mes, meta de ingreso mensual, tasas de cambio (se actualizan solas una vez al día, o edítalas a mano), y tu regla de presupuesto (necesidades / deseos / ahorro + deudas).</div>
+    </div>
+    <div class="item">
+      <div class="name">Seguridad</div>
+      <div class="desc">Activa un PIN de 4 dígitos para abrir la app. <strong>Ojo:</strong> si lo olvidas, la única forma de volver a entrar es borrar todos los datos — haz un respaldo antes de activarlo. Debajo está "Privacidad y seguridad", con el detalle de qué puede y no puede hacer la conexión con Google, y el botón para desconectar tu cuenta cuando quieras.</div>
+    </div>
+    <div class="item">
+      <div class="name">Datos</div>
+      <div class="desc">Todo lo de respaldar, restaurar, conectar Google y borrar — con su propia sección aquí abajo, porque es la parte que más vale la pena entender bien.</div>
+    </div>
+  </section>
+
+  <section class="card" id="respaldo">
+    <h2><span class="n">08</span> Respaldar y restaurar tus datos</h2>
+    <div class="lede">Todos tus datos viven solo en este dispositivo — por eso un respaldo periódico es la única forma de no perderlos si cambias de celular, lo formateas, o algo sale mal.</div>
+
+    <div class="backup-grid">
+      <div class="backup-col">
+        <h3>Para guardar un respaldo</h3>
+        <div class="steps">
+          <div class="step"><div class="num"></div><div class="body"><b>Excel</b>"Descargar resumen (Excel)" — un archivo legible con tus totales, pero no sirve para restaurar en la app.</div></div>
+          <div class="step"><div class="num"></div><div class="body"><b>JSON (este sí restaura)</b>"Compartir respaldo (JSON)" — comparte o descarga un archivo con absolutamente todos tus datos, usando la función nativa de compartir de tu celular o navegador. Guárdalo en Drive, WhatsApp a ti misma, correo, donde prefieras.</div></div>
+          <div class="step"><div class="num"></div><div class="body"><b>Google Drive (opcional)</b>Si conectas tu cuenta de Google, "Subir Excel a Drive" lo guarda directo en una carpeta "Payday" de tu Drive.</div></div>
+          <div class="step"><div class="num"></div><div class="body"><b>Google Calendar (opcional)</b>"Sincronizar recordatorios con Calendar" crea o actualiza eventos de tus deudas, gastos fijos e ingresos esperados directamente en tu Calendar. Vuelve a tocarlo cuando quieras que se actualicen.</div></div>
+        </div>
+      </div>
+      <div class="backup-col">
+        <h3>Para restaurar</h3>
+        <div class="steps">
+          <div class="step"><div class="num"></div><div class="body"><b>Desde un archivo</b>Ajustes → Datos → Restaurar datos → "Elegir archivo de respaldo" — elige el .json que descargaste o compartiste antes.</div></div>
+          <div class="step"><div class="num"></div><div class="body"><b>Desde Google Drive</b>Si conectaste tu cuenta, ahí mismo aparecen tus últimos respaldos subidos a Drive, listos para restaurar con un toque.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="warn">
+      <p><b>Importante:</b> restaurar un respaldo <strong>reemplaza</strong> los datos que tengas en ese momento en el dispositivo — no los combina. Úsalo cuando quieras volver a un respaldo anterior o pasar tus datos a un celular nuevo, no para "sumar" información.</p>
+    </div>
+  </section>
+
+  <div class="divider-line"></div>
+
+  <footer class="contact">
+    <div class="meta" style="margin-bottom: 4px;">¿Algo no quedó claro?</div>
+    <a href="mailto:hola.studioalto@gmail.com">hola.studioalto@gmail.com</a>
+    <div class="fine">Studio Alto — desarrollador de Payday.</div>
+  </footer>
+</div>
+</body>
+</html>

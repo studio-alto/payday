@@ -1,0 +1,331 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Privacidad de Payday</title>
+<style>
+  :root {
+    --bg: #f5f5f6;
+    --card-bg: #ffffff;
+    --text: #111111;
+    --text-secondary: #6b7280;
+    --divider: #ececec;
+    --accent: #ff5a36;
+    --accent-text: #c1391c;
+    --accent-soft: #fdece6;
+    --danger-text: #c0262b;
+    --danger-soft: #fbe4e4;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141414;
+      --card-bg: #1f1f20;
+      --text: #f5f5f5;
+      --text-secondary: #9ca3af;
+      --divider: #2c2c2e;
+      --accent-text: #ff5a36;
+      --accent-soft: #2b1c16;
+      --danger-text: #ff6b6b;
+      --danger-soft: #3a1c1c;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141414;
+    --card-bg: #1f1f20;
+    --text: #f5f5f5;
+    --text-secondary: #9ca3af;
+    --divider: #2c2c2e;
+    --accent-text: #ff5a36;
+    --accent-soft: #2b1c16;
+    --danger-text: #ff6b6b;
+    --danger-soft: #3a1c1c;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    margin: 0;
+    padding: 0;
+  }
+  ::selection { background: var(--accent); color: white; }
+
+  .wrap {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 20px 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  header.top {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .wordmark {
+    font-weight: 900;
+    font-size: 28px;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  .wordmark span { color: var(--accent); }
+  h1 {
+    font-weight: 900;
+    font-size: clamp(28px, 5vw, 38px);
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+    margin: 4px 0 0;
+  }
+  .meta {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+
+  .callout {
+    background: var(--accent-soft);
+    border-radius: 20px;
+    padding: 20px 22px;
+    font-size: 15px;
+    line-height: 1.6;
+    color: var(--text);
+  }
+  .callout b { color: var(--accent-text); }
+
+  nav.toc {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 4px 0 8px;
+  }
+  nav.toc a {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text);
+    background: var(--card-bg);
+    border: 1px solid var(--divider);
+    padding: 8px 14px;
+    border-radius: 20px;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+  nav.toc a:hover { border-color: var(--accent); color: var(--accent-text); }
+  nav.toc a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  section.card {
+    background: var(--card-bg);
+    border-radius: 24px;
+    padding: 26px 26px 28px;
+    scroll-margin-top: 20px;
+  }
+  section.card h2 {
+    font-weight: 800;
+    font-size: 20px;
+    letter-spacing: -0.01em;
+    margin: 0 0 14px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+  section.card h2 .n {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    letter-spacing: 0.04em;
+  }
+  section.card p, section.card li {
+    font-size: 15px;
+    line-height: 1.7;
+    color: var(--text);
+    max-width: 62ch;
+  }
+  section.card p + p { margin-top: 12px; }
+  section.card strong { color: var(--text); font-weight: 700; }
+  section.card ul { margin: 10px 0 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
+
+  .scope-table {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .scope-row {
+    display: grid;
+    grid-template-columns: minmax(120px, auto) 1fr;
+    gap: 4px 16px;
+    padding: 14px 16px;
+    background: var(--bg);
+    border-radius: 14px;
+  }
+  .scope-row .label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--text-secondary);
+  }
+  .scope-row .value { font-size: 14px; color: var(--text); line-height: 1.5; }
+  .scope-row code {
+    font-family: 'SF Mono', 'JetBrains Mono', monospace;
+    font-size: 12px;
+    background: var(--divider);
+    padding: 2px 6px;
+    border-radius: 6px;
+  }
+
+  .not-box {
+    background: var(--danger-soft);
+    border-radius: 16px;
+    padding: 16px 18px;
+    margin-top: 14px;
+  }
+  .not-box p { color: var(--text); }
+  .not-box strong { color: var(--danger-text); }
+
+  .divider-line { height: 1px; background: var(--divider); margin: 4px 0; }
+
+  footer.contact {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: flex-start;
+    padding: 10px 4px 0;
+  }
+  footer.contact a { color: var(--accent-text); font-weight: 700; text-decoration: none; }
+  footer.contact a:hover { text-decoration: underline; }
+  footer.contact .fine { font-size: 12px; color: var(--text-secondary); }
+
+  @media (max-width: 480px) {
+    .wrap { padding: 32px 16px 64px; }
+    section.card { padding: 22px 18px 24px; }
+    .scope-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="wordmark">Pay<span>day</span></div>
+    <h1>Política de Privacidad</h1>
+    <div class="meta">Última actualización: 15 de septiembre de 2026</div>
+  </header>
+
+  <div class="callout">
+    <b>En resumen:</b> Payday guarda toda tu información financiera únicamente en tu propio celular o computador — nunca en un servidor nuestro. No tenemos cuentas de usuario, no vendemos datos, no mostramos publicidad. Si conectas tu cuenta de Google (opcional), solo la usamos para lo que tú decidas: guardar un respaldo en tu Drive o crear recordatorios en tu Calendar.
+  </div>
+
+  <nav class="toc" aria-label="Contenido">
+    <a href="#como-funciona">Cómo funciona</a>
+    <a href="#donde-viven-datos">Dónde viven tus datos</a>
+    <a href="#google">Integración con Google</a>
+    <a href="#respaldo">Respaldar tus datos</a>
+    <a href="#no-hacemos">Qué no hacemos</a>
+    <a href="#derechos">Tus derechos</a>
+    <a href="#cambios">Cambios</a>
+    <a href="#contacto">Contacto</a>
+  </nav>
+
+  <section class="card" id="como-funciona">
+    <h2><span class="n">01</span> Cómo funciona Payday</h2>
+    <p>Payday es una aplicación web progresiva (PWA) para llevar el control de ingresos variables, metas de ahorro, deudas y gastos fijos y variables. Se instala directo desde el navegador — sin tienda de aplicaciones, sin cuenta, sin conexión obligatoria a internet para usarla día a día.</p>
+    <p>Todo lo que registras (un ingreso, un abono a una deuda, un gasto) se guarda al instante en el almacenamiento local de tu propio dispositivo. La app funciona completamente sin conexión: no necesita "avisarle" a ningún servidor para calcular tus totales, proyecciones o resúmenes — todo el cálculo ocurre dentro de tu navegador.</p>
+  </section>
+
+  <section class="card" id="donde-viven-datos">
+    <h2><span class="n">02</span> Dónde viven tus datos</h2>
+    <p>Tus ingresos, metas, deudas, gastos y ajustes se guardan en el <strong>almacenamiento local del navegador</strong> (localStorage) de tu propio dispositivo — el mismo lugar donde tu navegador guarda contraseñas guardadas o el carrito de una tienda en línea. Esta información:</p>
+    <ul>
+      <li><strong>Nunca sale de tu dispositivo</strong> a menos que tú explícitamente elijas exportarla o respaldarla (ver secciones 3 y 4).</li>
+      <li><strong>Studio Alto no tiene acceso a ella.</strong> No existe un servidor nuestro que la reciba, procese o almacene. No podemos ver tus finanzas aunque quisiéramos.</li>
+      <li>Se pierde si borras los datos del navegador, desinstalas la app, o cambias de dispositivo — por eso la app te ofrece herramientas de respaldo (Excel, JSON, Drive) bajo tu control.</li>
+    </ul>
+  </section>
+
+  <section class="card" id="google">
+    <h2><span class="n">03</span> Integración con Google (opcional)</h2>
+    <p>Si tú decides conectar tu cuenta de Google desde Ajustes, Payday pide dos permisos específicos y limitados. Nunca se conecta a Google automáticamente ni sin tu autorización explícita.</p>
+    <div class="scope-table">
+      <div class="scope-row">
+        <div class="label">Permiso</div>
+        <div class="value"><code>drive.file</code> — Google Drive</div>
+      </div>
+      <div class="scope-row">
+        <div class="label">Qué puede hacer</div>
+        <div class="value">Crear y ver <strong>únicamente los archivos que la propia app sube</strong> — un Excel con tu resumen financiero o un respaldo JSON, guardados dentro de tu Drive.</div>
+      </div>
+      <div class="scope-row">
+        <div class="label">Qué NO puede hacer</div>
+        <div class="value">No puede ver, listar ni tocar ningún otro archivo o carpeta de tu Drive.</div>
+      </div>
+    </div>
+    <div class="scope-table" style="margin-top: 14px;">
+      <div class="scope-row">
+        <div class="label">Permiso</div>
+        <div class="value"><code>calendar.events</code> — Google Calendar</div>
+      </div>
+      <div class="scope-row">
+        <div class="label">Qué puede hacer</div>
+        <div class="value">Crear y actualizar <strong>eventos que la propia app genera</strong> — recordatorios de próximos pagos de deudas, vencimientos de gastos fijos, e ingresos que esperas recibir.</div>
+      </div>
+      <div class="scope-row">
+        <div class="label">Qué NO puede hacer</div>
+        <div class="value">No puede leer, listar ni modificar ningún otro evento de tu calendario.</div>
+      </div>
+    </div>
+    <p style="margin-top: 16px;">Esta conexión ocurre directamente entre tu navegador y los servidores de Google — <strong>Studio Alto nunca recibe ni almacena</strong> tu contraseña de Google, ni el permiso de acceso (token) que Google entrega, ni el contenido de lo que se sube o se crea. El token de acceso vive únicamente en la memoria temporal de tu navegador (sessionStorage) y desaparece al cerrar esa pestaña o sesión.</p>
+    <p>El uso que Payday hace de tu información de Google Calendar y Google Drive cumple con la <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Política de Datos de Usuario de los Servicios de API de Google</a>, incluidos los requisitos de Uso Limitado ("Limited Use").</p>
+  </section>
+
+  <section class="card" id="respaldo">
+    <h2><span class="n">04</span> Respaldar tus datos</h2>
+    <p>Desde Ajustes → Datos puedes respaldar tu información en cualquier momento, sin que eso dependa de conectar tu cuenta de Google:</p>
+    <ul>
+      <li><strong>Descargar resumen (Excel):</strong> genera un archivo Excel con tus ingresos, metas, deudas y gastos, y lo descarga directamente a tu dispositivo.</li>
+      <li><strong>Compartir respaldo (JSON):</strong> usa la función nativa de compartir de tu celular o navegador para mandar un respaldo completo de tus datos a donde tú decidas guardarlo — otra app, un correo tuyo, o descargarlo como archivo. Ese respaldo solo pasa por tu dispositivo y por el destino que tú elijas; Studio Alto nunca lo recibe.</li>
+      <li><strong>Subir a Google Drive (opcional):</strong> si conectaste tu cuenta de Google, puedes subir el Excel o el respaldo JSON directo a tu propio Drive.</li>
+    </ul>
+  </section>
+
+  <section class="card" id="no-hacemos">
+    <h2><span class="n">05</span> Qué no hacemos</h2>
+    <div class="not-box">
+      <p><strong>No</strong> tenemos servidores propios que reciban o almacenen tus datos financieros.</p>
+      <p><strong>No</strong> vendemos, alquilamos ni compartimos tu información con nadie — no la tenemos para empezar.</p>
+      <p><strong>No</strong> mostramos publicidad ni usamos rastreadores de analítica dentro de la app.</p>
+      <p><strong>No</strong> usamos los datos de tu cuenta de Google para nada distinto a lo que tú activas explícitamente (subir tu respaldo, crear tus recordatorios).</p>
+    </div>
+  </section>
+
+  <section class="card" id="derechos">
+    <h2><span class="n">06</span> Tus derechos y cómo borrar tus datos</h2>
+    <p>Como tus datos financieros viven solo en tu dispositivo, tú tienes control total y directo sobre ellos, sin necesidad de pedírnoslo a nosotros:</p>
+    <ul>
+      <li><strong>Borrar todo:</strong> Ajustes → Datos → Restaurar datos → "Eliminar todos mis datos" elimina toda la información de la app en ese dispositivo, de inmediato.</li>
+      <li><strong>Exportar:</strong> descarga un Excel o comparte un respaldo JSON completo desde Ajustes → Datos en cualquier momento.</li>
+      <li><strong>Revocar el acceso a Google:</strong> puedes desconectar tu cuenta desde Ajustes → Datos ("Desconectar Google Drive"), o quitarle permisos a Payday desde <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">la página de permisos de tu cuenta de Google</a> en cualquier momento — Payday deja de poder subir archivos o crear eventos de inmediato.</li>
+    </ul>
+  </section>
+
+  <section class="card" id="cambios">
+    <h2><span class="n">07</span> Cambios a esta política</h2>
+    <p>Si esta política cambia de forma importante, actualizamos la fecha en la parte superior de esta misma página. Como Payday no recolecta tu correo ni tiene forma de contactarte directamente, te recomendamos revisar esta página ocasionalmente si usas las integraciones con Google.</p>
+  </section>
+
+  <div class="divider-line"></div>
+
+  <footer class="contact" id="contacto">
+    <div class="meta" style="margin-bottom: 4px;">Contacto</div>
+    <a href="mailto:hola.studioalto@gmail.com">hola.studioalto@gmail.com</a>
+    <div class="fine">Studio Alto — desarrollador de Payday.</div>
+  </footer>
+</div>
+</body>
+</html>
