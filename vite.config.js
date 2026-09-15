@@ -1,4 +1,6 @@
-import { defineConfig } from 'vite'
+// `vitest/config`'s defineConfig (not plain `vite`'s) so the `test` block below is
+// type-checked and merged correctly — same Vite config either way.
+import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
@@ -33,4 +35,10 @@ export default defineConfig({
       },
     }),
   ],
+  test: {
+    // jsdom only — component tests render into a fake DOM, not a real browser.
+    // Existing lib/*.test.js files are plain functions and run fine here too.
+    environment: 'jsdom',
+    setupFiles: ['./src/setupTests.js'],
+  },
 })
