@@ -214,8 +214,10 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
     // Once connected before, the ~1h token expiring shouldn't mean re-approving
     // by hand every time — try an invisible reconnect first (works as long as
     // the browser's own Google session is still active) before falling back to
-    // the real consent screen.
-    connectGoogle({ silent: hasConnectedBefore() });
+    // the real consent screen. But if that silent attempt already failed once,
+    // trying it again would just fail the same way forever — show the real
+    // consent screen instead so the user can actually get back in.
+    connectGoogle({ silent: hasConnectedBefore() && !silentReconnectFailed });
   };
 
   const [disconnectStatus, setDisconnectStatus] = useState('idle'); // idle | loading | done | error
