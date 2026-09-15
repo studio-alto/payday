@@ -21,7 +21,7 @@ function emptyForm() {
   return { name: '', target: '', current: '', description: '', fechaObjetivo: '', color: '' };
 }
 
-export default function Metas({ data, setData, onViewDetail }) {
+export default function Metas({ data, setData, onViewDetail, onEditIncome }) {
   const { goals } = data;
   // "Eliminar" archives a goal that already has contributions instead of removing it
   // outright (see confirmDelete below) — otherwise every month it received savings
@@ -37,6 +37,7 @@ export default function Metas({ data, setData, onViewDetail }) {
   const [addingToGoalId, setAddingToGoalId] = useState(null);
   const [addAmount, setAddAmount] = useState('');
   const [claimTarget, setClaimTarget] = useState('');
+  const [showUnassignedDetail, setShowUnassignedDetail] = useState(false);
 
   // Ahorro that's counted in the Home totals but invisible here — either the
   // person picked "Sin meta" when distributing an ingreso, or the goal it was
@@ -46,6 +47,7 @@ export default function Metas({ data, setData, onViewDetail }) {
     (i) => i.estado !== 'proyectado' && !i.distribution.goalId && (i.distribution.ahorro || 0) > 0,
   );
   const unassignedTotal = unassignedIncomes.reduce((a, i) => a + i.distribution.ahorro, 0);
+  const sortedUnassignedIncomes = [...unassignedIncomes].sort((a, b) => b.date.localeCompare(a.date));
   const claimUnassigned = (goalId) => {
     setData((s) => {
       const targets = s.incomes.filter((i) => i.estado !== 'proyectado' && !i.distribution.goalId && (i.distribution.ahorro || 0) > 0);
@@ -189,6 +191,31 @@ export default function Metas({ data, setData, onViewDetail }) {
             De ingresos donde elegiste "Sin meta", o de una meta que eliminaste. Cuenta en tu ahorro total de Inicio, pero no en el
             progreso de ninguna meta hasta que lo asignes.
           </div>
+
+          <button
+            type="button"
+            onClick={() => setShowUnassignedDetail((v) => !v)}
+            style={{ marginTop: 10, border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}
+          >
+            {showUnassignedDetail ? 'Ocultar ingresos' : `Ver ingresos (${sortedUnassignedIncomes.length})`}
+          </button>
+
+          {showUnassignedDetail && (
+            <div style={{ marginTop: 8 }}>
+              {sortedUnassignedIncomes.map((inc) => (
+                <div key={inc.id} style={{ padding: '10px 0', borderTop: '1px solid var(--divider)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)' }}>{fmt(inc.distribution.ahorro, currency)}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {formatFullDate(inc.date)} · {inc.name}
+                    </div>
+                  </div>
+                  <CardMenu inline triggerBg="transparent" actions={[{ label: 'Editar ingreso', onClick: () => onEditIncome(inc) }]} />
+                </div>
+              ))}
+            </div>
+          )}
+
           {activeGoals.length > 0 ? (
             <>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.03em', marginTop: 12 }}>

@@ -203,7 +203,7 @@ export default function App() {
           {activeTab === 'registrar' && (
             <Registrar data={data} setData={setData} onNavigate={navigate} editingIncome={editingIncome} onDoneEditing={() => setEditingIncome(null)} />
           )}
-          {activeTab === 'metas' && <Metas data={data} setData={setData} onViewDetail={viewGoalDetail} />}
+          {activeTab === 'metas' && <Metas data={data} setData={setData} onViewDetail={viewGoalDetail} onEditIncome={startEditIncome} />}
           {activeTab === 'meta-detalle' && (
             <MetaDetalle data={data} setData={setData} goalId={viewingGoalId} onNavigate={navigate} onEditIncome={startEditIncome} />
           )}
