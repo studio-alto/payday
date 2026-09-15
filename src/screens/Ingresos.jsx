@@ -97,6 +97,13 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
     return true;
   });
 
+  // Shown regardless of the "mes"/"30 días"/"todo" filter below — a future income's
+  // date can fall outside all three views (isWithinDays excludes future dates, and
+  // "todo" only shows the month you're browsing), so this is the one place its total
+  // is always visible, same as the "PRÓXIMOS A RECIBIR" card on Inicio.
+  const projectedIncomes = filteredIncomes.filter((i) => i.estado === 'proyectado');
+  const totalProjected = projectedIncomes.reduce((a, i) => a + i.amount, 0);
+
   // "Este mes" and "Últimos 30 días" render as a flat list — no clicking through an
   // accordion for the common case of checking recent income. "Todo" is the one mode
   // that hands you the year+month browser, for digging through older history.
@@ -242,6 +249,21 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
           style={textInputStyle()}
         />
       </div>
+
+      {projectedIncomes.length > 0 && (
+        <div style={cardStyle}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <div style={labelStyle}>PRÓXIMOS A RECIBIR</div>
+              {selectedJob && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{selectedJob}</div>}
+              <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', marginTop: 6, letterSpacing: '-0.02em' }}>{fmt(totalProjected, currency)}</div>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+              {projectedIncomes.length === 1 ? '1 ingreso' : `${projectedIncomes.length} ingresos`}
+            </div>
+          </div>
+        </div>
+      )}
 
       {timeFilter !== 'todo' && (
         <>
