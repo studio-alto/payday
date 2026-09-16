@@ -15,11 +15,11 @@ describe('BackupReminder', () => {
     expect(screen.getByText('No has respaldado en 20 días')).toBeInTheDocument();
   });
 
-  it('navigates to Ajustes → Datos when "Respaldar" is tapped', () => {
+  it('navigates to Ajustes → General when "Respaldar" is tapped', () => {
     const onNavigate = vi.fn();
     render(<BackupReminder data={makeData()} setData={vi.fn()} onNavigate={onNavigate} />);
     fireEvent.click(screen.getByText('Respaldar'));
-    expect(sessionStorage.getItem('payday_return_section')).toBe('datos');
+    expect(sessionStorage.getItem('payday_return_section')).toBe('general');
     expect(onNavigate).toHaveBeenCalledWith('config');
   });
 

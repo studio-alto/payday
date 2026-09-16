@@ -26,9 +26,9 @@ function emptySueldoForm(defaultGoalId) {
 export default function Ajustes({ data, setData, canInstall, isInstalled, onInstall, onNavigate }) {
   const { user } = data;
   const dark = user.theme === 'oscuro';
-  // Restores the "Datos" tab after a Google connect redirect bounces the
-  // whole page away and back (see connectGoogle() in lib/googleAuth) — otherwise
-  // returning from Google would land back on "General" with no indication of why.
+  // Restores the right tab after a full-page redirect bounces someone away and
+  // back — from Google connecting (lib/googleAuth), from RestaurarDatos, or from
+  // the backup reminder on Inicio — instead of always landing back on "General".
   const [section, setSection] = useState(() => {
     const pending = sessionStorage.getItem('payday_return_section');
     if (pending) sessionStorage.removeItem('payday_return_section');
@@ -209,7 +209,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
     // consent screen, then back), so the next load needs to know to land back on
     // this tab instead of the default Home screen.
     sessionStorage.setItem('payday_return_tab', 'config');
-    sessionStorage.setItem('payday_return_section', 'datos');
+    sessionStorage.setItem('payday_return_section', 'general');
     setSilentReconnectFailed(false);
     // Once connected before, the ~1h token expiring shouldn't mean re-approving
     // by hand every time — try an invisible reconnect first (works as long as
@@ -260,7 +260,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
     }
   };
 
-  // Restoring and wiping data now live in their own screen (Ajustes → Datos →
+  // Restoring and wiping data now live in their own screen (Ajustes → General →
   // "Restaurar datos"), reached via onNavigate('restaurar') below — see
   // screens/RestaurarDatos.jsx.
 
@@ -287,7 +287,6 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
               { key: 'general', label: 'General' },
               { key: 'finanzas', label: 'Finanzas' },
               { key: 'seguridad', label: 'Seguridad' },
-              { key: 'datos', label: 'Datos' },
             ].map((s) => {
               const active = section === s.key;
               return (
@@ -837,7 +836,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
         </BottomSheet>
       )}
 
-      {section === 'datos' && (
+      {section === 'general' && (
       <>
       <div style={labelStyle}>DATOS</div>
       <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -917,7 +916,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
         <button
           type="button"
           onClick={() => {
-            sessionStorage.setItem('payday_return_section', 'datos');
+            sessionStorage.setItem('payday_return_section', 'general');
             onNavigate('restaurar');
           }}
           style={actionRowStyle}

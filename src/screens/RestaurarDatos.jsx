@@ -37,7 +37,7 @@ function summaryLine(s) {
 export default function RestaurarDatos({ data, setData, onNavigate }) {
   const [toast, setToast] = useState(null);
   const goBack = () => {
-    sessionStorage.setItem('payday_return_section', 'datos');
+    sessionStorage.setItem('payday_return_section', 'general');
     onNavigate('config');
   };
   const finishRestore = (parsed) => {
@@ -211,7 +211,7 @@ export default function RestaurarDatos({ data, setData, onNavigate }) {
               )}
               {driveState === 'loaded' && backups.length === 0 && (
                 <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                  Todavía no tienes respaldos en Drive. Sube uno desde Ajustes → Datos ("Subir Excel a Drive").
+                  Todavía no tienes respaldos en Drive. Sube uno desde Ajustes → General ("Subir Excel a Drive").
                 </div>
               )}
               {driveState === 'loaded' &&

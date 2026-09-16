@@ -2,16 +2,16 @@ import { cardStyle } from '../lib/styles';
 import { daysSince } from '../lib/dates';
 
 // Compact, dismissible nudge — not a status card. It reads the same
-// `user.lastBackupAt` that Ajustes → Datos writes (see lib/backup.js), and tapping
-// it just navigates there instead of repeating the backup actions or tracking its
-// own "connected"/"last synced" state, on purpose: that duplication is exactly why
-// the previous BackupStatusCard on Home got removed.
+// `user.lastBackupAt` that Ajustes → General (Datos) writes (see lib/backup.js),
+// and tapping it just navigates there instead of repeating the backup actions or
+// tracking its own "connected"/"last synced" state, on purpose: that duplication
+// is exactly why the previous BackupStatusCard on Home got removed.
 export default function BackupReminder({ data, setData, onNavigate }) {
   const { lastBackupAt } = data.user;
   const days = lastBackupAt ? daysSince(lastBackupAt) : null;
 
   const goBackup = () => {
-    sessionStorage.setItem('payday_return_section', 'datos');
+    sessionStorage.setItem('payday_return_section', 'general');
     onNavigate('config');
   };
   const dismiss = () => setData((s) => ({ ...s, user: { ...s.user, backupReminderDismissedAt: new Date().toISOString() } }));
