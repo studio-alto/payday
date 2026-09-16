@@ -52,6 +52,12 @@
   .wrap { max-width: 760px; margin: 0 auto; padding: 48px 20px 80px; display: flex; flex-direction: column; gap: 14px; }
 
   header.top { display: flex; flex-direction: column; gap: 10px; margin-bottom: 6px; }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 13px; font-weight: 700; color: var(--text-secondary);
+    text-decoration: none; width: fit-content;
+  }
+  .back-link:hover { color: var(--accent-text); }
   .wordmark { font-weight: 900; font-size: 28px; letter-spacing: -0.02em; color: var(--text); }
   .wordmark span { color: var(--accent); }
   h1 { font-weight: 900; font-size: clamp(28px, 5vw, 38px); letter-spacing: -0.02em; text-wrap: balance; margin: 4px 0 0; }
@@ -126,6 +132,7 @@
 <body>
 <div class="wrap">
   <header class="top">
+    <a class="back-link" href="/">‹ Volver a Payday</a>
     <div class="wordmark">Pay<span>day</span></div>
     <h1>Guía de uso</h1>
     <div class="meta">Qué hace cada pantalla, botón y ajuste</div>
