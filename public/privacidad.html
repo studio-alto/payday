@@ -231,7 +231,7 @@
   </header>
 
   <div class="callout">
-    <b>En resumen:</b> Payday guarda toda tu información financiera únicamente en tu propio celular o computador — nunca en un servidor nuestro. No tenemos cuentas de usuario, no vendemos datos, no mostramos publicidad. Si conectas tu cuenta de Google (opcional), solo la usamos para lo que tú decidas: guardar un respaldo en tu Drive o crear recordatorios en tu Calendar.
+    <b>En resumen:</b> Payday guarda toda tu información financiera únicamente en tu propio celular o computador, nunca en un servidor nuestro. No tenemos cuentas de usuario, no vendemos datos, no mostramos publicidad. Si conectas tu cuenta de Google (opcional), solo la usamos para lo que tú decidas: guardar un respaldo en tu Drive o crear recordatorios en tu Calendar.
   </div>
 
   <nav class="toc" aria-label="Contenido">
@@ -247,17 +247,17 @@
 
   <section class="card" id="como-funciona">
     <h2><span class="n">01</span> Cómo funciona Payday</h2>
-    <p>Payday es una aplicación web progresiva (PWA) para llevar el control de ingresos variables, metas de ahorro, deudas y gastos fijos y variables. Se instala directo desde el navegador — sin tienda de aplicaciones, sin cuenta, sin conexión obligatoria a internet para usarla día a día.</p>
-    <p>Todo lo que registras (un ingreso, un abono a una deuda, un gasto) se guarda al instante en el almacenamiento local de tu propio dispositivo. La app funciona completamente sin conexión: no necesita "avisarle" a ningún servidor para calcular tus totales, proyecciones o resúmenes — todo el cálculo ocurre dentro de tu navegador.</p>
+    <p>Payday es una aplicación web progresiva (PWA) para llevar el control de ingresos variables, metas de ahorro, deudas y gastos fijos y variables. Se instala directo desde el navegador: sin tienda de aplicaciones, sin cuenta, sin conexión obligatoria a internet para usarla día a día.</p>
+    <p>Todo lo que registras (un ingreso, un abono a una deuda, un gasto) se guarda al instante en el almacenamiento local de tu propio dispositivo. La app funciona completamente sin conexión: no necesita "avisarle" a ningún servidor para calcular tus totales, proyecciones o resúmenes. Todo el cálculo ocurre dentro de tu navegador.</p>
   </section>
 
   <section class="card" id="donde-viven-datos">
     <h2><span class="n">02</span> Dónde viven tus datos</h2>
-    <p>Tus ingresos, metas, deudas, gastos y ajustes se guardan en el <strong>almacenamiento local del navegador</strong> (localStorage) de tu propio dispositivo — el mismo lugar donde tu navegador guarda contraseñas guardadas o el carrito de una tienda en línea. Esta información:</p>
+    <p>Tus ingresos, metas, deudas, gastos y ajustes se guardan en el <strong>almacenamiento local del navegador</strong> (localStorage) de tu propio dispositivo, el mismo lugar donde tu navegador guarda contraseñas guardadas o el carrito de una tienda en línea. Esta información:</p>
     <ul>
       <li><strong>Nunca sale de tu dispositivo</strong> a menos que tú explícitamente elijas exportarla o respaldarla (ver secciones 3 y 4).</li>
       <li><strong>Studio Alto no tiene acceso a ella.</strong> No existe un servidor nuestro que la reciba, procese o almacene. No podemos ver tus finanzas aunque quisiéramos.</li>
-      <li>Se pierde si borras los datos del navegador, desinstalas la app, o cambias de dispositivo — por eso la app te ofrece herramientas de respaldo (Excel, JSON, Drive) bajo tu control.</li>
+      <li>Se pierde si borras los datos del navegador, desinstalas la app, o cambias de dispositivo. Por eso la app te ofrece herramientas de respaldo (Excel, JSON, Drive) bajo tu control.</li>
     </ul>
   </section>
 
@@ -267,11 +267,11 @@
     <div class="scope-table">
       <div class="scope-row">
         <div class="label">Permiso</div>
-        <div class="value"><code>drive.file</code> — Google Drive</div>
+        <div class="value"><code>drive.file</code> · Google Drive</div>
       </div>
       <div class="scope-row">
         <div class="label">Qué puede hacer</div>
-        <div class="value">Crear y ver <strong>únicamente los archivos que la propia app sube</strong> — un Excel con tu resumen financiero o un respaldo JSON, guardados dentro de tu Drive.</div>
+        <div class="value">Crear y ver <strong>únicamente los archivos que la propia app sube</strong>: un Excel con tu resumen financiero o un respaldo JSON, guardados dentro de tu Drive.</div>
       </div>
       <div class="scope-row">
         <div class="label">Qué NO puede hacer</div>
@@ -281,27 +281,27 @@
     <div class="scope-table" style="margin-top: 14px;">
       <div class="scope-row">
         <div class="label">Permiso</div>
-        <div class="value"><code>calendar.events</code> — Google Calendar</div>
+        <div class="value"><code>calendar.events</code> · Google Calendar</div>
       </div>
       <div class="scope-row">
         <div class="label">Qué puede hacer</div>
-        <div class="value">Crear y actualizar <strong>eventos que la propia app genera</strong> — recordatorios de próximos pagos de deudas, vencimientos de gastos fijos, e ingresos que esperas recibir.</div>
+        <div class="value">Crear y actualizar <strong>eventos que la propia app genera</strong>: recordatorios de próximos pagos de deudas, vencimientos de gastos fijos, e ingresos que esperas recibir.</div>
       </div>
       <div class="scope-row">
         <div class="label">Qué NO puede hacer</div>
         <div class="value">No puede leer, listar ni modificar ningún otro evento de tu calendario.</div>
       </div>
     </div>
-    <p style="margin-top: 16px;">Esta conexión ocurre directamente entre tu navegador y los servidores de Google — <strong>Studio Alto nunca recibe ni almacena</strong> tu contraseña de Google, ni el permiso de acceso (token) que Google entrega, ni el contenido de lo que se sube o se crea. El token de acceso vive únicamente en la memoria temporal de tu navegador (sessionStorage) y desaparece al cerrar esa pestaña o sesión.</p>
+    <p style="margin-top: 16px;">Esta conexión ocurre directamente entre tu navegador y los servidores de Google. <strong>Studio Alto nunca recibe ni almacena</strong> tu contraseña de Google, ni el permiso de acceso (token) que Google entrega, ni el contenido de lo que se sube o se crea. El token de acceso vive únicamente en la memoria temporal de tu navegador (sessionStorage) y desaparece al cerrar esa pestaña o sesión.</p>
     <p>El uso que Payday hace de tu información de Google Calendar y Google Drive cumple con la <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Política de Datos de Usuario de los Servicios de API de Google</a>, incluidos los requisitos de Uso Limitado ("Limited Use").</p>
   </section>
 
   <section class="card" id="respaldo">
     <h2><span class="n">04</span> Respaldar tus datos</h2>
-    <p>Desde Ajustes → Datos puedes respaldar tu información en cualquier momento, sin que eso dependa de conectar tu cuenta de Google:</p>
+    <p>Desde Ajustes → General puedes respaldar tu información en cualquier momento, sin que eso dependa de conectar tu cuenta de Google:</p>
     <ul>
       <li><strong>Descargar resumen (Excel):</strong> genera un archivo Excel con tus ingresos, metas, deudas y gastos, y lo descarga directamente a tu dispositivo.</li>
-      <li><strong>Compartir respaldo (JSON):</strong> usa la función nativa de compartir de tu celular o navegador para mandar un respaldo completo de tus datos a donde tú decidas guardarlo — otra app, un correo tuyo, o descargarlo como archivo. Ese respaldo solo pasa por tu dispositivo y por el destino que tú elijas; Studio Alto nunca lo recibe.</li>
+      <li><strong>Compartir respaldo (JSON):</strong> usa la función nativa de compartir de tu celular o navegador para mandar un respaldo completo de tus datos a donde tú decidas guardarlo: otra app, un correo tuyo, o descargarlo como archivo. Ese respaldo solo pasa por tu dispositivo y por el destino que tú elijas; Studio Alto nunca lo recibe.</li>
       <li><strong>Subir a Google Drive (opcional):</strong> si conectaste tu cuenta de Google, puedes subir el Excel o el respaldo JSON directo a tu propio Drive.</li>
     </ul>
   </section>
@@ -310,7 +310,7 @@
     <h2><span class="n">05</span> Qué no hacemos</h2>
     <div class="not-box">
       <p><strong>No</strong> tenemos servidores propios que reciban o almacenen tus datos financieros.</p>
-      <p><strong>No</strong> vendemos, alquilamos ni compartimos tu información con nadie — no la tenemos para empezar.</p>
+      <p><strong>No</strong> vendemos, alquilamos ni compartimos tu información con nadie. No la tenemos para empezar.</p>
       <p><strong>No</strong> mostramos publicidad ni usamos rastreadores de analítica dentro de la app.</p>
       <p><strong>No</strong> usamos los datos de tu cuenta de Google para nada distinto a lo que tú activas explícitamente (subir tu respaldo, crear tus recordatorios).</p>
     </div>
@@ -320,9 +320,9 @@
     <h2><span class="n">06</span> Tus derechos y cómo borrar tus datos</h2>
     <p>Como tus datos financieros viven solo en tu dispositivo, tú tienes control total y directo sobre ellos, sin necesidad de pedírnoslo a nosotros:</p>
     <ul>
-      <li><strong>Borrar todo:</strong> Ajustes → Datos → Restaurar datos → "Eliminar todos mis datos" elimina toda la información de la app en ese dispositivo, de inmediato.</li>
-      <li><strong>Exportar:</strong> descarga un Excel o comparte un respaldo JSON completo desde Ajustes → Datos en cualquier momento.</li>
-      <li><strong>Revocar el acceso a Google:</strong> puedes desconectar tu cuenta desde Ajustes → Datos ("Desconectar Google Drive"), o quitarle permisos a Payday desde <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">la página de permisos de tu cuenta de Google</a> en cualquier momento — Payday deja de poder subir archivos o crear eventos de inmediato.</li>
+      <li><strong>Borrar todo:</strong> Ajustes → General → Restaurar datos → "Eliminar todos mis datos" elimina toda la información de la app en ese dispositivo, de inmediato.</li>
+      <li><strong>Exportar:</strong> descarga un Excel o comparte un respaldo JSON completo desde Ajustes → General en cualquier momento.</li>
+      <li><strong>Revocar el acceso a Google:</strong> puedes desconectar tu cuenta desde Ajustes → Seguridad ("Desconectar Google Drive"), o quitarle permisos a Payday desde <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">la página de permisos de tu cuenta de Google</a> en cualquier momento. Payday deja de poder subir archivos o crear eventos de inmediato.</li>
     </ul>
   </section>
 
@@ -336,7 +336,7 @@
   <footer class="contact" id="contacto">
     <div class="meta" style="margin-bottom: 4px;">Contacto</div>
     <a href="mailto:hola.studioalto@gmail.com">hola.studioalto@gmail.com</a>
-    <div class="fine">Studio Alto — desarrollador de Payday.</div>
+    <div class="fine">Studio Alto, desarrollador de Payday.</div>
   </footer>
 </div>
 </body>
