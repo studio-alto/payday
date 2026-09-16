@@ -582,6 +582,11 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
         <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
           Cuántos pesos equivalen a 1 dólar / 1 euro. Se llenan solas, pero puedes escribir un valor propio si prefieres.
         </div>
+        <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
+          Esta es una tasa de referencia (se publica una vez al día), no el precio de mercado en vivo, así que puede quedar
+          un poco por debajo de lo que veas en Google o una casa de cambio en ese momento. Si manejas dólares o euros de
+          forma activa, edita el valor a mano para que quede exacto.
+        </div>
         <div style={{ height: 1, background: 'var(--divider)', margin: '4px 0' }} />
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.03em' }}>REGLA DE PRESUPUESTO</div>
