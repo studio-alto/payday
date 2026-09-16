@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Payday</title>
+<meta name="description" content="Payday es una app para llevar el control de ingresos variables, metas de ahorro, deudas y gastos, sin cuentas ni servidores — todo vive en tu propio dispositivo.">
+<style>
+  :root {
+    --bg: #f5f5f6;
+    --card-bg: #ffffff;
+    --text: #111111;
+    --text-secondary: #6b7280;
+    --divider: #ececec;
+    --accent: #ff5a36;
+    --accent-text: #c1391c;
+    --accent-soft: #fdece6;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141414;
+      --card-bg: #1f1f20;
+      --text: #f5f5f5;
+      --text-secondary: #9ca3af;
+      --divider: #2c2c2e;
+      --accent-text: #ff5a36;
+      --accent-soft: #2b1c16;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141414;
+    --card-bg: #1f1f20;
+    --text: #f5f5f5;
+    --text-secondary: #9ca3af;
+    --divider: #2c2c2e;
+    --accent-text: #ff5a36;
+    --accent-soft: #2b1c16;
+  }
+
+  * { box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); margin: 0; padding: 0; }
+  ::selection { background: var(--accent); color: white; }
+
+  .wrap { max-width: 720px; margin: 0 auto; padding: 56px 20px 80px; display: flex; flex-direction: column; gap: 16px; }
+
+  .wordmark { font-weight: 900; font-size: 30px; letter-spacing: -0.02em; color: var(--text); }
+  .wordmark span { color: var(--accent); }
+  h1 { font-weight: 900; font-size: clamp(28px, 5vw, 40px); letter-spacing: -0.02em; text-wrap: balance; margin: 10px 0 0; line-height: 1.15; }
+  .subtitle { font-size: 16px; color: var(--text-secondary); line-height: 1.6; max-width: 56ch; margin-top: 6px; }
+
+  .cta-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    padding: 13px 22px; border-radius: 20px; font-weight: 700; font-size: 14px;
+    text-decoration: none; cursor: pointer; border: none;
+  }
+  .btn.primary { background: var(--accent); color: white; }
+  .btn.secondary { background: var(--card-bg); color: var(--text); border: 1px solid var(--divider); }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 10px; }
+  .feature { background: var(--card-bg); border-radius: 20px; padding: 20px 22px; }
+  .feature .name { font-weight: 800; font-size: 15px; color: var(--text); margin-bottom: 6px; }
+  .feature .desc { font-size: 13px; color: var(--text-secondary); line-height: 1.6; }
+
+  .callout { background: var(--accent-soft); border-radius: 20px; padding: 20px 22px; font-size: 14px; line-height: 1.6; color: var(--text); margin-top: 10px; }
+  .callout b { color: var(--accent-text); }
+
+  footer.contact { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; padding: 18px 4px 0; font-size: 12px; color: var(--text-secondary); }
+  footer.contact a { color: var(--accent-text); font-weight: 700; text-decoration: none; }
+  footer.contact a:hover { text-decoration: underline; }
+
+  @media (max-width: 560px) {
+    .wrap { padding: 40px 16px 64px; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="wordmark">Pay<span>day</span></div>
+  <h1>Tu dinero, cada día.</h1>
+  <p class="subtitle">Payday es una aplicación web para llevar el control de ingresos variables, metas de ahorro, deudas y gastos fijos y variables — pensada para quien no gana el mismo monto cada mes.</p>
+
+  <div class="cta-row">
+    <a class="btn primary" href="/">Abrir Payday</a>
+    <a class="btn secondary" href="/guia.html">Guía de uso</a>
+    <a class="btn secondary" href="/privacidad.html">Política de privacidad</a>
+  </div>
+
+  <div class="grid">
+    <div class="feature">
+      <div class="name">Ingresos variables</div>
+      <div class="desc">Registra lo que ganas día a día — turnos, domingos, festivos — y reparte cada ingreso entre ahorro y deudas al momento.</div>
+    </div>
+    <div class="feature">
+      <div class="name">Metas de ahorro</div>
+      <div class="desc">Crea metas con fecha o sin ella, y mira cuánto te falta ahorrar por día, semana o mes para llegar a tiempo.</div>
+    </div>
+    <div class="feature">
+      <div class="name">Deudas y gastos</div>
+      <div class="desc">Elige tu estrategia para salir de deudas (bola de nieve o avalancha), y controla tus gastos fijos y variables por categoría.</div>
+    </div>
+    <div class="feature">
+      <div class="name">Todo en tu dispositivo</div>
+      <div class="desc">Sin cuentas ni servidores propios — tus datos se guardan solo en tu celular o computador, a menos que tú decidas respaldarlos.</div>
+    </div>
+  </div>
+
+  <div class="callout">
+    <b>Integración opcional con Google:</b> si tú decides conectar tu cuenta, Payday puede subir un respaldo a tu Google Drive y crear recordatorios de pagos e ingresos esperados en tu Google Calendar — solo si tú lo activas, y solo tocando los archivos y eventos que la propia app crea.
+  </div>
+
+  <footer class="contact">
+    <span>Studio Alto — desarrollador de Payday</span>
+    <a href="mailto:hola.studioalto@gmail.com">hola.studioalto@gmail.com</a>
+  </footer>
+</div>
+</body>
+</html>
