@@ -7,13 +7,9 @@ export const VARIABLE_CATEGORIES = [
   'Restaurante',
   'Entretenimiento',
   'Salud',
-  'Cuidado personal',
   'Hogar',
   'Ropa',
-  'Educación',
-  'Vacaciones',
   'Mascotas',
-  'Regalos',
   'Misceláneos',
 ];
 
