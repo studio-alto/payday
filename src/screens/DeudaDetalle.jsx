@@ -17,10 +17,13 @@ function ExplainerNote({ children }) {
   return <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: 8 }}>{children}</div>;
 }
 
-// One label/value line in the "Detalle completo" table below — `onEdit` makes the
-// whole row tappable (reusing whichever modal already owns that field) instead of
-// duplicating an edit affordance for values that already have one elsewhere.
-function DetailRow({ label, value, valueColor = 'var(--text)', sub, onEdit, isLast }) {
+// One stat cell in the "Detalle completo" grid below — `onEdit` makes the whole cell
+// tappable (reusing whichever modal already owns that field) instead of duplicating
+// an edit affordance for values that already have one elsewhere. Label-above-value,
+// same pattern as the SALDO PENDIENTE / ABONADO EN TOTAL tiles higher up on this
+// screen, just laid out 2-per-row instead of 1, so the whole "ficha" reads like one
+// dashboard of stats instead of a long list.
+function DetailRow({ label, value, valueColor = 'var(--text)', sub, onEdit }) {
   const Wrapper = onEdit ? 'button' : 'div';
   return (
     <Wrapper
@@ -28,26 +31,22 @@ function DetailRow({ label, value, valueColor = 'var(--text)', sub, onEdit, isLa
       onClick={onEdit}
       style={{
         display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: 12,
-        padding: '11px 0',
-        borderBottom: isLast ? 'none' : '1px solid var(--divider)',
+        flexDirection: 'column',
+        gap: 2,
+        minWidth: 0,
         border: 'none',
-        borderBottomWidth: isLast ? 0 : 1,
-        borderBottomStyle: 'solid',
-        borderBottomColor: 'var(--divider)',
-        width: '100%',
         background: 'none',
+        padding: 0,
         textAlign: 'left',
         cursor: onEdit ? 'pointer' : 'default',
       }}
     >
-      <div style={{ fontSize: 13, color: 'var(--text-secondary)', flexShrink: 0 }}>{label}</div>
-      <div style={{ textAlign: 'right', minWidth: 0 }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: valueColor }}>{value}</div>
-        {sub && <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 1 }}>{sub}</div>}
+      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.02em' }}>
+        {label}
+        {onEdit && <span style={{ color: 'var(--accent-text)' }}> · Editar</span>}
       </div>
+      <div style={{ fontSize: 16, fontWeight: 800, color: valueColor, letterSpacing: '-0.01em' }}>{value}</div>
+      {sub && <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{sub}</div>}
     </Wrapper>
   );
 }
@@ -338,7 +337,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
       {/* Ficha completa: todos los datos de la deuda, organizados en un solo lugar */}
       <div style={cardStyle}>
         <div style={labelStyle}>DETALLE COMPLETO</div>
-        <div style={{ marginTop: 4 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', rowGap: 18, columnGap: 14, marginTop: 14 }}>
           <DetailRow
             label="Monto total original"
             value={card.originalAmount > 0 ? fmt(card.originalAmount, currency) : 'No configurado'}
@@ -357,8 +356,9 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
             onEdit={openCuotaModal}
           />
           <DetailRow
-            label={`Prioridad (${methodLabel.toLowerCase()})`}
+            label="Prioridad"
             value={priorityRank !== null ? `#${priorityRank} de ${totalOpenDebts}` : 'Ya la pagaste'}
+            sub={priorityRank !== null ? methodLabel : null}
           />
           <DetailRow
             label="Interés mensual estimado"
@@ -377,7 +377,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
             sub="hasta terminar de pagarla, con el mínimo"
           />
           <DetailRow label="Abonado hasta hoy" value={fmt(paidToDate, currency)} valueColor="var(--accent-text)" />
-          <DetailRow label="Balance pendiente" value={fmt(card.balance, currency)} isLast />
+          <DetailRow label="Balance pendiente" value={fmt(card.balance, currency)} />
         </div>
       </div>
 
