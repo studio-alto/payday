@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { fmt } from '../lib/format';
-import { formatShortDate, monthsSince, todayISO } from '../lib/dates';
+import { formatShortDate, monthsSince, todayISO, addMonthsISO, formatMonthYear } from '../lib/dates';
 import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import { monthlyInterestCost, simulateCardPayoff, formatMonthsLabel, debtPriorityRank, METHODS } from '../lib/debt';
 import NumberInput from '../components/NumberInput';
@@ -117,6 +117,11 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
   // that's explicitly about "what would happen if", not "what did this actually cost".
   const interesManual = card.interesMensual || 0;
   const interestCost = monthlyInterestCost(card);
+  // Whether this debt actually accrues interest at all — a personal loan from family
+  // or friends often doesn't, and comparing "interest paid" between two scenarios that
+  // are both always $0 is meaningless, so the scenario cards below switch to comparing
+  // payoff time instead when this is false.
+  const hasInterest = card.interestRate > 0;
   const debtMethod = data.user.debtMethod || 'bola_nieve';
   const methodLabel = METHODS.find((m) => m.key === debtMethod)?.label || '';
   const { rank: priorityRank, total: totalOpenDebts } = debtPriorityRank(cards.filter((c) => !c.archived), debtMethod, card.id);
@@ -124,6 +129,10 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
   const extra = Number(extraText) || 0;
   const baseline = simulateCardPayoff(card, 0);
   const withExtra = simulateCardPayoff(card, extra);
+  // Concrete calendar month each scenario would finish in — "6 meses" is an abstract
+  // count, "julio 2026" is the actual future the person is deciding between.
+  const baselinePayoffDate = !baseline.stuck ? addMonthsISO(baseline.monthsToPayoff) : null;
+  const withExtraPayoffDate = !withExtra.stuck ? addMonthsISO(withExtra.monthsToPayoff) : null;
   const bothResolve = !baseline.stuck && !withExtra.stuck;
   const interestSaved = bothResolve ? baseline.totalInterest - withExtra.totalInterest : null;
   const monthsSaved = bothResolve ? baseline.monthsToPayoff - withExtra.monthsToPayoff : null;
@@ -418,9 +427,11 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
 
       {/* Comparación de escenarios */}
       <div style={cardStyle}>
-        <div style={labelStyle}>¿CUÁNTO PAGARÍAS EN INTERESES EN TOTAL?</div>
+        <div style={labelStyle}>{hasInterest ? '¿CUÁNTO PAGARÍAS EN INTERESES EN TOTAL?' : '¿CUÁNDO TERMINARÍAS DE PAGARLA?'}</div>
         <ExplainerNote>
-          Esto proyecta hacia adelante, desde el saldo de hoy. No es lo que ya pagaste, es lo que pagarías si sigues el plan que elijas.
+          {hasInterest
+            ? 'Esto proyecta hacia adelante, desde el saldo de hoy. No es lo que ya pagaste, es lo que pagarías si sigues el plan que elijas.'
+            : 'Esto proyecta hacia adelante, desde el saldo de hoy: en qué mes real la terminarías de pagar según cuánto abones.'}
         </ExplainerNote>
 
         <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
@@ -434,10 +445,16 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
                   <>No tienes un pago mínimo que reduzca esta deuda, así que el saldo nunca baja por sí solo.</>
                 )}
               </div>
-            ) : (
+            ) : hasInterest ? (
               <>
                 <div style={{ fontWeight: 800, fontSize: 20, color: 'var(--text)', marginTop: 4, letterSpacing: '-0.01em' }}>{fmt(baseline.totalInterest, currency)}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>en intereses · {formatMonthsLabel(baseline.monthsToPayoff)}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Terminarías en {formatMonthYear(baselinePayoffDate)}</div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontWeight: 800, fontSize: 20, color: 'var(--text)', marginTop: 4, letterSpacing: '-0.01em' }}>{formatMonthsLabel(baseline.monthsToPayoff)}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Terminarías en {formatMonthYear(baselinePayoffDate)}</div>
               </>
             )}
           </div>
@@ -451,10 +468,16 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
                   <>Agrega un abono extra arriba. Ahora mismo el mínimo no cubre el interés.</>
                 )}
               </div>
-            ) : (
+            ) : hasInterest ? (
               <>
                 <div style={{ fontWeight: 800, fontSize: 20, color: 'var(--text)', marginTop: 4, letterSpacing: '-0.01em' }}>{fmt(withExtra.totalInterest, currency)}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>en intereses · {formatMonthsLabel(withExtra.monthsToPayoff)}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Terminarías en {formatMonthYear(withExtraPayoffDate)}</div>
+              </>
+            ) : (
+              <>
+                <div style={{ fontWeight: 800, fontSize: 20, color: 'var(--text)', marginTop: 4, letterSpacing: '-0.01em' }}>{formatMonthsLabel(withExtra.monthsToPayoff)}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>Terminarías en {formatMonthYear(withExtraPayoffDate)}</div>
               </>
             )}
           </div>
@@ -489,8 +512,10 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
         {hasSurplus && (
           <div style={{ marginTop: 12, background: 'var(--accent-soft-bg)', borderRadius: 14, padding: 12 }}>
             <div style={{ fontSize: 13, color: 'var(--text)' }}>
-              {fmt(extra, currency)} es más de lo que esta deuda necesita. Con eso la <b>saldas por completo este mes</b> y te sobran{' '}
-              <span style={{ fontWeight: 800, color: 'var(--accent-text)' }}>{fmt(withExtra.surplus, currency)}</span> que podrías destinar a tus otras deudas o metas.
+              {fmt(extra, currency)} es más de lo que esta deuda necesita para pagarse rápido. La{' '}
+              <b>saldarías por completo {withExtra.monthsToPayoff === 1 ? 'este mes' : `en ${formatMonthsLabel(withExtra.monthsToPayoff)}`}</b>
+              {withExtraPayoffDate && `, en ${formatMonthYear(withExtraPayoffDate)}`}, y de ahí en adelante te sobrarían{' '}
+              <span style={{ fontWeight: 800, color: 'var(--accent-text)' }}>{fmt(withExtra.surplus, currency)}</span> cada mes que podrías destinar a tus otras deudas o metas.
             </div>
           </div>
         )}
@@ -498,22 +523,35 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
         {!hasSurplus && extraRescuesFromStuck && (
           <div style={{ marginTop: 12, background: 'var(--accent-soft-bg)', borderRadius: 14, padding: 12 }}>
             <div style={{ fontSize: 13, color: 'var(--text)' }}>
-              Con el mínimo solo, esta deuda <b>nunca se termina de pagar</b>. El interés crece más rápido de lo que abonas. Pero con{' '}
-              {fmt(extra, currency)} extra al mes, sí la terminarías de pagar, en{' '}
-              <span style={{ fontWeight: 800, color: 'var(--accent-text)' }}>{formatMonthsLabel(withExtra.monthsToPayoff)}</span>.
+              Con el mínimo solo, esta deuda <b>nunca se termina de pagar</b>.
+              {hasInterest ? ' El interés crece más rápido de lo que abonas.' : ' No tienes una cuota mensual configurada (o es de $0), así que el saldo no baja solo.'}
+              {' '}Pero con {fmt(extra, currency)} extra al mes, sí la terminarías de pagar, en{' '}
+              <span style={{ fontWeight: 800, color: 'var(--accent-text)' }}>{formatMonthsLabel(withExtra.monthsToPayoff)}</span>
+              {withExtraPayoffDate && `, en ${formatMonthYear(withExtraPayoffDate)}`}.
             </div>
           </div>
         )}
 
-        {!hasSurplus && extra > 0 && !extraRescuesFromStuck && interestSaved !== null && (
+        {!hasSurplus && extra > 0 && !extraRescuesFromStuck && interestSaved !== null && (hasInterest || monthsSaved > 0) && (
           <div style={{ marginTop: 12, background: 'var(--accent-soft-bg)', borderRadius: 14, padding: 12 }}>
             <div style={{ fontSize: 13, color: 'var(--text)' }}>
-              Abonando {fmt(extra, currency)} extra cada mes, te ahorrarías{' '}
-              <span style={{ fontWeight: 800, color: 'var(--accent-text)' }}>{fmt(Math.max(0, interestSaved), currency)}</span> en intereses
-              {monthsSaved > 0 && (
+              {hasInterest ? (
                 <>
-                  {' '}
-                  y terminarías <span style={{ fontWeight: 800, color: 'var(--accent-text)' }}>{monthsSaved} {monthsSaved === 1 ? 'mes' : 'meses'}</span> antes.
+                  Abonando {fmt(extra, currency)} extra cada mes, te ahorrarías{' '}
+                  <span style={{ fontWeight: 800, color: 'var(--accent-text)' }}>{fmt(Math.max(0, interestSaved), currency)}</span> en intereses
+                  {monthsSaved > 0 && (
+                    <>
+                      {' '}
+                      y terminarías <span style={{ fontWeight: 800, color: 'var(--accent-text)' }}>{monthsSaved} {monthsSaved === 1 ? 'mes' : 'meses'}</span> antes, en{' '}
+                      {formatMonthYear(withExtraPayoffDate)}.
+                    </>
+                  )}
+                </>
+              ) : (
+                <>
+                  Abonando {fmt(extra, currency)} extra cada mes, terminarías{' '}
+                  <span style={{ fontWeight: 800, color: 'var(--accent-text)' }}>{monthsSaved} {monthsSaved === 1 ? 'mes' : 'meses'}</span> antes, en{' '}
+                  {formatMonthYear(withExtraPayoffDate)}.
                 </>
               )}
             </div>
@@ -525,8 +563,9 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
         )}
 
         <ExplainerNote>
-          Si solo pagas el mínimo, el interés se sigue sumando cada mes sobre lo que debes, así que terminas pagando más en total. Cada peso
-          extra que abonas reduce el saldo sobre el que se calcula el interés del mes siguiente, por eso pagas menos intereses y terminas antes.
+          {hasInterest
+            ? 'Si solo pagas el mínimo, el interés se sigue sumando cada mes sobre lo que debes, así que terminas pagando más en total. Cada peso extra que abonas reduce el saldo sobre el que se calcula el interés del mes siguiente, por eso pagas menos intereses y terminas antes.'
+            : 'Cada peso extra que abonas se descuenta directo del saldo pendiente, así que entre más abones cada mes, antes terminas de pagarla.'}
         </ExplainerNote>
       </div>
 

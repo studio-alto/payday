@@ -73,6 +73,29 @@ export function daysSince(isoTimestamp, ref = new Date()) {
   return Math.floor((ref - new Date(isoTimestamp)) / 86400000);
 }
 
+// Adds whole months to a base date and returns an ISO date — used to turn a payoff plan's
+// "N months from now" into a real calendar date. Clamps the day to the target month's last
+// day so e.g. Jan 31 + 1 month lands on Feb 28/29 instead of silently rolling into March.
+export function addMonthsISO(months, base = new Date()) {
+  const d = new Date(base);
+  const day = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + months);
+  d.setDate(Math.min(day, daysInMonth(d)));
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+
+// "Julio 2026" — used to show a payoff plan's end date as a real, concrete month
+// instead of just a month count.
+export function formatMonthYear(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00');
+  const label = d.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' });
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
 export function daysInMonth(date = new Date()) {
   return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
 }
