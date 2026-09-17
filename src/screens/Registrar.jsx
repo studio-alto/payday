@@ -76,6 +76,10 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
   const ahorroMonto = Number(form.ahorroMonto) || 0;
   const tarjetaMonto = Number(form.tarjetaMonto) || 0;
   const overAllocated = ahorroMonto + tarjetaMonto > regAmount;
+  // Deudas' percentage presets/input work off what's actually left after ahorro,
+  // not the full income — otherwise a "valid-looking" 40% of the total can quietly
+  // exceed what's still available once ahorro already took its share.
+  const disponibleParaDeudas = Math.max(0, regAmount - ahorroMonto);
   const debtMethod = data.user.debtMethod || 'bola_nieve';
   const debtWaterfall = computeDebtWaterfall(data.cards, debtMethod, tarjetaMonto);
   // Whatever doesn't fit any debt (debtWaterfall.leftover) never reaches a card balance —
@@ -114,7 +118,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
   };
   const setTarjetaPct = (pct) => {
     setTarjetaPctText('');
-    setForm((f) => ({ ...f, tarjetaMonto: String(Math.round(regAmount * pct)) }));
+    setForm((f) => ({ ...f, tarjetaMonto: String(Math.round(disponibleParaDeudas * pct)) }));
   };
   const setAhorroMontoManual = (e) => {
     setAhorroPctText('');
@@ -134,7 +138,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
     const digits = e.target.value.replace(/\D/g, '').slice(0, 3);
     const pct = Math.min(100, Number(digits) || 0);
     setTarjetaPctText(digits);
-    setForm((f) => ({ ...f, tarjetaMonto: String(Math.round(regAmount * (pct / 100))) }));
+    setForm((f) => ({ ...f, tarjetaMonto: String(Math.round(disponibleParaDeudas * (pct / 100))) }));
   };
 
   const goStep2 = () => {
@@ -566,7 +570,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
       {step === 3 && (
         <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>¿Cuánto a deudas?</div>
-          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Te quedan {fmt(regAmount - ahorroMonto, currency)} disponibles</div>
+          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Te quedan {fmt(disponibleParaDeudas, currency)} disponibles</div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {TARJETA_PCTS.map((pct) => (
               <button
