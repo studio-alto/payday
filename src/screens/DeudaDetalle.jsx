@@ -17,13 +17,33 @@ function ExplainerNote({ children }) {
   return <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: 8 }}>{children}</div>;
 }
 
+function EditPencilIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      width="12"
+      height="12"
+      style={{ flexShrink: 0 }}
+    >
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+    </svg>
+  );
+}
+
 // One stat cell in the "Detalle completo" grid below — `onEdit` makes the whole cell
 // tappable (reusing whichever modal already owns that field) instead of duplicating
 // an edit affordance for values that already have one elsewhere. Label-above-value,
 // same pattern as the SALDO PENDIENTE / ABONADO EN TOTAL tiles higher up on this
 // screen, just laid out 2-per-row instead of 1, so the whole "ficha" reads like one
-// dashboard of stats instead of a long list.
-function DetailRow({ label, value, valueColor = 'var(--text)', sub, onEdit }) {
+// dashboard of stats instead of a long list. Sits inside a grid whose own background
+// shows through the 1px gaps as dividing lines — see the wrapping grid below.
+function DetailRow({ label, value, valueColor = 'var(--text)', sub, onEdit, span }) {
   const Wrapper = onEdit ? 'button' : 'div';
   return (
     <Wrapper
@@ -34,16 +54,21 @@ function DetailRow({ label, value, valueColor = 'var(--text)', sub, onEdit }) {
         flexDirection: 'column',
         gap: 2,
         minWidth: 0,
+        gridColumn: span ? '1 / -1' : undefined,
         border: 'none',
-        background: 'none',
-        padding: 0,
+        background: 'var(--card-bg)',
+        padding: '14px 14px',
         textAlign: 'left',
         cursor: onEdit ? 'pointer' : 'default',
       }}
     >
-      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.02em' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.02em' }}>
         {label}
-        {onEdit && <span style={{ color: 'var(--accent-text)' }}> · Editar</span>}
+        {onEdit && (
+          <span style={{ color: 'var(--accent-text)', display: 'inline-flex' }}>
+            <EditPencilIcon />
+          </span>
+        )}
       </div>
       <div style={{ fontSize: 16, fontWeight: 800, color: valueColor, letterSpacing: '-0.01em' }}>{value}</div>
       {sub && <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{sub}</div>}
@@ -337,7 +362,17 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
       {/* Ficha completa: todos los datos de la deuda, organizados en un solo lugar */}
       <div style={cardStyle}>
         <div style={labelStyle}>DETALLE COMPLETO</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', rowGap: 18, columnGap: 14, marginTop: 14 }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: '1fr 1fr',
+            gap: 1,
+            marginTop: 14,
+            background: 'var(--divider)',
+            borderRadius: 14,
+            overflow: 'hidden',
+          }}
+        >
           <DetailRow
             label="Monto total original"
             value={card.originalAmount > 0 ? fmt(card.originalAmount, currency) : 'No configurado'}
@@ -377,7 +412,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
             sub="hasta terminar de pagarla, con el mínimo"
           />
           <DetailRow label="Abonado hasta hoy" value={fmt(paidToDate, currency)} valueColor="var(--accent-text)" />
-          <DetailRow label="Balance pendiente" value={fmt(card.balance, currency)} />
+          <DetailRow label="Balance pendiente" value={fmt(card.balance, currency)} span />
         </div>
       </div>
 
