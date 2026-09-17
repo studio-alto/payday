@@ -29,6 +29,17 @@ export function sortDebtsByPriority(cards, method) {
   });
 }
 
+// Where a single debt ranks in the current method's payoff order (1-based), counted
+// only among debts that still have a balance — the same order simulatePayoffPlan and
+// computeDebtWaterfall actually pay them off in. Returns { rank: null, total } for an
+// already-paid-off debt, since it has no place in the queue anymore.
+export function debtPriorityRank(cards, method, cardId) {
+  const open = cards.filter((c) => c.balance > 0);
+  const sorted = sortDebtsByPriority(open, method);
+  const idx = sorted.findIndex((c) => c.id === cardId);
+  return { rank: idx === -1 ? null : idx + 1, total: open.length };
+}
+
 // Waterfall: all of `amount` goes to the top-priority debt until it's paid off,
 // then the overflow rolls to the next one — how snowball/avalanche actually work for a lump sum.
 export function computeDebtWaterfall(cards, method, amount) {

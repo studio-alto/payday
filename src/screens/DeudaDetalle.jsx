@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { fmt } from '../lib/format';
 import { formatShortDate, monthsSince, todayISO } from '../lib/dates';
 import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
-import { monthlyInterestCost, simulateCardPayoff, formatMonthsLabel } from '../lib/debt';
+import { monthlyInterestCost, simulateCardPayoff, formatMonthsLabel, debtPriorityRank, METHODS } from '../lib/debt';
 import NumberInput from '../components/NumberInput';
 import DateField from '../components/DateField';
 import BottomSheet from '../components/BottomSheet';
@@ -15,6 +15,41 @@ const EXTRA_PRESETS = [0, 20000, 50000, 100000, 200000];
 
 function ExplainerNote({ children }) {
   return <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: 8 }}>{children}</div>;
+}
+
+// One label/value line in the "Detalle completo" table below — `onEdit` makes the
+// whole row tappable (reusing whichever modal already owns that field) instead of
+// duplicating an edit affordance for values that already have one elsewhere.
+function DetailRow({ label, value, valueColor = 'var(--text)', sub, onEdit, isLast }) {
+  const Wrapper = onEdit ? 'button' : 'div';
+  return (
+    <Wrapper
+      type={onEdit ? 'button' : undefined}
+      onClick={onEdit}
+      style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 12,
+        padding: '11px 0',
+        borderBottom: isLast ? 'none' : '1px solid var(--divider)',
+        border: 'none',
+        borderBottomWidth: isLast ? 0 : 1,
+        borderBottomStyle: 'solid',
+        borderBottomColor: 'var(--divider)',
+        width: '100%',
+        background: 'none',
+        textAlign: 'left',
+        cursor: onEdit ? 'pointer' : 'default',
+      }}
+    >
+      <div style={{ fontSize: 13, color: 'var(--text-secondary)', flexShrink: 0 }}>{label}</div>
+      <div style={{ textAlign: 'right', minWidth: 0 }}>
+        <div style={{ fontSize: 13, fontWeight: 700, color: valueColor }}>{value}</div>
+        {sub && <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 1 }}>{sub}</div>}
+      </div>
+    </Wrapper>
+  );
 }
 
 export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEditIncome }) {
@@ -31,6 +66,8 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
   const [cuotaText, setCuotaText] = useState('');
   const [interesModalOpen, setInteresModalOpen] = useState(false);
   const [interesText, setInteresText] = useState('');
+  const [montoOriginalModalOpen, setMontoOriginalModalOpen] = useState(false);
+  const [montoOriginalText, setMontoOriginalText] = useState('');
 
   if (!card) {
     return (
@@ -56,6 +93,9 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
   // that's explicitly about "what would happen if", not "what did this actually cost".
   const interesManual = card.interesMensual || 0;
   const interestCost = monthlyInterestCost(card);
+  const debtMethod = data.user.debtMethod || 'bola_nieve';
+  const methodLabel = METHODS.find((m) => m.key === debtMethod)?.label || '';
+  const { rank: priorityRank, total: totalOpenDebts } = debtPriorityRank(cards.filter((c) => !c.archived), debtMethod, card.id);
 
   const extra = Number(extraText) || 0;
   const baseline = simulateCardPayoff(card, 0);
@@ -144,6 +184,19 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
     const interesMensual = Number(interesText) || 0;
     setData((s) => ({ ...s, cards: s.cards.map((c) => (c.id === card.id ? { ...c, interesMensual } : c)) }));
     setInteresModalOpen(false);
+  };
+
+  // What you originally borrowed — pure reference, never used in any calculation
+  // (the balance is what actually drives everything else), so it's fine to leave
+  // unset for a debt that's been around since before you started using Payday.
+  const openMontoOriginalModal = () => {
+    setMontoOriginalText(card.originalAmount > 0 ? String(card.originalAmount) : '');
+    setMontoOriginalModalOpen(true);
+  };
+  const saveMontoOriginal = () => {
+    const originalAmount = Number(montoOriginalText) || 0;
+    setData((s) => ({ ...s, cards: s.cards.map((c) => (c.id === card.id ? { ...c, originalAmount } : c)) }));
+    setMontoOriginalModalOpen(false);
   };
 
   const scenarioCardStyle = { background: 'var(--input-bg)', borderRadius: 16, padding: 14, flex: 1, display: 'flex', flexDirection: 'column', gap: 4 };
@@ -257,12 +310,76 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
         </BottomSheet>
       )}
 
+      {montoOriginalModalOpen && (
+        <BottomSheet onClose={() => setMontoOriginalModalOpen(false)}>
+          <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>Monto total original</div>
+          <ExplainerNote>
+            Cuánto pediste prestado en un inicio. Es solo de referencia para que veas cuánto llevas recorrido: no afecta
+            ningún cálculo de esta pantalla, esos siempre parten del saldo pendiente de hoy.
+          </ExplainerNote>
+          <NumberInput value={montoOriginalText} onChange={(e) => setMontoOriginalText(e.target.value)} placeholder="Ej: 5.000.000" style={textInputStyle()} />
+          <button
+            type="button"
+            onClick={saveMontoOriginal}
+            style={{ height: 50, borderRadius: 25, background: 'var(--accent)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 14, cursor: 'pointer', border: 'none' }}
+          >
+            Guardar
+          </button>
+        </BottomSheet>
+      )}
+
       <ExplainerNote>
         El círculo muestra qué tanto de esta deuda ya pagaste ({pct}%): entre más lleno, más cerca estás de terminarla.
         {card.interestRate > 0 &&
           ` Lo rojo es lo que te cuesta cada mes solo por tenerla (tú lo ingresas desde tu extracto). No reduce lo que debes, es dinero extra que pagas por no haberla saldado todavía. "E.A." significa Efectivo Anual: es la tasa de interés que cobran por un año completo, la misma que suele aparecer en tu extracto o contrato.`}
         {months !== null && ` Llevas ${months === 0 ? 'menos de un mes' : months === 1 ? '1 mes' : `${months} meses`} con esta deuda.`}
       </ExplainerNote>
+
+      {/* Ficha completa: todos los datos de la deuda, organizados en un solo lugar */}
+      <div style={cardStyle}>
+        <div style={labelStyle}>DETALLE COMPLETO</div>
+        <div style={{ marginTop: 4 }}>
+          <DetailRow
+            label="Monto total original"
+            value={card.originalAmount > 0 ? fmt(card.originalAmount, currency) : 'No configurado'}
+            valueColor={card.originalAmount > 0 ? 'var(--text)' : 'var(--text-secondary)'}
+            onEdit={openMontoOriginalModal}
+          />
+          <DetailRow
+            label="Tasa de interés anual"
+            value={card.interestRate > 0 ? `${card.interestRate}% E.A.` : 'No configurada'}
+            valueColor={card.interestRate > 0 ? 'var(--text)' : 'var(--text-secondary)'}
+          />
+          <DetailRow
+            label="Pago mínimo mensual"
+            value={card.minPayment > 0 ? fmt(card.minPayment, currency) : 'No configurado'}
+            valueColor={card.minPayment > 0 ? 'var(--text)' : 'var(--text-secondary)'}
+            onEdit={openCuotaModal}
+          />
+          <DetailRow
+            label={`Prioridad (${methodLabel.toLowerCase()})`}
+            value={priorityRank !== null ? `#${priorityRank} de ${totalOpenDebts}` : 'Ya la pagaste'}
+          />
+          <DetailRow
+            label="Interés mensual estimado"
+            value={interestCost > 0 ? fmt(interestCost, currency) : 'No aplica'}
+            sub={card.interestRate > 0 ? 'según la tasa, no tu extracto real' : 'falta configurar la tasa'}
+          />
+          <DetailRow
+            label="Meses restantes estimados"
+            value={baseline.stuck ? 'No se alcanza a pagar así' : formatMonthsLabel(baseline.monthsToPayoff)}
+            valueColor={baseline.stuck ? 'var(--danger-text)' : 'var(--text)'}
+            sub="pagando solo el mínimo, desde hoy"
+          />
+          <DetailRow
+            label="Interés total acumulado estimado"
+            value={baseline.stuck ? '—' : fmt(baseline.totalInterest, currency)}
+            sub="hasta terminar de pagarla, con el mínimo"
+          />
+          <DetailRow label="Abonado hasta hoy" value={fmt(paidToDate, currency)} valueColor="var(--accent-text)" />
+          <DetailRow label="Balance pendiente" value={fmt(card.balance, currency)} isLast />
+        </div>
+      </div>
 
       {/* Comparación de escenarios */}
       <div style={cardStyle}>

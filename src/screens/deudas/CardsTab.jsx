@@ -9,7 +9,7 @@ import NumberInput from '../../components/NumberInput';
 import DateField from '../../components/DateField';
 import CardMenu from '../../components/CardMenu';
 import ProgressRing from '../../components/ProgressRing';
-import { sortDebtsByPriority, simulatePayoffPlan, formatMonthsLabel, monthlyPaidTotals, METHODS } from '../../lib/debt';
+import { sortDebtsByPriority, debtPriorityRank, simulatePayoffPlan, formatMonthsLabel, monthlyPaidTotals, METHODS } from '../../lib/debt';
 
 const TIPOS = ['Tarjeta de crédito', 'Préstamo', 'Otro'];
 
@@ -23,7 +23,7 @@ function sanitizeDecimal(raw) {
 }
 
 function emptyForm() {
-  return { tipo: 'Tarjeta de crédito', name: '', balance: '', nextPayment: '', minPayment: '', interestRate: '', startDate: '' };
+  return { tipo: 'Tarjeta de crédito', name: '', balance: '', originalAmount: '', nextPayment: '', minPayment: '', interestRate: '', startDate: '' };
 }
 
 // "Deudas" tab — tarjetas/préstamos, el simulador de pago y el historial de abonos.
@@ -44,7 +44,6 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
   const setExtraMensual = (e) => setData((s) => ({ ...s, user: { ...s.user, extraDeudaMensual: Number(e.target.value) || 0 } }));
 
   const sortedCards = sortDebtsByPriority(activeCards, debtMethod);
-  const priorityId = sortedCards.find((c) => c.balance > 0)?.id;
   const payoffPlan = simulatePayoffPlan(activeCards, debtMethod, extraMensual);
 
   const totalBalance = activeCards.reduce((a, c) => a + c.balance, 0);
@@ -79,6 +78,7 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
       tipo: c.tipo || 'Tarjeta de crédito',
       name: c.name,
       balance: String(c.balance),
+      originalAmount: c.originalAmount ? String(c.originalAmount) : '',
       nextPayment: c.nextPayment,
       minPayment: String(c.minPayment),
       interestRate: c.interestRate ? String(c.interestRate) : '',
@@ -101,6 +101,7 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
                   ...c,
                   name: form.name,
                   balance: Number(form.balance),
+                  originalAmount: Number(form.originalAmount) || 0,
                   nextPayment: form.nextPayment || c.nextPayment,
                   minPayment: Number(form.minPayment) || 0,
                   interestRate: Number(form.interestRate) || 0,
@@ -119,6 +120,7 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
             id: uid(),
             name: form.name,
             balance: Number(form.balance),
+            originalAmount: Number(form.originalAmount) || 0,
             nextPayment: form.nextPayment || today,
             minPayment: Number(form.minPayment) || 0,
             interestRate: Number(form.interestRate) || 0,
@@ -348,6 +350,7 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
         const pct = paidToDate + c.balance > 0 ? Math.round((paidToDate / (paidToDate + c.balance)) * 100) : 0;
         const isOverdue = c.nextPayment < today && c.balance > 0;
         const numAbonos = c.history.length;
+        const { rank, total: totalOpen } = debtPriorityRank(activeCards, debtMethod, c.id);
 
         return (
           <CardMenu
@@ -360,19 +363,19 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
           <div style={cardStyle}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', paddingRight: 34 }}>
               <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>{c.name}</div>
-              {c.id === priorityId && (
+              {rank !== null && totalOpen > 1 && (
                 <div
                   style={{
                     fontSize: 10,
                     fontWeight: 700,
-                    color: 'white',
-                    background: 'var(--accent)',
+                    color: rank === 1 ? 'white' : 'var(--text-secondary)',
+                    background: rank === 1 ? 'var(--accent)' : 'var(--input-bg)',
                     padding: '3px 8px',
                     borderRadius: 10,
                     letterSpacing: '0.03em',
                   }}
                 >
-                  PRIORIDAD
+                  {rank === 1 ? 'PRIORIDAD' : `#${rank} DE ${totalOpen}`}
                 </div>
               )}
             </div>
@@ -510,6 +513,10 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
           </select>
           <input type="text" value={form.name} onChange={setField('name')} placeholder="Nombre (ej: Visa Roja, Préstamo banco X)" style={textInputStyle()} />
           <NumberInput value={form.balance} onChange={setField('balance')} placeholder="Saldo pendiente" style={textInputStyle()} />
+          <NumberInput value={form.originalAmount} onChange={setField('originalAmount')} placeholder="Monto total original (opcional)" style={textInputStyle()} />
+          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: -6 }}>
+            Cuánto pediste prestado en un inicio. Es solo de referencia, no afecta ningún cálculo — déjalo vacío si no lo recuerdas.
+          </div>
           <div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 700 }}>PRÓXIMO PAGO</div>
             <DateField value={form.nextPayment} onChange={setField('nextPayment')} style={textInputStyle()} />
