@@ -24,6 +24,26 @@ export function averageRecentIncome(incomes, count = 10) {
   return Math.round(confirmed.reduce((a, i) => a + i.amount, 0) / confirmed.length);
 }
 
+// Average earned per calendar day (days off included) over the last `windowDays` days,
+// or since the first confirmed income if that's more recent — so someone who only works
+// 4 days a week isn't projected as if they earn every single day, and someone new to the
+// app isn't diluted by days from before they started logging. Used for the month projection.
+export function averageDailyEarnings(incomes, windowDays = 30, ref = new Date()) {
+  const confirmed = incomes.filter((i) => i.estado !== 'proyectado');
+  if (confirmed.length === 0) return 0;
+  const todayMs = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate()).getTime();
+  const dayMs = 86400000;
+  const windowStart = todayMs - (windowDays - 1) * dayMs;
+  const firstMs = Math.min(...confirmed.map((i) => new Date(i.date + 'T00:00:00').getTime()));
+  const startMs = Math.max(windowStart, firstMs);
+  const days = Math.max(1, Math.round((todayMs - startMs) / dayMs) + 1);
+  const total = confirmed.reduce((a, i) => {
+    const t = new Date(i.date + 'T00:00:00').getTime();
+    return t >= startMs && t <= todayMs ? a + i.amount : a;
+  }, 0);
+  return Math.round(total / days);
+}
+
 // The reference income figure shown while registering/reviewing income — an
 // average of recent entries for variable/gig income, or the expected fixed salary
 // for a "fijo" earner. With one or more sueldos fijos configured (see

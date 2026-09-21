@@ -1,5 +1,34 @@
 import { describe, it, expect } from 'vitest';
-import { averageRecentIncome, monthlyBreakdown, getPendingConfirmations, referenceIncome, effectiveIncomeMode } from './incomeStats';
+import { averageRecentIncome, averageDailyEarnings, monthlyBreakdown, getPendingConfirmations, referenceIncome, effectiveIncomeMode } from './incomeStats';
+
+describe('averageDailyEarnings', () => {
+  const ref = new Date(2026, 8, 20);
+
+  it('returns 0 with no confirmed incomes', () => {
+    expect(averageDailyEarnings([], 30, ref)).toBe(0);
+    expect(averageDailyEarnings([{ date: '2026-09-19', amount: 100, estado: 'proyectado' }], 30, ref)).toBe(0);
+  });
+
+  it('counts days off: 4 paid days out of 10 since the first income', () => {
+    const incomes = [
+      { date: '2026-09-11', amount: 100 },
+      { date: '2026-09-13', amount: 100 },
+      { date: '2026-09-15', amount: 100 },
+      { date: '2026-09-20', amount: 100 },
+    ];
+    // first income on the 11th -> 10 days through the 20th, 400 total -> 40/day
+    expect(averageDailyEarnings(incomes, 30, ref)).toBe(40);
+  });
+
+  it('ignores incomes older than the window', () => {
+    const incomes = [
+      { date: '2026-06-01', amount: 9999 },
+      { date: '2026-09-20', amount: 300 },
+    ];
+    // window is the last 30 days (Aug 22 - Sep 20), the June income falls outside it
+    expect(averageDailyEarnings(incomes, 30, ref)).toBe(10);
+  });
+});
 
 describe('getPendingConfirmations', () => {
   const confirmed = { id: 'c1', date: '2026-08-29', estado: 'confirmado' };
