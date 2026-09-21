@@ -48,6 +48,9 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
   // Same plan with no extra, to say what the extra actually changes — only worth
   // computing separately when an extra is set (otherwise it's the plan above).
   const minimumsOnlyPlan = extraMensual > 0 ? simulatePayoffPlan(activeCards, debtMethod, 0) : payoffPlan;
+  // What goes toward debt every month while any is open: every minimum plus the extra.
+  // With the snowball rollover this total stays constant until the very last debt clears.
+  const monthlyDebtBudget = activeCards.filter((c) => c.balance > 0).reduce((a, c) => a + (c.minPayment || 0), 0) + extraMensual;
   const monthsSavedByExtra =
     extraMensual > 0 && !payoffPlan.stuck && !minimumsOnlyPlan.stuck ? minimumsOnlyPlan.monthsToPayoff - payoffPlan.monthsToPayoff : 0;
 
@@ -345,9 +348,9 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
                     {monthsSavedByExtra} {monthsSavedByExtra === 1 ? 'mes' : 'meses'} antes.
                   </div>
                 )}
-                {payoffPlan.surplus > 0 && (
+                {monthlyDebtBudget > 0 && (
                   <div style={{ fontSize: 12, color: 'var(--accent-text)', marginTop: 4 }}>
-                    El extra se usa completo hasta el último mes (mes {payoffPlan.monthsToPayoff}), cuando te sobrarían {fmt(payoffPlan.surplus, currency)} porque ya no quedan deudas. Desde ahí, ese dinero queda libre para tus metas o ahorro.
+                    Cada vez que termines una deuda, su cuota pasa a la siguiente, así que pagas {fmt(monthlyDebtBudget, currency)} al mes en total hasta el final. Cuando termines (mes {payoffPlan.monthsToPayoff}), ese dinero queda libre para tus metas o ahorro.
                   </div>
                 )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>

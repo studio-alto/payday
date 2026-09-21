@@ -104,6 +104,28 @@ describe('simulatePayoffPlan', () => {
     expect(small.payoffMonth).toBeLessThan(big.payoffMonth);
   });
 
+  it('rolls the minimum of a paid-off debt onto the next one (the actual snowball)', () => {
+    const cards = [
+      { id: 'a', name: 'A', balance: 100, interestRate: 0, minPayment: 100 },
+      { id: 'b', name: 'B', balance: 300, interestRate: 0, minPayment: 100 },
+    ];
+    const plan = simulatePayoffPlan(cards, 'bola_nieve', 0);
+    // Month 1: A cleared (100) and B down to 200. Month 2: B's 100 + A's freed 100 clears it.
+    expect(plan.perCard.find((c) => c.id === 'a').payoffMonth).toBe(1);
+    expect(plan.perCard.find((c) => c.id === 'b').payoffMonth).toBe(2);
+    expect(plan.monthsToPayoff).toBe(2);
+  });
+
+  it('the unused part of a final-month minimum also flows to the other debts that same month', () => {
+    const cards = [
+      { id: 'a', name: 'A', balance: 30, interestRate: 0, minPayment: 100 },
+      { id: 'b', name: 'B', balance: 170, interestRate: 0, minPayment: 100 },
+    ];
+    const plan = simulatePayoffPlan(cards, 'bola_nieve', 0);
+    // A only needs 30 of its 100; the other 70 plus B's own 100 clears B (170) the same month.
+    expect(plan.monthsToPayoff).toBe(1);
+  });
+
   it('reports how much of an oversized extra payment is left unapplied once every debt clears', () => {
     const cards = [{ id: 'a', name: 'A', balance: 1000, interestRate: 0, minPayment: 0 }];
     const plan = simulatePayoffPlan(cards, 'bola_nieve', 1000000);

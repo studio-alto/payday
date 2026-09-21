@@ -58,9 +58,12 @@ export function computeDebtWaterfall(cards, method, amount) {
 }
 
 // Simulates paying off all debts month by month: interest accrues, minimum payments
-// keep every card current, and `extraMonthly` rolls down the priority order (paying
-// off the top debt first, then spilling onto the next one), same as the waterfall
-// above but repeated over time instead of for a single lump sum.
+// keep every open card current, and `extraMonthly` rolls down the priority order
+// (paying off the top debt first, then spilling onto the next one). This is the actual
+// snowball/avalanche mechanic: once a debt is paid off, the minimum you were paying on
+// it (plus whatever part of it wasn't needed in its final month) joins the extra and
+// keeps going down the priority order, so the monthly amount put toward debt never
+// shrinks. Same waterfall as above, repeated over time instead of for a single lump sum.
 export function simulatePayoffPlan(cards, method, extraMonthly) {
   const MAX_MONTHS = 360;
   const working = cards
@@ -90,7 +93,10 @@ export function simulatePayoffPlan(cards, method, extraMonthly) {
   }));
 
   let month = 0;
-  // Extra left over after rolling through every open card this month — 0 in every
+  // Minimums of cards already paid off in earlier months — they stop being paid to that
+  // card, so they join the pool that flows to the remaining ones.
+  let freedMinimums = 0;
+  // Money left over after rolling through every open card this month — 0 in every
   // month but the last one (it's fully absorbed while debts remain), so whatever
   // value survives the loop is the leftover from the month everything got paid off.
   let leftoverExtra = 0;
@@ -99,22 +105,28 @@ export function simulatePayoffPlan(cards, method, extraMonthly) {
     working.forEach((c) => {
       if (c.balance > 0) c.balance += c.balance * c.monthlyRate;
     });
+    let pool = extraMonthly + freedMinimums;
     working.forEach((c) => {
-      if (c.balance > 0) c.balance -= Math.min(c.minPayment, c.balance);
+      if (c.balance <= 0) return;
+      const paid = Math.min(c.minPayment, c.balance);
+      c.balance -= paid;
+      pool += c.minPayment - paid;
     });
-    let extra = extraMonthly;
     const open = working
       .filter((c) => c.balance > 0.01)
       .sort((a, b) => (method === 'avalancha' ? b.interestRate - a.interestRate : a.balance - b.balance));
     for (const c of open) {
-      if (extra <= 0) break;
-      const pay = Math.min(extra, c.balance);
+      if (pool <= 0) break;
+      const pay = Math.min(pool, c.balance);
       c.balance -= pay;
-      extra -= pay;
+      pool -= pay;
     }
-    leftoverExtra = extra;
+    leftoverExtra = pool;
     working.forEach((c) => {
-      if (c.balance <= 0.01 && c.payoffMonth === null) c.payoffMonth = month;
+      if (c.balance <= 0.01 && c.payoffMonth === null) {
+        c.payoffMonth = month;
+        freedMinimums += c.minPayment;
+      }
     });
   }
 
