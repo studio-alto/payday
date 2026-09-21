@@ -526,14 +526,6 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
           </select>
         </div>
         <div>
-          <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>DÍA DE PAGO DEL MES</div>
-          <NumberInput
-            value={user.payDayOfMonth}
-            onChange={setUserField('payDayOfMonth', (v) => Math.min(31, Math.max(1, Number(v) || 1)))}
-            style={{ ...textInputStyle(), padding: 12, borderRadius: 12 }}
-          />
-        </div>
-        <div>
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>META DE INGRESO MENSUAL (OPCIONAL)</div>
           <NumberInput
             value={user.metaIngresoMensual || ''}

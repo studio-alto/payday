@@ -1,5 +1,35 @@
 import { describe, it, expect } from 'vitest';
-import { averageRecentIncome, averageDailyEarnings, monthlyBreakdown, getPendingConfirmations, referenceIncome, effectiveIncomeMode } from './incomeStats';
+import { averageRecentIncome, averageDailyEarnings, nextExpectedIncome, monthlyBreakdown, getPendingConfirmations, referenceIncome, effectiveIncomeMode } from './incomeStats';
+
+describe('nextExpectedIncome', () => {
+  const today = '2026-09-20';
+
+  it('returns null when there is nothing scheduled', () => {
+    expect(nextExpectedIncome([], today)).toBeNull();
+    expect(nextExpectedIncome([{ date: '2026-09-25', amount: 100, estado: 'confirmado' }], today)).toBeNull();
+  });
+
+  it('ignores projected incomes already past their date (they await confirmation)', () => {
+    expect(nextExpectedIncome([{ date: '2026-09-18', amount: 100, estado: 'proyectado' }], today)).toBeNull();
+  });
+
+  it('picks the soonest one and counts calendar days', () => {
+    const incomes = [
+      { name: 'Sueldo', date: '2026-10-01', amount: 1500000, estado: 'proyectado' },
+      { name: 'Freelance', date: '2026-09-23', amount: 200000, estado: 'proyectado' },
+    ];
+    expect(nextExpectedIncome(incomes, today)).toEqual({ date: '2026-09-23', days: 3, total: 200000, names: ['Freelance'], count: 1 });
+  });
+
+  it('sums incomes that land on the same day and says Hoy as 0 days', () => {
+    const incomes = [
+      { name: 'A', date: '2026-09-20', amount: 100, estado: 'proyectado' },
+      { name: 'B', date: '2026-09-20', amount: 50, estado: 'proyectado' },
+      { name: 'C', date: '2026-09-30', amount: 999, estado: 'proyectado' },
+    ];
+    expect(nextExpectedIncome(incomes, today)).toEqual({ date: '2026-09-20', days: 0, total: 150, names: ['A', 'B'], count: 2 });
+  });
+});
 
 describe('averageDailyEarnings', () => {
   const ref = new Date(2026, 8, 20);

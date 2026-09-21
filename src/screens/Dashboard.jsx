@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { fmt } from '../lib/format';
 import { WEEKDAY_LETTERS, dayTypeLabel, daysUntilPayday, formatShortDate, isSameMonth, last7Days, remainingDaysInMonth, todayISO } from '../lib/dates';
 import { cardStyle, labelStyle } from '../lib/styles';
-import { averageDailyEarnings, getPendingConfirmations, effectiveIncomeMode } from '../lib/incomeStats';
+import { averageDailyEarnings, getPendingConfirmations, effectiveIncomeMode, nextExpectedIncome } from '../lib/incomeStats';
 import { applyIncomeEffects } from '../lib/debt';
 import { shouldShowBackupReminder } from '../lib/backup';
 import FixedHeader from '../components/FixedHeader';
@@ -105,8 +105,9 @@ export default function Dashboard({ data, setData, onNavigate }) {
   const disponibleFinal =
     projectedTotal !== null ? Math.round(projectedTotal - totalGastos - totalVariablesMonth - projectedTotal * (budgetAhorro / 100)) : null;
   const shortfallWarning = disponibleFinal !== null && disponibleFinal < 0;
-  const paydayDays = daysUntilPayday(user.payDayOfMonth);
-  const paydayLabel = paydayDays === 0 ? 'Hoy' : paydayDays === 1 ? 'En 1 día' : `En ${paydayDays} días`;
+  const nextIncome = nextExpectedIncome(incomes);
+  const nextIncomeWhen = nextIncome ? (nextIncome.days === 0 ? 'Hoy' : nextIncome.days === 1 ? 'Mañana' : `En ${nextIncome.days} días`) : '';
+  const nextIncomeWho = nextIncome ? (nextIncome.names.length > 0 ? nextIncome.names.join(' + ') : nextIncome.count === 1 ? 'Ingreso' : `${nextIncome.count} ingresos`) : '';
 
   const dueSoonLabel = (daysLeft) => (daysLeft < 0 ? 'vencido' : daysLeft === 0 ? 'vence hoy' : daysLeft === 1 ? 'vence en 1 día' : `vence en ${daysLeft} días`);
 
@@ -359,28 +360,35 @@ export default function Dashboard({ data, setData, onNavigate }) {
         </div>
       )}
 
-      <button
-        type="button"
-        onClick={() => onNavigate('ingresos')}
-        style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%' }}
-      >
-        <div style={labelStyle}>PRÓXIMO PAGO</div>
-        <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)' }}>{paydayLabel}</div>
-      </button>
-
       {projectedIncomes.length > 0 && (
         <button
           type="button"
           onClick={() => onNavigate('ingresos')}
-          style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%' }}
+          style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 10, border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%' }}
         >
-          <div>
-            <div style={labelStyle}>PRÓXIMOS A RECIBIR</div>
-            <div style={{ fontWeight: 800, fontSize: 20, color: 'var(--text)', marginTop: 3 }}>{fmt(totalProyectado, user.currency)}</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+            <div>
+              <div style={labelStyle}>PRÓXIMOS A RECIBIR</div>
+              <div style={{ fontWeight: 800, fontSize: 20, color: 'var(--text)', marginTop: 3 }}>{fmt(totalProyectado, user.currency)}</div>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+              {projectedIncomes.length === 1 ? '1 ingreso' : `${projectedIncomes.length} ingresos`}
+            </div>
           </div>
-          <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-            {projectedIncomes.length === 1 ? '1 ingreso' : `${projectedIncomes.length} ingresos`}
-          </div>
+          {nextIncome && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, width: '100%', background: 'var(--input-bg)', borderRadius: 14, padding: '10px 12px' }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.03em' }}>EL PRÓXIMO</div>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginTop: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {nextIncomeWho} · {fmt(nextIncome.total, user.currency)}
+                </div>
+              </div>
+              <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--accent-text)' }}>{nextIncomeWhen}</div>
+                <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 1 }}>{formatShortDate(nextIncome.date)}</div>
+              </div>
+            </div>
+          )}
         </button>
       )}
 

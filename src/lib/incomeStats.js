@@ -1,4 +1,4 @@
-import { isoOffset } from './dates';
+import { isoOffset, todayISO } from './dates';
 
 // Projected incomes worth nagging the person to confirm: any still-planned income whose
 // date already passed (clearly overdue), plus today's once it's evening — giving the
@@ -59,6 +59,27 @@ export function referenceIncome(incomes, mode = 'variable', sueldosFijos = []) {
     return confirmed[0]?.amount || 0;
   }
   return averageRecentIncome(incomes);
+}
+
+// The soonest upcoming (not yet confirmed) income, from the same `proyectado` entries
+// the "Próximos a recibir" card totals — this covers both incomes marked "futuro" by
+// hand and the ones auto-created from a sueldo fijo, each with its own exact date.
+// Incomes landing on that same day are summed together. Projected incomes already past
+// their date aren't "upcoming" (they're waiting for confirmation), so they're skipped.
+// Returns null when nothing is scheduled — nothing to count down to.
+export function nextExpectedIncome(incomes, today = todayISO()) {
+  const upcoming = incomes.filter((i) => i.estado === 'proyectado' && i.date >= today);
+  if (upcoming.length === 0) return null;
+  const date = upcoming.reduce((min, i) => (i.date < min ? i.date : min), upcoming[0].date);
+  const sameDay = upcoming.filter((i) => i.date === date);
+  const days = Math.round((new Date(date + 'T00:00:00') - new Date(today + 'T00:00:00')) / 86400000);
+  return {
+    date,
+    days,
+    total: sameDay.reduce((a, i) => a + i.amount, 0),
+    names: sameDay.map((i) => (i.name || '').trim()).filter(Boolean),
+    count: sameDay.length,
+  };
 }
 
 // Whether a person effectively behaves as "fijo" — either they configured a
