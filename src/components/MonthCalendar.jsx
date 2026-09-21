@@ -2,10 +2,10 @@ const WEEKDAY_HEADERS = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
 
 // A month grid — days with income are green (a soft tint behind the number plus a dot),
 // days with an expense payment get a red dot (a day can show both), and today gets a
-// filled accent circle. Income uses the "good" green rather than the brand orange so it
+// filled accent circle. Planned (future) income is yellow, the same way. Income uses the "good" green rather than the brand orange so it
 // can't be mistaken for the red expense dot. Tapping a day selects it (ring outline) so
 // the caller can filter the list below to just that day.
-export default function MonthCalendar({ year, month, incomeDays, expenseDays, today, selectedDay, onSelectDay, maxDate, showLegend = false }) {
+export default function MonthCalendar({ year, month, incomeDays, futureIncomeDays = new Set(), expenseDays, today, selectedDay, onSelectDay, maxDate, showLegend = false }) {
   const firstWeekday = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const cells = [...Array(firstWeekday).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
@@ -26,6 +26,7 @@ export default function MonthCalendar({ year, month, incomeDays, expenseDays, to
           const isToday = dateStr === today;
           const isSelected = dateStr === selectedDay;
           const hasIncome = incomeDays.has(dateStr);
+          const hasFuture = futureIncomeDays.has(dateStr);
           const hasExpense = expenseDays.has(dateStr);
           const disabled = maxDate ? dateStr > maxDate : false;
           return (
@@ -56,8 +57,8 @@ export default function MonthCalendar({ year, month, incomeDays, expenseDays, to
                   justifyContent: 'center',
                   fontSize: 12,
                   fontWeight: 700,
-                  background: isToday ? 'var(--accent)' : hasIncome ? 'var(--good-soft-bg)' : 'transparent',
-                  color: isToday ? 'white' : hasIncome ? 'var(--good-text)' : 'var(--text)',
+                  background: isToday ? 'var(--accent)' : hasIncome ? 'var(--good-soft-bg)' : hasFuture ? 'var(--future-soft-bg)' : 'transparent',
+                  color: isToday ? 'white' : hasIncome ? 'var(--good-text)' : hasFuture ? 'var(--future-text)' : 'var(--text)',
                   boxShadow: isSelected && !isToday ? 'inset 0 0 0 2px var(--text)' : 'none',
                 }}
               >
@@ -65,6 +66,7 @@ export default function MonthCalendar({ year, month, incomeDays, expenseDays, to
               </div>
               <div style={{ display: 'flex', gap: 3, height: 5 }}>
                 {hasIncome && <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--good)' }} />}
+                {hasFuture && <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--future)' }} />}
                 {hasExpense && <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--danger)' }} />}
               </div>
             </button>
@@ -72,10 +74,14 @@ export default function MonthCalendar({ year, month, incomeDays, expenseDays, to
         })}
       </div>
       {showLegend && (
-        <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 10, fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700 }}>
+        <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', justifyContent: 'center', marginTop: 10, fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700 }}>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--good)' }} />
             Ingreso
+          </span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--future)' }} />
+            Ingreso futuro
           </span>
           <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
             <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--danger)' }} />

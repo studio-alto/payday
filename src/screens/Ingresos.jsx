@@ -30,8 +30,8 @@ function IncomeRow({ inc, currency, isLast, onEdit, confirmDeleteId, setConfirmD
               {inc.name || dayTypeLabel(inc.type)}
             </div>
             {inc.estado === 'proyectado' && (
-              <div style={{ fontSize: 9, fontWeight: 700, color: 'white', background: 'var(--accent)', padding: '2px 6px', borderRadius: 8, flexShrink: 0 }}>
-                PROYECTADO
+              <div style={{ fontSize: 9, fontWeight: 700, color: '#3d2a00', background: 'var(--future)', padding: '2px 6px', borderRadius: 8, flexShrink: 0 }}>
+                FUTURO
               </div>
             )}
           </div>
@@ -129,7 +129,8 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
   );
   const calExpenseTotal = calExpensePayments.reduce((a, h) => a + h.amount, 0);
 
-  const incomeDaySet = new Set(calIncomes.map((i) => i.date));
+  const incomeDaySet = new Set(calIncomes.filter((i) => i.estado !== 'proyectado').map((i) => i.date));
+  const futureIncomeDaySet = new Set(calIncomes.filter((i) => i.estado === 'proyectado').map((i) => i.date));
   const expenseDaySet = new Set(calExpensePayments.map((h) => h.date));
 
   // When a day is tapped on the calendar, narrow the list below to just that
@@ -314,6 +315,7 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
             year={year}
             month={month}
             incomeDays={incomeDaySet}
+            futureIncomeDays={futureIncomeDaySet}
             expenseDays={expenseDaySet}
             today={todayISO()}
             selectedDay={selectedDay}

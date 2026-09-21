@@ -396,7 +396,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
                 width: 40,
                 height: 24,
                 borderRadius: 20,
-                background: form.esFuturo ? 'var(--accent)' : '#D5D5D5',
+                background: form.esFuturo ? 'var(--future)' : '#D5D5D5',
                 position: 'relative',
                 flexShrink: 0,
               }}
@@ -465,7 +465,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
           <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>¿Cuánto al ahorro?</div>
           <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>De {fmt(regAmount, currency)} ganados</div>
           {form.esFuturo && (
-            <div style={{ fontSize: 12, color: 'var(--accent-text)', background: 'var(--input-bg)', padding: 10, borderRadius: 12 }}>
+            <div style={{ fontSize: 12, color: 'var(--future-text)', background: 'var(--future-soft-bg)', padding: 10, borderRadius: 12 }}>
               Como es un ingreso futuro, esta distribución quedará planeada pero no se aplicará a tus metas hasta que confirmes que ya lo recibiste.
             </div>
           )}

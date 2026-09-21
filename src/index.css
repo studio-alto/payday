@@ -21,6 +21,11 @@
   --good: #2f9e6f;
   --good-text: #1f7a54;
   --good-soft-bg: #e6f4ec;
+  /* Money that's planned but not received yet (ingresos futuros) — its own yellow so it
+     never reads as confirmed income (green) or as a warning (red). */
+  --future: #f5b301;
+  --future-text: #8a5d00;
+  --future-soft-bg: #fff4cc;
 }
 
 [data-theme='oscuro'] {
@@ -40,6 +45,9 @@
   --good: #3ecf8e;
   --good-text: #3ecf8e;
   --good-soft-bg: #163829;
+  --future: #ffc93c;
+  --future-text: #ffc93c;
+  --future-soft-bg: #3a3012;
 }
 
 :root {
