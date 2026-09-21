@@ -45,6 +45,11 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
 
   const sortedCards = sortDebtsByPriority(activeCards, debtMethod);
   const payoffPlan = simulatePayoffPlan(activeCards, debtMethod, extraMensual);
+  // Same plan with no extra, to say what the extra actually changes — only worth
+  // computing separately when an extra is set (otherwise it's the plan above).
+  const minimumsOnlyPlan = extraMensual > 0 ? simulatePayoffPlan(activeCards, debtMethod, 0) : payoffPlan;
+  const monthsSavedByExtra =
+    extraMensual > 0 && !payoffPlan.stuck && !minimumsOnlyPlan.stuck ? minimumsOnlyPlan.monthsToPayoff - payoffPlan.monthsToPayoff : 0;
 
   const totalBalance = activeCards.reduce((a, c) => a + c.balance, 0);
   const totalPaidAllTime = activeCards.reduce((a, c) => a + c.history.reduce((h, x) => h + x.amount, 0), 0);
@@ -312,7 +317,7 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
               <div style={{ fontSize: 12, color: 'var(--accent-text)' }}>
                 {payoffPlan.stuckInfo?.worstCards.length > 0 ? (
                   <>
-                    El interés mensual de {payoffPlan.stuckInfo.worstCards.join(', ')} ({fmt(payoffPlan.stuckInfo.totalMonthlyInterest, currency)}) supera tus pagos mínimos + extra ({fmt(payoffPlan.stuckInfo.totalMinPayments + extraMensual, currency)}). Te faltan {fmt(payoffPlan.stuckInfo.gap, currency)} más al mes para empezar a bajar el saldo.
+                    El interés mensual de {payoffPlan.stuckInfo.worstCards.join(', ')} ({fmt(payoffPlan.stuckInfo.totalMonthlyInterest, currency)}) supera {extraMensual > 0 ? 'tus pagos mínimos + extra' : 'tus pagos mínimos'} ({fmt(payoffPlan.stuckInfo.totalMinPayments + extraMensual, currency)}). Te faltan {fmt(payoffPlan.stuckInfo.gap, currency)} más al mes para empezar a bajar el saldo.
                   </>
                 ) : (
                   'Con los pagos mínimos actuales no alcanzas a cubrir el interés. Aumenta el extra mensual o los pagos mínimos.'
@@ -321,12 +326,28 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
             ) : (
               <>
                 <div style={{ fontSize: 13, color: 'var(--text)' }}>
-                  Terminarías de pagar todo en{' '}
+                  {extraMensual > 0 ? `Pagando los mínimos + ${fmt(extraMensual, currency)} extra al mes, terminarías de pagar todo en` : 'Pagando solo los mínimos, terminarías de pagar todo en'}{' '}
                   <span style={{ fontWeight: 800, color: 'var(--accent-text)' }}>{formatMonthsLabel(payoffPlan.monthsToPayoff)}</span>
                 </div>
+                {extraMensual === 0 && (
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
+                    Escribe un extra mensual arriba para ver cuánto se acorta.
+                  </div>
+                )}
+                {extraMensual > 0 && minimumsOnlyPlan.stuck && (
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
+                    Solo con los mínimos no terminarías nunca de pagar: el extra es lo que lo hace posible.
+                  </div>
+                )}
+                {monthsSavedByExtra > 0 && (
+                  <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 4 }}>
+                    Solo con los mínimos serían {formatMonthsLabel(minimumsOnlyPlan.monthsToPayoff)}. Con el extra terminas{' '}
+                    {monthsSavedByExtra} {monthsSavedByExtra === 1 ? 'mes' : 'meses'} antes.
+                  </div>
+                )}
                 {payoffPlan.surplus > 0 && (
                   <div style={{ fontSize: 12, color: 'var(--accent-text)', marginTop: 4 }}>
-                    Tu extra mensual es más de lo que tus deudas necesitan. Te sobran {fmt(payoffPlan.surplus, currency)} al mes sin aplicar a ninguna, que podrías destinar a tus metas o ahorro.
+                    El extra se usa completo hasta el último mes (mes {payoffPlan.monthsToPayoff}), cuando te sobrarían {fmt(payoffPlan.surplus, currency)} porque ya no quedan deudas. Desde ahí, ese dinero queda libre para tus metas o ahorro.
                   </div>
                 )}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
