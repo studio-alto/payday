@@ -318,6 +318,7 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
             today={todayISO()}
             selectedDay={selectedDay}
             onSelectDay={toggleSelectedDay}
+            showLegend
           />
 
           <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>

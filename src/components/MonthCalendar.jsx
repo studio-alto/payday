@@ -1,10 +1,11 @@
 const WEEKDAY_HEADERS = ['D', 'L', 'M', 'M', 'J', 'V', 'S'];
 
-// A month grid — days with income get an accent dot, days with an expense
-// payment get a danger dot (a day can show both), and today gets a filled
-// circle. Tapping a day selects it (ring outline) so the caller can filter
-// the list below to just that day.
-export default function MonthCalendar({ year, month, incomeDays, expenseDays, today, selectedDay, onSelectDay, maxDate }) {
+// A month grid — days with income are green (a soft tint behind the number plus a dot),
+// days with an expense payment get a red dot (a day can show both), and today gets a
+// filled accent circle. Income uses the "good" green rather than the brand orange so it
+// can't be mistaken for the red expense dot. Tapping a day selects it (ring outline) so
+// the caller can filter the list below to just that day.
+export default function MonthCalendar({ year, month, incomeDays, expenseDays, today, selectedDay, onSelectDay, maxDate, showLegend = false }) {
   const firstWeekday = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const cells = [...Array(firstWeekday).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)];
@@ -55,21 +56,33 @@ export default function MonthCalendar({ year, month, incomeDays, expenseDays, to
                   justifyContent: 'center',
                   fontSize: 12,
                   fontWeight: 700,
-                  background: isToday ? 'var(--accent)' : 'transparent',
-                  color: isToday ? 'white' : 'var(--text)',
+                  background: isToday ? 'var(--accent)' : hasIncome ? 'var(--good-soft-bg)' : 'transparent',
+                  color: isToday ? 'white' : hasIncome ? 'var(--good-text)' : 'var(--text)',
                   boxShadow: isSelected && !isToday ? 'inset 0 0 0 2px var(--text)' : 'none',
                 }}
               >
                 {d}
               </div>
               <div style={{ display: 'flex', gap: 3, height: 5 }}>
-                {hasIncome && <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--accent)' }} />}
+                {hasIncome && <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--good)' }} />}
                 {hasExpense && <div style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--danger)' }} />}
               </div>
             </button>
           );
         })}
       </div>
+      {showLegend && (
+        <div style={{ display: 'flex', gap: 16, justifyContent: 'center', marginTop: 10, fontSize: 11, color: 'var(--text-secondary)', fontWeight: 700 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--good)' }} />
+            Ingreso
+          </span>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ width: 7, height: 7, borderRadius: '50%', background: 'var(--danger)' }} />
+            Gasto pagado
+          </span>
+        </div>
+      )}
     </div>
   );
 }
