@@ -88,6 +88,19 @@ export function addMonthsISO(months, base = new Date()) {
   return `${y}-${m}-${dd}`;
 }
 
+// After a payment is registered on a debt, its "próximo pago" date moves on to the same
+// day of the following month, and keeps moving month by month until it lands after the
+// day the payment was made — so paying early, on time or late (even a month or more late)
+// never leaves the debt showing as overdue right after paying. Always counts from the
+// original due day (not the previous clamped result), so a 31st doesn't drift to the 28th.
+export function advanceDueDate(dueISO, paidISO) {
+  if (!dueISO || Number.isNaN(new Date(dueISO + 'T00:00:00').getTime())) return dueISO;
+  const due = new Date(dueISO + 'T00:00:00');
+  let next = addMonthsISO(1, due);
+  for (let months = 2; next <= paidISO && months <= 240; months++) next = addMonthsISO(months, due);
+  return next;
+}
+
 // "Julio 2026" — used to show a payoff plan's end date as a real, concrete month
 // instead of just a month count.
 export function formatMonthYear(dateStr) {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { daysInMonth, remainingDaysInMonth, isSameMonth, daysUntilPayday, isWithinDays, isoOffset, monthsSince, daysSince } from './dates';
+import { daysInMonth, remainingDaysInMonth, isSameMonth, daysUntilPayday, isWithinDays, isoOffset, monthsSince, daysSince, advanceDueDate } from './dates';
 
 describe('daysSince', () => {
   it('counts whole days elapsed since a precise timestamp', () => {
@@ -118,5 +118,34 @@ describe('isWithinDays', () => {
 
   it('excludes a future date', () => {
     expect(isWithinDays('2026-09-01', 30, '2026-08-27')).toBe(false);
+  });
+});
+
+describe('advanceDueDate', () => {
+  it('paying before the due date moves it to the same day next month', () => {
+    expect(advanceDueDate('2026-09-09', '2026-09-01')).toBe('2026-10-09');
+  });
+
+  it('paying on the due date moves it a month', () => {
+    expect(advanceDueDate('2026-09-09', '2026-09-09')).toBe('2026-10-09');
+  });
+
+  it('paying a few days late still lands on next month\'s due day', () => {
+    expect(advanceDueDate('2026-09-09', '2026-09-12')).toBe('2026-10-09');
+  });
+
+  it('paying more than a month late keeps moving until the date is after the payment', () => {
+    // due Aug 9, paid Sep 21: Sep 9 would still be behind the payment day
+    expect(advanceDueDate('2026-08-09', '2026-09-21')).toBe('2026-10-09');
+  });
+
+  it('keeps the original day across short months instead of drifting', () => {
+    expect(advanceDueDate('2026-01-31', '2026-01-31')).toBe('2026-02-28');
+    expect(advanceDueDate('2026-01-31', '2026-02-28')).toBe('2026-03-31');
+  });
+
+  it('leaves a missing or invalid date untouched', () => {
+    expect(advanceDueDate('', '2026-09-01')).toBe('');
+    expect(advanceDueDate(undefined, '2026-09-01')).toBeUndefined();
   });
 });

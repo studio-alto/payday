@@ -1,6 +1,6 @@
 import { useImperativeHandle, useState } from 'react';
 import { fmt } from '../../lib/format';
-import { formatShortDate, todayISO } from '../../lib/dates';
+import { formatShortDate, todayISO, advanceDueDate } from '../../lib/dates';
 import { uid } from '../../lib/id';
 import { cardStyle, textInputStyle, primaryButtonStyle } from '../../lib/styles';
 import BottomSheet from '../../components/BottomSheet';
@@ -191,7 +191,13 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
           const history = c.history.map((h, i) => (i === index ? { date: payForm.date || today, amount, note: payForm.note } : h));
           return { ...c, balance: Math.max(0, c.balance + oldAmount - amount), history };
         }
-        return { ...c, balance: Math.max(0, c.balance - amount), history: [...c.history, { date: payForm.date || today, amount, note: payForm.note }] };
+        const paidOn = payForm.date || today;
+        return {
+          ...c,
+          balance: Math.max(0, c.balance - amount),
+          nextPayment: advanceDueDate(c.nextPayment, paidOn),
+          history: [...c.history, { date: paidOn, amount, note: payForm.note }],
+        };
       }),
     }));
     setPayModalOpen(false);

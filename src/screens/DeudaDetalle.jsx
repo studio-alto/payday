@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { fmt } from '../lib/format';
-import { formatShortDate, monthsSince, todayISO, addMonthsISO, formatMonthYear } from '../lib/dates';
+import { formatShortDate, monthsSince, todayISO, addMonthsISO, formatMonthYear, advanceDueDate } from '../lib/dates';
 import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import { monthlyInterestCost, simulateCardPayoff, formatMonthsLabel, debtPriorityRank, METHODS } from '../lib/debt';
 import NumberInput from '../components/NumberInput';
@@ -117,6 +117,12 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
   // that's explicitly about "what would happen if", not "what did this actually cost".
   const interesManual = card.interesMensual || 0;
   const interestCost = monthlyInterestCost(card);
+  // If the real interest from the statement is way above what the entered E.A. rate
+  // projects, the number typed in "Tasa de interés anual" is very likely the card's
+  // monthly rate, not the annual one this screen expects — a common mix-up, since a
+  // Colombian extracto usually prints both a monthly rate and an E.A. one. Flagging it
+  // beats leaving every projection on this screen silently off by roughly the same factor.
+  const possibleRateMismatch = interesManual > 0 && interestCost > 0 && interesManual > interestCost * 3;
   // Whether this debt actually accrues interest at all — a personal loan from family
   // or friends often doesn't, and comparing "interest paid" between two scenarios that
   // are both always $0 is meaningless, so the scenario cards below switch to comparing
@@ -174,7 +180,13 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
           const history = c.history.map((h, i) => (i === editingHistoryIdx ? { date: payForm.date || today, amount, note: payForm.note } : h));
           return { ...c, balance: Math.max(0, c.balance + oldAmount - amount), history };
         }
-        return { ...c, balance: Math.max(0, c.balance - amount), history: [...c.history, { date: payForm.date || today, amount, note: payForm.note }] };
+        const paidOn = payForm.date || today;
+        return {
+          ...c,
+          balance: Math.max(0, c.balance - amount),
+          nextPayment: advanceDueDate(c.nextPayment, paidOn),
+          history: [...c.history, { date: paidOn, amount, note: payForm.note }],
+        };
       }),
     }));
     setPayModalOpen(false);
@@ -280,6 +292,17 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
           </button>
         )}
       </div>
+
+      {possibleRateMismatch && (
+        <div style={{ ...cardStyle, background: 'var(--danger-soft-bg)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--danger-text)' }}>⚠️ Revisa la tasa que ingresaste</div>
+          <div style={{ fontSize: 12, color: 'var(--danger-text)' }}>
+            Con {card.interestRate}% E.A. este mes te cobrarían aprox. {fmt(interestCost, currency)}, pero ingresaste{' '}
+            {fmt(interesManual, currency)} reales desde tu extracto. Es posible que {card.interestRate}% sea tu tasa
+            mensual y no la E.A. (anual) — revísalo en tu extracto y corrígelo en "Editar" desde Gastos si es así.
+          </div>
+        </div>
+      )}
 
       {/* Saldo y abonado, en tarjetas secundarias */}
       <div style={{ display: 'flex', gap: 12 }}>
