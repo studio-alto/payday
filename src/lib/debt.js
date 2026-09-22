@@ -57,6 +57,17 @@ export function computeDebtWaterfall(cards, method, amount) {
   return { allocations, leftover: remaining };
 }
 
+// Same shape as computeDebtWaterfall ({ allocations, leftover }), but for when the person
+// picks a specific debt instead of letting the method decide — all of `amount` goes to
+// that one card, up to its balance; anything past that stays as leftover (kept as
+// disponible, never silently rolled onto another debt like the waterfall would).
+export function computeManualDebtAllocation(cards, cardId, amount) {
+  const card = cards.find((c) => c.id === cardId && c.balance > 0);
+  if (!card || amount <= 0) return { allocations: [], leftover: Math.max(0, amount) };
+  const applied = Math.min(amount, card.balance);
+  return { allocations: applied > 0 ? [{ cardId: card.id, name: card.name, amount: applied }] : [], leftover: amount - applied };
+}
+
 // Simulates paying off all debts month by month: interest accrues, minimum payments
 // keep every open card current, and `extraMonthly` rolls down the priority order
 // (paying off the top debt first, then spilling onto the next one). This is the actual
@@ -226,7 +237,7 @@ export function reverseIncomeEffects(income, goals, cards) {
 // `cards`, applying each allocation as a tagged payment. Returns the debtAllocations
 // actually applied so the caller can store them on the income for a future reversal.
 export function applyIncomeEffects(income, goals, cards, debtMethod) {
-  const { ahorro, tarjeta, goalId } = income.distribution;
+  const { ahorro, tarjeta, goalId, tarjetaCardId } = income.distribution;
 
   const newGoals =
     goalId && ahorro > 0
@@ -237,7 +248,12 @@ export function applyIncomeEffects(income, goals, cards, debtMethod) {
         )
       : goals;
 
-  const { allocations } = computeDebtWaterfall(cards, debtMethod, tarjeta);
+  // A person can either let the method (bola de nieve/avalancha) decide, or pick one
+  // debt by hand — same allocation shape either way, so everything downstream (history
+  // tagging, reversal, totals) doesn't need to know which one produced it.
+  const { allocations } = tarjetaCardId
+    ? computeManualDebtAllocation(cards, tarjetaCardId, tarjeta)
+    : computeDebtWaterfall(cards, debtMethod, tarjeta);
   const newCards = cards.map((c) => {
     const alloc = allocations.find((a) => a.cardId === c.id);
     if (!alloc) return c;

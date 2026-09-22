@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   sortDebtsByPriority,
   computeDebtWaterfall,
+  computeManualDebtAllocation,
   simulatePayoffPlan,
   simulateCardPayoff,
   monthlyInterestCost,
@@ -23,6 +24,31 @@ describe('sortDebtsByPriority', () => {
   it('avalancha: highest interest rate first', () => {
     const sorted = sortDebtsByPriority([smallLow, bigHigh], 'avalancha');
     expect(sorted.map((c) => c.id)).toEqual(['big_high', 'small_low']);
+  });
+});
+
+describe('computeManualDebtAllocation', () => {
+  const cards = [smallLow, bigHigh];
+
+  it('sends the full amount to the chosen card, ignoring priority order', () => {
+    const { allocations, leftover } = computeManualDebtAllocation(cards, 'big_high', 50);
+    expect(allocations).toEqual([{ cardId: 'big_high', name: 'Grande, interés alto', amount: 50 }]);
+    expect(leftover).toBe(0);
+  });
+
+  it('caps at the balance and reports the rest as leftover, without rolling to another card', () => {
+    const { allocations, leftover } = computeManualDebtAllocation(cards, 'small_low', 150);
+    expect(allocations).toEqual([{ cardId: 'small_low', name: 'Chica, interés bajo', amount: 100 }]);
+    expect(leftover).toBe(50);
+  });
+
+  it('returns all-leftover for an unknown or already-paid-off card', () => {
+    expect(computeManualDebtAllocation(cards, 'missing', 50)).toEqual({ allocations: [], leftover: 50 });
+    expect(computeManualDebtAllocation([{ ...smallLow, balance: 0 }], 'small_low', 50)).toEqual({ allocations: [], leftover: 50 });
+  });
+
+  it('does nothing with a zero or negative amount', () => {
+    expect(computeManualDebtAllocation(cards, 'small_low', 0)).toEqual({ allocations: [], leftover: 0 });
   });
 });
 

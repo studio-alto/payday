@@ -6,7 +6,7 @@ import { cardStyle, labelStyle, fieldLabelStyle, textInputStyle, primaryButtonSt
 import NumberInput from '../components/NumberInput';
 import DateField from '../components/DateField';
 import FixedHeader from '../components/FixedHeader';
-import { METHODS, computeDebtWaterfall, reverseIncomeEffects, applyIncomeEffects } from '../lib/debt';
+import { METHODS, computeDebtWaterfall, computeManualDebtAllocation, reverseIncomeEffects, applyIncomeEffects } from '../lib/debt';
 import { referenceIncome, effectiveIncomeMode } from '../lib/incomeStats';
 
 const AHORRO_PCTS = [0, 0.1, 0.2, 0.3, 0.4, 0.5];
@@ -23,6 +23,7 @@ function emptyForm(suggestedAmount, goals, incomeMode) {
     note: '',
     ahorroMonto: '',
     tarjetaMonto: '',
+    tarjetaCardId: '',
     goalId: defaultGoal ? defaultGoal.id : '',
     esFuturo: false,
   };
@@ -37,6 +38,7 @@ function formFromIncome(income) {
     note: income.note || '',
     ahorroMonto: income.distribution.ahorro ? String(income.distribution.ahorro) : '',
     tarjetaMonto: income.distribution.tarjeta ? String(income.distribution.tarjeta) : '',
+    tarjetaCardId: income.distribution.tarjetaCardId || '',
     goalId: income.distribution.goalId || '',
     esFuturo: income.estado === 'proyectado',
   };
@@ -81,7 +83,12 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
   // exceed what's still available once ahorro already took its share.
   const disponibleParaDeudas = Math.max(0, regAmount - ahorroMonto);
   const debtMethod = data.user.debtMethod || 'bola_nieve';
-  const debtWaterfall = computeDebtWaterfall(data.cards, debtMethod, tarjetaMonto);
+  // Cards a person can actually pick to send this abono to by hand, instead of letting
+  // bola de nieve/avalancha decide — same active-with-balance scope CardsTab uses.
+  const payableCards = data.cards.filter((c) => !c.archived && c.balance > 0);
+  const debtWaterfall = form.tarjetaCardId
+    ? computeManualDebtAllocation(data.cards, form.tarjetaCardId, tarjetaMonto)
+    : computeDebtWaterfall(data.cards, debtMethod, tarjetaMonto);
   // Whatever doesn't fit any debt (debtWaterfall.leftover) never reaches a card balance —
   // it has to stay part of "disponible", not get subtracted as if it were paid toward
   // debt, or that amount would silently vanish from every total in the app.
@@ -141,6 +148,8 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
     setForm((f) => ({ ...f, tarjetaMonto: String(Math.round(disponibleParaDeudas * (pct / 100))) }));
   };
 
+  const setTarjetaCardId = (cardId) => setForm((f) => ({ ...f, tarjetaCardId: cardId }));
+
   const goStep2 = () => {
     if (regAmount > 0) setStep(2);
   };
@@ -170,7 +179,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
         type: form.type,
         note: form.note,
         estado: form.esFuturo ? 'proyectado' : 'confirmado',
-        distribution: { ahorro: ahorroMonto, tarjeta: tarjetaMonto, goalId: form.goalId || null },
+        distribution: { ahorro: ahorroMonto, tarjeta: tarjetaMonto, tarjetaCardId: form.tarjetaCardId || null, goalId: form.goalId || null },
         // Keeps this income tied to whichever sueldo fijo generated it (see
         // lib/recurringIncome.js) — dropping it here would make the next app load
         // think this cycle was never covered and generate a duplicate.
@@ -612,6 +621,51 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
               />
             </div>
           </div>
+          {payableCards.length > 1 && (
+            <div>
+              <div style={fieldLabelStyle}>¿A QUÉ DEUDA VA ESTO?</div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => setTarjetaCardId('')}
+                  style={{
+                    padding: '9px 14px',
+                    borderRadius: 20,
+                    fontSize: 13,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    background: !form.tarjetaCardId ? 'var(--text)' : 'var(--input-bg)',
+                    color: !form.tarjetaCardId ? 'var(--page-bg)' : 'var(--text)',
+                    border: 'none',
+                  }}
+                >
+                  Automático ({METHODS.find((m) => m.key === debtMethod)?.label})
+                </button>
+                {payableCards.map((c) => {
+                  const active = form.tarjetaCardId === c.id;
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setTarjetaCardId(c.id)}
+                      style={{
+                        padding: '9px 14px',
+                        borderRadius: 20,
+                        fontSize: 13,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        background: active ? 'var(--text)' : 'var(--input-bg)',
+                        color: active ? 'var(--page-bg)' : 'var(--text)',
+                        border: 'none',
+                      }}
+                    >
+                      {c.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
           <div style={{ background: 'var(--input-bg)', borderRadius: 14, padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
               <span style={{ color: 'var(--text-secondary)', fontWeight: 700 }}>Ahorro</span>
@@ -625,10 +679,16 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
           {tarjetaMonto > 0 && (
             <div style={{ background: 'var(--input-bg)', borderRadius: 14, padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.03em' }}>
-                {form.esFuturo ? 'SE ABONARÁ CUANDO LO CONFIRMES' : 'SE ABONARÁ AUTOMÁTICO'} · {METHODS.find((m) => m.key === debtMethod)?.label.toUpperCase()}
+                {form.esFuturo
+                  ? 'SE ABONARÁ CUANDO LO CONFIRMES'
+                  : form.tarjetaCardId
+                    ? 'SE ABONARÁ A LA DEUDA ELEGIDA'
+                    : `SE ABONARÁ AUTOMÁTICO · ${METHODS.find((m) => m.key === debtMethod)?.label.toUpperCase()}`}
               </div>
               {debtWaterfall.allocations.length === 0 ? (
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>No tienes deudas pendientes.</div>
+                <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                  {form.tarjetaCardId ? 'Esa deuda ya no tiene saldo pendiente.' : 'No tienes deudas pendientes.'}
+                </div>
               ) : (
                 debtWaterfall.allocations.map((a) => (
                   <div key={a.cardId} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
@@ -639,7 +699,9 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
               )}
               {debtWaterfall.leftover > 0 && (
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                  Sobran {fmt(debtWaterfall.leftover, currency)} sin deudas a las que aplicarlos. Ese monto se queda como disponible, no se resta de tus cuentas.
+                  {form.tarjetaCardId
+                    ? `Sobran ${fmt(debtWaterfall.leftover, currency)} porque superan el saldo de esa deuda. Ese monto se queda como disponible, no se resta de tus cuentas.`
+                    : `Sobran ${fmt(debtWaterfall.leftover, currency)} sin deudas a las que aplicarlos. Ese monto se queda como disponible, no se resta de tus cuentas.`}
                 </div>
               )}
             </div>
