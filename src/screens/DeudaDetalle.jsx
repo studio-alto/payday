@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { fmt } from '../lib/format';
 import { formatShortDate, monthsSince, todayISO, addMonthsISO, formatMonthYear, advanceDueDate } from '../lib/dates';
 import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
-import { monthlyInterestCost, simulateCardPayoff, formatMonthsLabel, debtPriorityRank, METHODS } from '../lib/debt';
+import { monthlyInterestCost, simulateCardPayoff, formatMonthsLabel, debtPriorityRank, reverseIncomeEffects, METHODS } from '../lib/debt';
 import NumberInput from '../components/NumberInput';
 import DateField from '../components/DateField';
 import BottomSheet from '../components/BottomSheet';
@@ -204,6 +204,21 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
       }),
     }));
     setDeleteHistoryIdx(null);
+  };
+
+  // An abono tagged "Desde un ingreso" isn't its own record — it's the debt side effect
+  // of that income's distribution. Deleting it here means deleting the income itself
+  // (same as doing it from Ingresos), so the ahorro and the debt allocation both reverse
+  // together instead of leaving the balance out of sync with a half-deleted abono.
+  const [deleteIncomeId, setDeleteIncomeId] = useState(null);
+  const confirmDeleteIncome = (incomeId) => {
+    setData((s) => {
+      const income = s.incomes.find((i) => i.id === incomeId);
+      if (!income) return s;
+      const reversed = reverseIncomeEffects(income, s.goals, s.cards);
+      return { ...s, incomes: s.incomes.filter((i) => i.id !== incomeId), goals: reversed.goals, cards: reversed.cards };
+    });
+    setDeleteIncomeId(null);
   };
 
   // A quick way to set/update just the cuota — credit cards especially have a minimum
@@ -617,13 +632,14 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
                     </div>
                   </div>
                   {linkedIncome ? (
-                    <button
-                      type="button"
-                      onClick={() => onEditIncome(linkedIncome)}
-                      style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer', border: 'none', background: 'none', padding: '4px 0', flexShrink: 0 }}
-                    >
-                      Editar ingreso
-                    </button>
+                    <CardMenu
+                      inline
+                      triggerBg="transparent"
+                      actions={[
+                        { label: 'Editar ingreso', onClick: () => onEditIncome(linkedIncome) },
+                        { label: 'Eliminar ingreso', destructive: true, onClick: () => setDeleteIncomeId(linkedIncome.id) },
+                      ]}
+                    />
                   ) : (
                     <CardMenu
                       inline
@@ -642,13 +658,20 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
                     onCancel={cancelDeleteHistory}
                   />
                 )}
+                {linkedIncome && deleteIncomeId === linkedIncome.id && (
+                  <InlineConfirm
+                    message="¿Eliminar este ingreso por completo? También se revierte lo que fue a ahorro y a esta deuda."
+                    onConfirm={() => confirmDeleteIncome(linkedIncome.id)}
+                    onCancel={() => setDeleteIncomeId(null)}
+                  />
+                )}
               </div>
             );
           })
         )}
         {sortedHistory.some((h) => h.incomeId) && (
           <ExplainerNote>
-            Los abonos marcados "Desde un ingreso" se editan o eliminan desde ese ingreso. Usa "Editar ingreso" para ir directo.
+            Los abonos marcados "Desde un ingreso" vienen de un ingreso que registraste. "Eliminar ingreso" borra ese ingreso completo (no solo el abono a esta deuda), y revierte también lo que fue a ahorro.
           </ExplainerNote>
         )}
         <button
