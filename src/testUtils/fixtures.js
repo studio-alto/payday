@@ -5,7 +5,6 @@ export function makeData(overrides = {}) {
   return {
     user: {
       currency: 'COP',
-      payDayOfMonth: 1,
       theme: 'light',
       debtMethod: 'bola_nieve',
       onboarded: true,

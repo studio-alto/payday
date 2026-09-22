@@ -8,7 +8,7 @@ export const STORAGE_KEY = 'payday-pwa-data-v1';
 // never resurfaces for people already using the app.
 function seedData() {
   return {
-    user: { currency: 'COP', payBaseDay: 60000, payDayOfMonth: 1, theme: 'light', debtMethod: 'bola_nieve', onboarded: false },
+    user: { currency: 'COP', theme: 'light', debtMethod: 'bola_nieve', onboarded: false },
     incomes: [],
     goals: [],
     cards: [],

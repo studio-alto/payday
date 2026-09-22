@@ -455,6 +455,8 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
           {hasInterest
             ? 'Esto proyecta hacia adelante, desde el saldo de hoy. No es lo que ya pagaste, es lo que pagarías si sigues el plan que elijas.'
             : 'Esto proyecta hacia adelante, desde el saldo de hoy: en qué mes real la terminarías de pagar según cuánto abones.'}
+          {totalOpenDebts > 1 &&
+            ' Aquí se calcula esta deuda sola, sin las demás: no cuenta que al terminar otra, su cuota podría sumarse a esta y adelantar el pago. Esa versión completa la ves en el plan general, en la pestaña Deudas.'}
         </ExplainerNote>
 
         <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
