@@ -101,7 +101,12 @@ export default function Dashboard({ data, setData, onNavigate }) {
   // Only surfaced as a small warning when it comes out negative — it's a guess about the
   // future, so it stays out of the way unless there's something worth flagging.
   const budgetAhorro = user.budgetAhorro ?? 20;
-  const projectedTotal = projectionEligible ? totalMonth + avgDailyIncome * remainingDaysInMonth() : null;
+  // Income already scheduled for later this month (a sueldo fijo, or anything marked "es
+  // un ingreso futuro") is a known amount, not a guess — folding it in avoids a false
+  // "te quedarías corto" when a real payment is already lined up. Never double-counted
+  // with the daily-pace estimate above, since that only ever looks at confirmed incomes.
+  const scheduledThisMonth = projectedIncomes.filter((i) => isSameMonth(i.date)).reduce((a, i) => a + i.amount, 0);
+  const projectedTotal = projectionEligible ? totalMonth + avgDailyIncome * remainingDaysInMonth() + scheduledThisMonth : null;
   const disponibleFinal =
     projectedTotal !== null ? Math.round(projectedTotal - totalGastos - totalVariablesMonth - projectedTotal * (budgetAhorro / 100)) : null;
   const shortfallWarning = disponibleFinal !== null && disponibleFinal < 0;
@@ -348,16 +353,6 @@ export default function Dashboard({ data, setData, onNavigate }) {
             />
           </div>
         </button>
-      )}
-
-      {shortfallWarning && (
-        <div style={{ ...cardStyle, background: 'var(--danger-soft-bg)', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--danger-text)' }}>⚠️ Podrías quedarte corto este mes</div>
-          <div style={{ fontSize: 12, color: 'var(--danger-text)' }}>
-            Si sigues ganando al ritmo de tus últimos 30 días, después de tus gastos y tu regla de ahorro te faltarían unos{' '}
-            {fmt(Math.abs(disponibleFinal), user.currency)} al cerrar el mes. Es solo un estimado.
-          </div>
-        </div>
       )}
 
       {projectedIncomes.length > 0 && (
@@ -643,6 +638,16 @@ export default function Dashboard({ data, setData, onNavigate }) {
       </div>
 
       <MonthComparisonCard data={data} />
+
+      {shortfallWarning && (
+        <div style={{ ...cardStyle, background: 'var(--danger-soft-bg)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--danger-text)' }}>⚠️ Podrías quedarte corto este mes</div>
+          <div style={{ fontSize: 12, color: 'var(--danger-text)' }}>
+            Contando lo que ya tienes programado a recibir y el ritmo de tus últimos 30 días, después de tus gastos y tu regla de ahorro te faltarían unos{' '}
+            {fmt(Math.abs(disponibleFinal), user.currency)} al cerrar el mes. Es solo un estimado.
+          </div>
+        </div>
+      )}
     </div>
   );
 }
