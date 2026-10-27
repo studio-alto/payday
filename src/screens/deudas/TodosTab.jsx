@@ -2,6 +2,8 @@ import { fmt } from '../../lib/format';
 import { formatShortDate } from '../../lib/dates';
 import { cardStyle, labelStyle } from '../../lib/styles';
 import MonthSwitcher from './MonthSwitcher';
+import MethodBreakdown from '../../components/MethodBreakdown';
+import { MethodTag } from '../../components/PaymentMethodIcon';
 
 // "Todos" tab — solo lectura: gastos fijos ya pagados en el mes visto (desde el
 // historial de cada gasto, la misma fuente que monthlyRecap.js usa para "gastos
@@ -15,7 +17,7 @@ export default function TodosTab({ data, monthNav }) {
   const fixedPaidThisMonth = expenses.flatMap((e) =>
     (e.history || [])
       .filter((h) => monthNav.inMonth(h.date))
-      .map((h) => ({ date: h.date, amount: h.amount, name: e.name, categoria: e.categoria, kind: 'fijo' })),
+      .map((h) => ({ date: h.date, amount: h.amount, name: e.name, categoria: e.categoria, kind: 'fijo', metodo: h.metodo })),
   );
   const totalFixedPaidMonth = fixedPaidThisMonth.reduce((a, h) => a + h.amount, 0);
 
@@ -43,6 +45,8 @@ export default function TodosTab({ data, monthNav }) {
         )}
       </div>
 
+      <MethodBreakdown card records={allExpensesThisMonth} currency={currency} title="CÓMO PAGASTE" />
+
       <div style={cardStyle}>
         <div style={labelStyle}>{monthNav.label.toUpperCase()}</div>
         {allExpensesThisMonth.length === 0 ? (
@@ -56,6 +60,7 @@ export default function TodosTab({ data, monthNav }) {
                 <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{item.name || item.categoria}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
                   {item.kind === 'fijo' ? 'Gasto fijo' : item.categoria} · {formatShortDate(item.date)}
+                  <MethodTag metodo={item.metodo} />
                 </div>
               </div>
               <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)', flexShrink: 0 }}>{fmt(item.amount, currency)}</div>

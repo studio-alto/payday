@@ -9,6 +9,10 @@ import MoneyInput from '../../components/MoneyInput';
 import DateField from '../../components/DateField';
 import CardMenu from '../../components/CardMenu';
 import CategoryIcon from '../../components/CategoryIcon';
+import { MethodTag } from '../../components/PaymentMethodIcon';
+import PaymentMethodChips from '../../components/PaymentMethodChips';
+import MethodBreakdown from '../../components/MethodBreakdown';
+import { normalizeMethod } from '../../lib/paymentMethods';
 import { VARIABLE_CATEGORIES, monthlyCategoryTotals, monthlyVariableTotals } from '../../lib/variableExpenses';
 import { CHART_COLORS as CATEGORY_CHART_COLORS } from '../../lib/colors';
 import MonthSwitcher from './MonthSwitcher';
@@ -35,8 +39,8 @@ function categoryDonutArcs(slices) {
   });
 }
 
-function emptyVariableForm(today, defaultCategoria) {
-  return { name: '', categoria: defaultCategoria, amount: '', date: today };
+function emptyVariableForm(today, defaultCategoria, lastMetodo = '') {
+  return { name: '', categoria: defaultCategoria, amount: '', date: today, metodo: normalizeMethod(lastMetodo) };
 }
 
 // "Variables" tab — gastos sueltos categorizados, presupuesto por categoría y su
@@ -93,19 +97,19 @@ export default function VariablesTab({ data, setData, monthNav, addRef }) {
 
   const [variableModalOpen, setVariableModalOpen] = useState(false);
   const [editingVariableId, setEditingVariableId] = useState(null);
-  const [variableForm, setVariableForm] = useState(emptyVariableForm(today, trackedCategories[0] || VARIABLE_CATEGORIES[0]));
+  const [variableForm, setVariableForm] = useState(emptyVariableForm(today, trackedCategories[0] || VARIABLE_CATEGORIES[0], data.user.lastMetodoGasto));
   const [confirmDeleteVariableId, setConfirmDeleteVariableId] = useState(null);
 
   const openNewVariableModal = () => {
     setEditingVariableId(null);
-    setVariableForm(emptyVariableForm(today, trackedCategories[0] || VARIABLE_CATEGORIES[0]));
+    setVariableForm(emptyVariableForm(today, trackedCategories[0] || VARIABLE_CATEGORIES[0], data.user.lastMetodoGasto));
     setVariableModalOpen(true);
   };
   useImperativeHandle(addRef, () => ({ openNew: openNewVariableModal }));
 
   const openEditVariableModal = (g) => {
     setEditingVariableId(g.id);
-    setVariableForm({ name: g.name || '', categoria: g.categoria, amount: String(g.amount), date: g.date });
+    setVariableForm({ name: g.name || '', categoria: g.categoria, amount: String(g.amount), date: g.date, metodo: normalizeMethod(g.metodo) });
     setVariableModalOpen(true);
   };
   const closeVariableModal = () => setVariableModalOpen(false);
@@ -120,16 +124,17 @@ export default function VariablesTab({ data, setData, monthNav, addRef }) {
           ...s,
           gastosVariables: list.map((g) =>
             g.id === editingVariableId
-              ? { ...g, name: variableForm.name, categoria: variableForm.categoria, amount: Number(variableForm.amount), date: variableForm.date || today }
+              ? { ...g, name: variableForm.name, categoria: variableForm.categoria, amount: Number(variableForm.amount), date: variableForm.date || today, metodo: variableForm.metodo }
               : g,
           ),
         };
       }
       return {
         ...s,
+        user: variableForm.metodo ? { ...s.user, lastMetodoGasto: variableForm.metodo } : s.user,
         gastosVariables: [
           ...list,
-          { id: uid(), name: variableForm.name, categoria: variableForm.categoria, amount: Number(variableForm.amount), date: variableForm.date || today },
+          { id: uid(), name: variableForm.name, categoria: variableForm.categoria, amount: Number(variableForm.amount), date: variableForm.date || today, metodo: variableForm.metodo },
         ],
       };
     });
@@ -314,6 +319,8 @@ export default function VariablesTab({ data, setData, monthNav, addRef }) {
             );
           })()}
 
+          <MethodBreakdown card records={thisMonthVariables} currency={currency} title="CÓMO PAGASTE" />
+
           <div style={cardStyle}>
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', letterSpacing: '0.06em', marginBottom: 4 }}>{monthNav.label.toUpperCase()}</div>
             {thisMonthVariables.length === 0 ? (
@@ -328,6 +335,7 @@ export default function VariablesTab({ data, setData, monthNav, addRef }) {
                       <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{g.name || g.categoria}</div>
                       <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
                         {g.categoria} · {formatShortDate(g.date)}
+                        <MethodTag metodo={g.metodo} />
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
@@ -391,6 +399,11 @@ export default function VariablesTab({ data, setData, monthNav, addRef }) {
             style={textInputStyle()}
           />
           <DateField value={variableForm.date} max={today} onChange={setVariableField('date')} style={textInputStyle()} />
+          <PaymentMethodChips
+            value={variableForm.metodo}
+            onChange={(metodo) => setVariableForm((f) => ({ ...f, metodo }))}
+            label="¿CÓMO PAGASTE? (OPCIONAL)"
+          />
           <button type="button" onClick={saveVariable} style={{ ...primaryButtonStyle(), height: 50, borderRadius: 25 }}>
             Guardar
           </button>

@@ -6,6 +6,8 @@ import { cardStyle, labelStyle, fieldLabelStyle, textInputStyle, primaryButtonSt
 import NumberInput from '../components/NumberInput';
 import DateField from '../components/DateField';
 import FixedHeader from '../components/FixedHeader';
+import PaymentMethodChips from '../components/PaymentMethodChips';
+import { normalizeMethod } from '../lib/paymentMethods';
 import { METHODS, computeDebtWaterfall, computeManualDebtAllocation, reverseIncomeEffects, applyIncomeEffects } from '../lib/debt';
 import { referenceIncome, effectiveIncomeMode } from '../lib/incomeStats';
 
@@ -13,7 +15,7 @@ const AHORRO_PCTS = [0, 0.1, 0.2, 0.3, 0.4, 0.5];
 const TARJETA_PCTS = [0, 0.1, 0.15, 0.2, 0.3, 0.4];
 const AMOUNT_PRESETS = [10000, 20000, 50000, 100000, 150000];
 
-function emptyForm(suggestedAmount, goals, incomeMode) {
+function emptyForm(suggestedAmount, goals, incomeMode, lastMetodo = '') {
   const defaultGoal = goals.find((g) => g.current < g.target) || goals[0];
   return {
     name: '',
@@ -26,6 +28,7 @@ function emptyForm(suggestedAmount, goals, incomeMode) {
     tarjetaCardId: '',
     goalId: defaultGoal ? defaultGoal.id : '',
     esFuturo: false,
+    metodo: normalizeMethod(lastMetodo),
   };
 }
 
@@ -41,6 +44,7 @@ function formFromIncome(income) {
     tarjetaCardId: income.distribution.tarjetaCardId || '',
     goalId: income.distribution.goalId || '',
     esFuturo: income.estado === 'proyectado',
+    metodo: normalizeMethod(income.metodo),
   };
 }
 
@@ -57,7 +61,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
   const [form, setForm] = useState(() =>
     isEditing
       ? formFromIncome(editingIncome)
-      : emptyForm(referenceIncome(data.incomes, incomeMode, data.sueldosFijos), activeGoals, incomeMode),
+      : emptyForm(referenceIncome(data.incomes, incomeMode, data.sueldosFijos), activeGoals, incomeMode, data.user.lastMetodoIngreso),
   );
   const [ahorroPctText, setAhorroPctText] = useState('');
   const [tarjetaPctText, setTarjetaPctText] = useState('');
@@ -179,6 +183,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
         type: form.type,
         note: form.note,
         estado: form.esFuturo ? 'proyectado' : 'confirmado',
+        metodo: form.metodo,
         distribution: { ahorro: ahorroMonto, tarjeta: tarjetaMonto, tarjetaCardId: form.tarjetaCardId || null, goalId: form.goalId || null },
         // Keeps this income tied to whichever sueldo fijo generated it (see
         // lib/recurringIncome.js) — dropping it here would make the next app load
@@ -199,6 +204,9 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
 
       return {
         ...s,
+        // A new income remembers its method as the next one's default; editing an old
+        // one shouldn't rewrite that habit.
+        user: !isEditing && form.metodo ? { ...s.user, lastMetodoIngreso: form.metodo } : s.user,
         incomes: isEditing ? s.incomes.map((i) => (i.id === entry.id ? entry : i)) : [...s.incomes, entry],
         goals: applied.goals,
         cards: applied.cards,
@@ -424,6 +432,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
               />
             </div>
           </button>
+          <PaymentMethodChips value={form.metodo} onChange={(metodo) => setForm((f) => ({ ...f, metodo }))} />
           {incomeMode !== 'fijo' && (
             <div>
               <div style={fieldLabelStyle}>TIPO DE DÍA</div>

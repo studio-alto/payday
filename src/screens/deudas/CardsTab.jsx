@@ -9,6 +9,9 @@ import NumberInput from '../../components/NumberInput';
 import DateField from '../../components/DateField';
 import CardMenu from '../../components/CardMenu';
 import ProgressRing from '../../components/ProgressRing';
+import { MethodTag } from '../../components/PaymentMethodIcon';
+import PaymentMethodChips from '../../components/PaymentMethodChips';
+import { normalizeMethod } from '../../lib/paymentMethods';
 import { sortDebtsByPriority, debtPriorityRank, simulatePayoffPlan, formatMonthsLabel, monthlyPaidTotals, reverseIncomeEffects, METHODS } from '../../lib/debt';
 
 const TIPOS = ['Tarjeta de crédito', 'Préstamo', 'Otro'];
@@ -70,7 +73,7 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
 
   const [payModalOpen, setPayModalOpen] = useState(false);
   const [payingCardId, setPayingCardId] = useState(null);
-  const [payForm, setPayForm] = useState({ amount: '', note: '' });
+  const [payForm, setPayForm] = useState({ amount: '', note: '', metodo: '' });
   const [editingHistoryTarget, setEditingHistoryTarget] = useState(null);
 
   const openNewModal = () => {
@@ -163,7 +166,7 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
   const openPayModal = (id) => {
     setPayingCardId(id);
     setEditingHistoryTarget(null);
-    setPayForm({ amount: '', note: '', date: today });
+    setPayForm({ amount: '', note: '', date: today, metodo: normalizeMethod(data.user.lastMetodoGasto) });
     setPayModalOpen(true);
   };
   const openEditHistoryModal = (cardId, index) => {
@@ -171,7 +174,7 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
     if (!entry) return;
     setPayingCardId(cardId);
     setEditingHistoryTarget({ cardId, index });
-    setPayForm({ amount: String(entry.amount), note: entry.note || '', date: entry.date });
+    setPayForm({ amount: String(entry.amount), note: entry.note || '', date: entry.date, metodo: normalizeMethod(entry.metodo) });
     setPayModalOpen(true);
   };
   const closePayModal = () => {
@@ -183,12 +186,13 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
     if (amount <= 0) return;
     setData((s) => ({
       ...s,
+      user: !editingHistoryTarget && payForm.metodo ? { ...s.user, lastMetodoGasto: payForm.metodo } : s.user,
       cards: s.cards.map((c) => {
         if (c.id !== payingCardId) return c;
         if (editingHistoryTarget && editingHistoryTarget.cardId === payingCardId) {
           const { index } = editingHistoryTarget;
           const oldAmount = c.history[index].amount;
-          const history = c.history.map((h, i) => (i === index ? { date: payForm.date || today, amount, note: payForm.note } : h));
+          const history = c.history.map((h, i) => (i === index ? { ...h, date: payForm.date || today, amount, note: payForm.note, metodo: payForm.metodo } : h));
           return { ...c, balance: Math.max(0, c.balance + oldAmount - amount), history };
         }
         const paidOn = payForm.date || today;
@@ -196,7 +200,7 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
           ...c,
           balance: Math.max(0, c.balance - amount),
           nextPayment: advanceDueDate(c.nextPayment, paidOn),
-          history: [...c.history, { date: paidOn, amount, note: payForm.note }],
+          history: [...c.history, { date: paidOn, amount, note: payForm.note, metodo: payForm.metodo }],
         };
       }),
     }));
@@ -501,6 +505,7 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
                           <div style={{ color: 'var(--text-secondary)' }}>
                             {formatShortDate(h.date)}
                             {h.note ? ` · ${h.note}` : ''}
+                            <MethodTag metodo={h.metodo} />
                             {h.incomeId ? ' · Desde un ingreso' : ''}
                           </div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -622,6 +627,11 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
             onChange={(e) => setPayForm((f) => ({ ...f, note: e.target.value }))}
             placeholder="Nota (opcional)"
             style={textInputStyle()}
+          />
+          <PaymentMethodChips
+            value={payForm.metodo}
+            onChange={(metodo) => setPayForm((f) => ({ ...f, metodo }))}
+            label="¿CÓMO PAGASTE? (OPCIONAL)"
           />
           <button
             type="button"

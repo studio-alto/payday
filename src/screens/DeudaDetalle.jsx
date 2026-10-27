@@ -10,6 +10,9 @@ import FixedHeader from '../components/FixedHeader';
 import ProgressRing from '../components/ProgressRing';
 import InlineConfirm from '../components/InlineConfirm';
 import CardMenu from '../components/CardMenu';
+import { MethodTag } from '../components/PaymentMethodIcon';
+import PaymentMethodChips from '../components/PaymentMethodChips';
+import { normalizeMethod } from '../lib/paymentMethods';
 
 const EXTRA_PRESETS = [0, 20000, 50000, 100000, 200000];
 
@@ -82,7 +85,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
   const card = cards.find((c) => c.id === cardId);
 
   const [payModalOpen, setPayModalOpen] = useState(false);
-  const [payForm, setPayForm] = useState({ amount: '', note: '', date: '' });
+  const [payForm, setPayForm] = useState({ amount: '', note: '', date: '', metodo: '' });
   const [editingHistoryIdx, setEditingHistoryIdx] = useState(null);
   const [deleteHistoryIdx, setDeleteHistoryIdx] = useState(null);
   const [extraText, setExtraText] = useState('');
@@ -164,13 +167,13 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
   const sortedHistory = card.history.map((h, i) => ({ ...h, _idx: i })).sort((a, b) => b.date.localeCompare(a.date));
   const openPayModal = () => {
     setEditingHistoryIdx(null);
-    setPayForm({ amount: '', note: '', date: today });
+    setPayForm({ amount: '', note: '', date: today, metodo: normalizeMethod(data.user.lastMetodoGasto) });
     setPayModalOpen(true);
   };
   const openEditHistoryModal = (idx) => {
     const entry = card.history[idx];
     setEditingHistoryIdx(idx);
-    setPayForm({ amount: String(entry.amount), note: entry.note || '', date: entry.date });
+    setPayForm({ amount: String(entry.amount), note: entry.note || '', date: entry.date, metodo: normalizeMethod(entry.metodo) });
     setPayModalOpen(true);
   };
   const confirmPay = () => {
@@ -178,11 +181,12 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
     if (amount <= 0) return;
     setData((s) => ({
       ...s,
+      user: editingHistoryIdx === null && payForm.metodo ? { ...s.user, lastMetodoGasto: payForm.metodo } : s.user,
       cards: s.cards.map((c) => {
         if (c.id !== card.id) return c;
         if (editingHistoryIdx !== null) {
           const oldAmount = c.history[editingHistoryIdx].amount;
-          const history = c.history.map((h, i) => (i === editingHistoryIdx ? { date: payForm.date || today, amount, note: payForm.note } : h));
+          const history = c.history.map((h, i) => (i === editingHistoryIdx ? { ...h, date: payForm.date || today, amount, note: payForm.note, metodo: payForm.metodo } : h));
           return { ...c, balance: Math.max(0, c.balance + oldAmount - amount), history };
         }
         const paidOn = payForm.date || today;
@@ -190,7 +194,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
           ...c,
           balance: Math.max(0, c.balance - amount),
           nextPayment: advanceDueDate(c.nextPayment, paidOn),
-          history: [...c.history, { date: paidOn, amount, note: payForm.note }],
+          history: [...c.history, { date: paidOn, amount, note: payForm.note, metodo: payForm.metodo }],
         };
       }),
     }));
@@ -628,6 +632,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
                     <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
                       {formatShortDate(h.date)}
                       {h.note ? ` · ${h.note}` : ''}
+                      <MethodTag metodo={h.metodo} />
                       {h.incomeId ? ' · Desde un ingreso' : ''}
                     </div>
                   </div>
@@ -718,6 +723,11 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
             onChange={(e) => setPayForm((f) => ({ ...f, note: e.target.value }))}
             placeholder="Nota (opcional)"
             style={textInputStyle()}
+          />
+          <PaymentMethodChips
+            value={payForm.metodo}
+            onChange={(metodo) => setPayForm((f) => ({ ...f, metodo }))}
+            label="¿CÓMO PAGASTE? (OPCIONAL)"
           />
           <button
             type="button"

@@ -32,6 +32,20 @@ describe('ensureRecurringIncomes', () => {
     });
   });
 
+  it('carries the sueldo fijo\'s payment method onto the generated income, ignoring unknown values', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 10));
+
+    const withMethod = ensureRecurringIncomes({ incomes: [], sueldosFijos: [{ id: 'a', name: 'A', amount: 100, payDayOfMonth: 15, metodo: 'Nequi' }] });
+    expect(withMethod.incomes[0].metodo).toBe('Nequi');
+
+    const unknown = ensureRecurringIncomes({ incomes: [], sueldosFijos: [{ id: 'b', name: 'B', amount: 100, payDayOfMonth: 15, metodo: 'Cripto' }] });
+    expect(unknown.incomes[0].metodo).toBe('');
+
+    const legacy = ensureRecurringIncomes({ incomes: [], sueldosFijos: [{ id: 'c', name: 'C', amount: 100, payDayOfMonth: 15 }] });
+    expect(legacy.incomes[0].metodo).toBe('');
+  });
+
   it('does not duplicate an income already generated for the current cycle', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 8, 10));

@@ -8,11 +8,14 @@ import InlineConfirm from '../../components/InlineConfirm';
 import NumberInput from '../../components/NumberInput';
 import CardMenu from '../../components/CardMenu';
 import MonthSwitcher from './MonthSwitcher';
+import { MethodTag } from '../../components/PaymentMethodIcon';
+import PaymentMethodChips from '../../components/PaymentMethodChips';
+import { normalizeMethod } from '../../lib/paymentMethods';
 
 const CATEGORIAS = ['Suscripción', 'Servicios', 'Transporte', 'Vivienda', 'Tarjeta de crédito', 'Otro'];
 
 function emptyExpenseForm() {
-  return { name: '', categoria: 'Suscripción', amount: '', dueDay: '', medioPago: 'efectivo' };
+  return { name: '', categoria: 'Suscripción', amount: '', dueDay: '', medioPago: 'efectivo', metodo: '' };
 }
 
 // Concentric progress rings (Apple Watch-style), one per metric — outer to inner.
@@ -90,7 +93,7 @@ export default function GastosFijosTab({ data, setData, monthNav, addRef }) {
   const fixedPaidThisMonth = expenses.flatMap((e) =>
     (e.history || [])
       .filter((h) => monthNav.inMonth(h.date))
-      .map((h) => ({ date: h.date, amount: h.amount, name: e.name, categoria: e.categoria, kind: 'fijo' })),
+      .map((h) => ({ date: h.date, amount: h.amount, name: e.name, categoria: e.categoria, kind: 'fijo', metodo: h.metodo })),
   );
   const totalFixedPaidMonth = fixedPaidThisMonth.reduce((a, h) => a + h.amount, 0);
 
@@ -108,7 +111,7 @@ export default function GastosFijosTab({ data, setData, monthNav, addRef }) {
 
   const openEditExpenseModal = (e) => {
     setEditingExpenseId(e.id);
-    setExpenseForm({ name: e.name, categoria: e.categoria, amount: String(e.amount), dueDay: String(e.dueDay), medioPago: e.medioPago });
+    setExpenseForm({ name: e.name, categoria: e.categoria, amount: String(e.amount), dueDay: String(e.dueDay), medioPago: e.medioPago, metodo: normalizeMethod(e.metodo) });
     setExpenseModalOpen(true);
   };
   const closeExpenseModal = () => setExpenseModalOpen(false);
@@ -117,13 +120,15 @@ export default function GastosFijosTab({ data, setData, monthNav, addRef }) {
   const saveExpense = () => {
     if (!expenseForm.name || !expenseForm.amount || !expenseForm.dueDay) return;
     const dueDay = Math.min(31, Math.max(1, Number(expenseForm.dueDay) || 1));
+    // A method only makes sense when the gasto isn't charged to a credit card.
+    const expenseMetodo = expenseForm.medioPago === 'efectivo' ? expenseForm.metodo : '';
     setData((s) => {
       if (editingExpenseId) {
         return {
           ...s,
           expenses: s.expenses.map((e) =>
             e.id === editingExpenseId
-              ? { ...e, name: expenseForm.name, categoria: expenseForm.categoria, amount: Number(expenseForm.amount), dueDay, medioPago: expenseForm.medioPago }
+              ? { ...e, name: expenseForm.name, categoria: expenseForm.categoria, amount: Number(expenseForm.amount), dueDay, medioPago: expenseForm.medioPago, metodo: expenseMetodo }
               : e,
           ),
         };
@@ -132,7 +137,7 @@ export default function GastosFijosTab({ data, setData, monthNav, addRef }) {
         ...s,
         expenses: [
           ...s.expenses,
-          { id: uid(), name: expenseForm.name, categoria: expenseForm.categoria, amount: Number(expenseForm.amount), dueDay, medioPago: expenseForm.medioPago, history: [] },
+          { id: uid(), name: expenseForm.name, categoria: expenseForm.categoria, amount: Number(expenseForm.amount), dueDay, medioPago: expenseForm.medioPago, metodo: expenseMetodo, history: [] },
         ],
       };
     });
@@ -154,7 +159,7 @@ export default function GastosFijosTab({ data, setData, monthNav, addRef }) {
   const markExpensePaid = (id) => {
     setData((s) => ({
       ...s,
-      expenses: s.expenses.map((e) => (e.id === id ? { ...e, history: [...e.history, { date: today, amount: e.amount }] } : e)),
+      expenses: s.expenses.map((e) => (e.id === id ? { ...e, history: [...e.history, { date: today, amount: e.amount, metodo: normalizeMethod(e.metodo) }] } : e)),
     }));
   };
 
@@ -318,6 +323,7 @@ export default function GastosFijosTab({ data, setData, monthNav, addRef }) {
             <div style={{ fontSize: 11, color: fgSoft, fontWeight: 700, marginTop: 2 }}>
               {e.categoria}
               {linkedCard && ` · ${linkedCard.name}${linkedCard.interestRate > 0 ? ` · ${linkedCard.interestRate}% E.A.` : ''}`}
+              {!linkedCard && <MethodTag metodo={e.metodo} />}
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: 10, gap: 10 }}>
@@ -397,6 +403,13 @@ export default function GastosFijosTab({ data, setData, monthNav, addRef }) {
               </option>
             ))}
           </select>
+          {expenseForm.medioPago === 'efectivo' && (
+            <PaymentMethodChips
+              value={expenseForm.metodo}
+              onChange={(metodo) => setExpenseForm((f) => ({ ...f, metodo }))}
+              label="¿CÓMO LO PAGAS NORMALMENTE? (OPCIONAL)"
+            />
+          )}
           <button type="button" onClick={saveExpense} style={{ ...primaryButtonStyle(), height: 50, borderRadius: 25 }}>
             Guardar
           </button>

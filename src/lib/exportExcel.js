@@ -1,5 +1,6 @@
 import writeXlsxFile from 'write-excel-file/browser';
 import { dayTypeLabel, formatFullDate, isSameMonth, todayISO } from './dates';
+import { normalizeMethod } from './paymentMethods';
 
 // write-excel-file instead of exceljs: same real .xlsx output (styled header row,
 // column widths, frozen header, money format), but its only dependency is fflate
@@ -72,8 +73,8 @@ export async function buildSummaryWorkbook({ incomes, goals, cards, expenses, ga
   const ingresosSheet = {
     sheet: 'Ingresos',
     ...table(
-      ['Nombre', 'Fecha', 'Tipo de día', 'Monto', 'Ahorro', 'Deudas', 'Estado'],
-      [24, 14, 14, 14, 12, 12, 14],
+      ['Nombre', 'Fecha', 'Tipo de día', 'Monto', 'Ahorro', 'Deudas', 'Estado', 'Método de pago'],
+      [24, 14, 14, 14, 12, 12, 14, 18],
       incomes.map((i) => [
         i.name || dayTypeLabel(i.type),
         formatFullDate(i.date),
@@ -82,6 +83,7 @@ export async function buildSummaryWorkbook({ incomes, goals, cards, expenses, ga
         i.distribution.ahorro || 0,
         i.distribution.tarjeta || 0,
         i.estado === 'proyectado' ? 'Proyectado' : 'Confirmado',
+        normalizeMethod(i.metodo),
       ]),
       [4, 5, 6],
     ),
@@ -122,9 +124,9 @@ export async function buildSummaryWorkbook({ incomes, goals, cards, expenses, ga
     sheets.push({
       sheet: 'Gastos variables',
       ...table(
-        ['Nombre', 'Categoría', 'Fecha', 'Monto'],
-        [22, 18, 14, 16],
-        gastosVariables.map((g) => [g.name || g.categoria, g.categoria, formatFullDate(g.date), g.amount]),
+        ['Nombre', 'Categoría', 'Fecha', 'Monto', 'Método de pago'],
+        [22, 18, 14, 16, 18],
+        gastosVariables.map((g) => [g.name || g.categoria, g.categoria, formatFullDate(g.date), g.amount, normalizeMethod(g.metodo)]),
         [4],
       ),
     });

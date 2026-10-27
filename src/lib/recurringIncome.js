@@ -1,5 +1,6 @@
 import { uid } from './id';
 import { daysUntilPayday, isoOffset, isSameMonth } from './dates';
+import { normalizeMethod } from './paymentMethods';
 
 // Next occurrence of a recurring salary's payday — this month's if it hasn't
 // passed yet, otherwise next month's (same lookahead daysUntilPayday already
@@ -42,6 +43,7 @@ export function ensureRecurringIncomes(data) {
         note: '',
         estado: 'proyectado',
         recurringId: sf.id,
+        metodo: normalizeMethod(sf.metodo),
         distribution: { ahorro, tarjeta, goalId: sf.goalId || null, debtAllocations: [] },
       },
     ];

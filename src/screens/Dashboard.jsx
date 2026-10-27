@@ -9,6 +9,7 @@ import ProgressRing from '../components/ProgressRing';
 import SummaryIcon from '../components/SummaryIcon';
 import MonthComparisonCard from '../components/MonthComparisonCard';
 import BackupReminder from '../components/BackupReminder';
+import { MethodTag } from '../components/PaymentMethodIcon';
 
 // One color per "Resumen general" row — a small, fixed palette (not the Variables
 // donut's per-category one, which grows/cycles) used purely to make each account
@@ -268,6 +269,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
                 </div>
                 <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.85)' }}>
                   {formatShortDate(inc.date)} · {fmt(inc.amount, user.currency)}
+                  <MethodTag metodo={inc.metodo} />
                 </div>
               </div>
               <button
@@ -541,6 +543,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{inc.name || dayTypeLabel(inc.type)}</div>
                 <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
                   {formatShortDate(inc.date)} · {dayTypeLabel(inc.type)}
+                  <MethodTag metodo={inc.metodo} />
                 </div>
               </div>
               <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{fmt(inc.amount, user.currency)}</div>

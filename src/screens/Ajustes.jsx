@@ -14,13 +14,16 @@ import NumberInput from '../components/NumberInput';
 import FixedHeader from '../components/FixedHeader';
 import BottomSheet from '../components/BottomSheet';
 import InlineConfirm from '../components/InlineConfirm';
+import { MethodTag } from '../components/PaymentMethodIcon';
+import PaymentMethodChips from '../components/PaymentMethodChips';
+import { normalizeMethod } from '../lib/paymentMethods';
 import PinPad from '../components/PinPad';
 
 const AHORRO_PCTS = [0, 10, 20, 30, 40, 50];
 const TARJETA_PCTS = [0, 10, 15, 20, 30, 40];
 
 function emptySueldoForm(defaultGoalId) {
-  return { name: '', amount: '', payDayOfMonth: '1', ahorroPct: '0', tarjetaPct: '0', goalId: defaultGoalId || '' };
+  return { name: '', amount: '', payDayOfMonth: '1', ahorroPct: '0', tarjetaPct: '0', goalId: defaultGoalId || '', metodo: '' };
 }
 
 export default function Ajustes({ data, setData, canInstall, isInstalled, onInstall, onNavigate }) {
@@ -63,6 +66,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
       ahorroPct: String(sf.ahorroPct || 0),
       tarjetaPct: String(sf.tarjetaPct || 0),
       goalId: sf.goalId || '',
+      metodo: normalizeMethod(sf.metodo),
     });
     setSueldoModalOpen(true);
   };
@@ -79,6 +83,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
       ahorroPct: Math.min(100, Number(sueldoForm.ahorroPct) || 0),
       tarjetaPct: Math.min(100, Number(sueldoForm.tarjetaPct) || 0),
       goalId: sueldoForm.goalId || null,
+      metodo: sueldoForm.metodo,
     };
     setData((s) => ({
       ...s,
@@ -485,6 +490,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
                     <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)' }}>{sf.name}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
                       {fmt(sf.amount, user.currency)} · día {sf.payDayOfMonth}
+                      <MethodTag metodo={sf.metodo} />
                       {(sf.ahorroPct > 0 || sf.tarjetaPct > 0) && ` · ${sf.ahorroPct || 0}% ahorro, ${sf.tarjetaPct || 0}% deudas`}
                     </div>
                   </div>
@@ -638,6 +644,12 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
               style={textInputStyle()}
             />
           </div>
+
+          <PaymentMethodChips
+            value={sueldoForm.metodo}
+            onChange={(metodo) => setSueldoForm((f) => ({ ...f, metodo }))}
+            label="¿CÓMO LO RECIBES? (OPCIONAL)"
+          />
 
           <div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 700 }}>% A AHORRO (OPCIONAL)</div>

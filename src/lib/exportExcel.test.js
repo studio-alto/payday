@@ -31,6 +31,19 @@ describe('buildSummaryWorkbook', () => {
     expenses: [{ name: 'Netflix', categoria: 'Suscripción', amount: 44900, dueDay: 15 }],
   };
 
+  it('still builds when incomes and variable expenses carry a payment method (or none)', async () => {
+    const data = {
+      ...baseData,
+      incomes: baseData.incomes.map((i, idx) => ({ ...i, metodo: idx === 0 ? 'Nequi' : undefined })),
+      gastosVariables: [
+        { name: 'Almuerzo', categoria: 'Comida', date: '2026-09-02', amount: 15000, metodo: 'Efectivo' },
+        { name: 'Cine', categoria: 'Ocio', date: '2026-09-03', amount: 30000 },
+      ],
+    };
+    const blob = await buildSummaryWorkbook(data);
+    expect(blob.size).toBeGreaterThan(0);
+  });
+
   it('resolves to a non-empty xlsx Blob with the expected sheets', async () => {
     const blob = await buildSummaryWorkbook({ ...baseData, gastosVariables: [] });
     expect(blob).toBeInstanceOf(Blob);

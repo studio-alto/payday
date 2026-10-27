@@ -6,7 +6,10 @@ import InlineConfirm from '../components/InlineConfirm';
 import FixedHeader from '../components/FixedHeader';
 import CardMenu from '../components/CardMenu';
 import MonthCalendar from '../components/MonthCalendar';
+import MethodBreakdown from '../components/MethodBreakdown';
+import { PAYMENT_METHODS, normalizeMethod } from '../lib/paymentMethods';
 import { reverseIncomeEffects } from '../lib/debt';
+import PaymentMethodIcon, { MethodTag } from '../components/PaymentMethodIcon';
 
 const MONTH_LABELS = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
 const TIME_FILTERS = [
@@ -38,6 +41,7 @@ function IncomeRow({ inc, currency, isLast, onEdit, confirmDeleteId, setConfirmD
           <div style={{ fontWeight: 700, fontSize: 17, color: 'var(--text)', marginTop: 4 }}>{fmt(inc.amount, currency)}</div>
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 4, whiteSpace: 'nowrap' }}>
             {formatShortDate(inc.date)} · {dayTypeLabel(inc.type)}
+            <MethodTag metodo={inc.metodo} />
           </div>
         </div>
         {confirmDeleteId === inc.id && (
@@ -53,6 +57,7 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
   const { currency } = data.user;
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [selectedJob, setSelectedJob] = useState(null);
+  const [selectedMetodo, setSelectedMetodo] = useState(null);
   const [searchText, setSearchText] = useState('');
   const [timeFilter, setTimeFilter] = useState('mes');
   const [year, setYear] = useState(new Date().getFullYear());
@@ -89,10 +94,14 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
 
   const jobNames = [...new Set(incomes.map((i) => i.name.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b));
 
+  // Only offer a method filter for methods that actually appear in this person's incomes.
+  const usedMethods = PAYMENT_METHODS.filter((m) => incomes.some((i) => normalizeMethod(i.metodo) === m));
+
   const sortedIncomes = [...incomes].sort((a, b) => b.date.localeCompare(a.date));
   const search = searchText.trim().toLowerCase();
   const filteredIncomes = sortedIncomes.filter((i) => {
     if (selectedJob && i.name.trim() !== selectedJob) return false;
+    if (selectedMetodo && normalizeMethod(i.metodo) !== selectedMetodo) return false;
     if (search && !`${i.name} ${i.note || ''}`.toLowerCase().includes(search)) return false;
     return true;
   });
@@ -215,11 +224,12 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
       <div style={cardStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <div style={labelStyle}>FILTRAR</div>
-          {(selectedJob || searchText) && (
+          {(selectedJob || selectedMetodo || searchText) && (
             <button
               type="button"
               onClick={() => {
                 setSelectedJob(null);
+                setSelectedMetodo(null);
                 setSearchText('');
               }}
               style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}
@@ -237,6 +247,26 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
             {jobNames.map((job) => (
               <button key={job} type="button" onClick={() => setSelectedJob(job)} aria-pressed={selectedJob === job} style={jobChipStyle(selectedJob === job)}>
                 {job}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {usedMethods.length > 0 && (
+          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 10 }}>
+            <button type="button" onClick={() => setSelectedMetodo(null)} aria-pressed={!selectedMetodo} style={jobChipStyle(!selectedMetodo)}>
+              Todo método
+            </button>
+            {usedMethods.map((m) => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setSelectedMetodo(m)}
+                aria-pressed={selectedMetodo === m}
+                style={{ ...jobChipStyle(selectedMetodo === m), display: 'inline-flex', alignItems: 'center', gap: 6, paddingLeft: 8 }}
+              >
+                <PaymentMethodIcon metodo={m} size={20} active={selectedMetodo !== m} />
+                {m}
               </button>
             ))}
           </div>
@@ -272,6 +302,9 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
             <div style={labelStyle}>{timeFilter === 'mes' ? 'TOTAL ESTE MES' : 'TOTAL ÚLTIMOS 30 DÍAS'}</div>
             {selectedJob && <div style={{ fontSize: 12, color: 'var(--text-secondary)', marginTop: 2 }}>{selectedJob}</div>}
             <div style={{ fontWeight: 800, fontSize: 26, color: 'var(--text)', marginTop: 6, letterSpacing: '-0.02em' }}>{fmt(flatTotal, currency)}</div>
+            <div style={{ marginTop: 12 }}>
+              <MethodBreakdown records={flatIncomes.filter((i) => i.estado !== 'proyectado')} currency={currency} title="CÓMO LO RECIBISTE" />
+            </div>
           </div>
 
           <div style={cardStyle}>
@@ -334,6 +367,10 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
             </div>
           </div>
 
+          <div style={{ marginTop: 10 }}>
+            <MethodBreakdown records={calIncomes.filter((i) => i.estado !== 'proyectado')} currency={currency} title="CÓMO LO RECIBISTE" />
+          </div>
+
           <div style={{ marginTop: 14 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <div style={labelStyle}>{selectedDay ? formatShortDate(selectedDay).toUpperCase() : 'TODO EL MES'}</div>
@@ -353,7 +390,14 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
                 key={`${h.name}-${idx}`}
                 style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 0', borderBottom: '1px solid var(--divider)' }}
               >
-                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{h.name}</div>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{h.name}</div>
+                  {normalizeMethod(h.metodo) && (
+                    <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                      <MethodTag metodo={h.metodo} lead={false} />
+                    </div>
+                  )}
+                </div>
                 <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--danger-text)' }}>-{fmt(h.amount, currency)}</div>
               </div>
             ))}
