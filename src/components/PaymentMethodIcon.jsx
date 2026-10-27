@@ -1,14 +1,17 @@
 import { normalizeMethod } from '../lib/paymentMethods';
+import nequiLogo from '../assets/payment/nequi.png';
+import daviplataLogo from '../assets/payment/daviplata.png';
+import brebLogo from '../assets/payment/breb.png';
 
-// Each method's circle: a brand-ish color plus either a drawn glyph (Efectivo,
-// Transferencia) or the initial (Nequi, Daviplata, Bre-b). Approximations on purpose,
-// not the official logos — swap `glyph` for an <img> here if real assets get added.
+// Each method's circle: the app's logo for Nequi, Daviplata and Bre-b (already laid out
+// square on the brand color), and a drawn glyph on a brand-ish color for Efectivo and
+// Transferencia, which have no logo of their own.
 const STYLES = {
   Efectivo: { color: '#1f9d62', glyph: 'cash' },
-  Nequi: { color: '#da0081', glyph: 'N' },
-  Daviplata: { color: '#e30613', glyph: 'D' },
+  Nequi: { color: '#ece7f5', logo: nequiLogo },
+  Daviplata: { color: '#ec1d27', logo: daviplataLogo },
   Transferencia: { color: '#476bff', glyph: 'bank' },
-  'Bre-b': { color: '#0b7285', glyph: 'B' },
+  'Bre-b': { color: '#2c1158', logo: brebLogo },
 };
 
 function Glyph({ kind, size }) {
@@ -35,11 +38,23 @@ function Glyph({ kind, size }) {
 }
 
 // Circle icon for a payment method. `active` fills it with the brand color (white glyph);
-// otherwise a soft circle with the glyph in the brand color, same idea as the category picker.
+// otherwise a soft circle with the glyph in the brand color, same idea as the category
+// picker. Logos can't be recolored, so inactive ones are shown greyed out instead.
 export default function PaymentMethodIcon({ metodo, size = 48, active = true }) {
   const method = normalizeMethod(metodo);
   if (!method) return null;
-  const { color, glyph } = STYLES[method];
+  const { color, glyph, logo } = STYLES[method];
+  if (logo) {
+    return (
+      <img
+        src={logo}
+        alt=""
+        width={size}
+        height={size}
+        style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, background: color, opacity: active ? 1 : 0.5, filter: active ? 'none' : 'grayscale(1)' }}
+      />
+    );
+  }
   return (
     <span
       style={{
