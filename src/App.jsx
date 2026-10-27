@@ -36,7 +36,7 @@ consumeGoogleRedirect();
 
 // Desktop content width per screen (see .w-narrow / .w-medium in index.css).
 const NARROW_TABS = ['registrar', 'config', 'restaurar', 'meta-detalle'];
-const MEDIUM_TABS = ['ingresos', 'deuda-detalle'];
+const MEDIUM_TABS = ['deuda-detalle'];
 
 export default function App() {
   const [data, setData] = useLocalData();

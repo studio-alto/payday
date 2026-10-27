@@ -221,6 +221,7 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
         </div>
       </FixedHeader>
 
+      <div className="ing-grid">
       <div style={cardStyle}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <div style={labelStyle}>FILTRAR</div>
@@ -307,7 +308,7 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
             </div>
           </div>
 
-          <div style={cardStyle}>
+          <div className="ing-list" style={cardStyle}>
             {flatIncomes.length > 0 ? (
               flatIncomes.map((inc, idx) => (
                 <IncomeRow
@@ -331,7 +332,7 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
       )}
 
       {timeFilter === 'todo' && (
-        <div style={cardStyle}>
+        <div className="ing-list" style={cardStyle}>
           <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 16, marginBottom: 12 }}>
             <button type="button" onClick={goPrevMonth} aria-label="Mes anterior" style={{ cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 700, fontSize: 14 }}>
               ‹
@@ -423,6 +424,7 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

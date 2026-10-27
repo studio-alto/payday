@@ -255,8 +255,9 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
         </div>
       )}
 
+      <div className="cards-grid">
       {activeCards.length > 0 && (
-        <div style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: 20 }}>
+        <div className={totalPaidAllTime > 0 ? '' : 'span-2'} style={{ ...cardStyle, display: 'flex', alignItems: 'center', gap: 20 }}>
           <ProgressRing pct={pctPaidGlobal} size={88}>
             <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{pctPaidGlobal}%</div>
           </ProgressRing>
@@ -295,6 +296,7 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
           </div>
         </div>
       )}
+      </div>
 
       {activeCards.length > 0 && (
         <div style={cardStyle}>

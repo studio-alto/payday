@@ -236,6 +236,12 @@ video {
   gap: 14px;
 }
 
+.ing-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
 .dash {
   display: flex;
   flex-direction: column;
@@ -321,6 +327,26 @@ video {
   .app-root.w-narrow .app-scroll,
   .app-root.w-medium .app-scroll {
     max-width: calc(var(--page-max-w) + 72px) !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .dash-main {
+    align-items: stretch;
+  }
+  /* Ingresos: filters and totals on the left, the list on the right. */
+  .ing-grid {
+    display: grid;
+    grid-template-columns: 360px minmax(0, 1fr);
+    gap: 14px 22px;
+    align-items: start;
+  }
+  .ing-grid > * {
+    grid-column: 1;
+  }
+  .ing-grid > .ing-list {
+    grid-column: 2;
+    grid-row: 1 / span 6;
   }
 }
 
