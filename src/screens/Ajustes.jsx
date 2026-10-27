@@ -386,6 +386,13 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
             >
               Política de privacidad
             </button>
+            <button
+              type="button"
+              onClick={() => window.open('/terminos.html', '_blank', 'noopener,noreferrer')}
+              style={actionRowStyle}
+            >
+              Términos y condiciones
+            </button>
           </div>
         </>
       )}
