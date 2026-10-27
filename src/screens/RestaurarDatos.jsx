@@ -34,7 +34,7 @@ function summaryLine(s) {
   ].join(', ');
 }
 
-export default function RestaurarDatos({ data, setData, onNavigate }) {
+export default function RestaurarDatos({ setData, onNavigate }) {
   const [toast, setToast] = useState(null);
   const goBack = () => {
     sessionStorage.setItem('payday_return_section', 'general');

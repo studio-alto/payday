@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { fmt } from '../lib/format';
-import { cardStyle, labelStyle } from '../lib/styles';
+import { cardStyle } from '../lib/styles';
 import { computeMonthlyRecap, previousMonth } from '../lib/monthlyRecap';
 import BottomSheet from './BottomSheet';
 

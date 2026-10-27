@@ -92,6 +92,11 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
   const [interesText, setInteresText] = useState('');
   const [montoOriginalModalOpen, setMontoOriginalModalOpen] = useState(false);
   const [montoOriginalText, setMontoOriginalText] = useState('');
+  // An abono tagged "Desde un ingreso" isn't its own record — it's the debt side effect
+  // of that income's distribution. Deleting it here means deleting the income itself
+  // (same as doing it from Ingresos), so the ahorro and the debt allocation both reverse
+  // together instead of leaving the balance out of sync with a half-deleted abono.
+  const [deleteIncomeId, setDeleteIncomeId] = useState(null);
 
   if (!card) {
     return (
@@ -206,11 +211,6 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
     setDeleteHistoryIdx(null);
   };
 
-  // An abono tagged "Desde un ingreso" isn't its own record — it's the debt side effect
-  // of that income's distribution. Deleting it here means deleting the income itself
-  // (same as doing it from Ingresos), so the ahorro and the debt allocation both reverse
-  // together instead of leaving the balance out of sync with a half-deleted abono.
-  const [deleteIncomeId, setDeleteIncomeId] = useState(null);
   const confirmDeleteIncome = (incomeId) => {
     setData((s) => {
       const income = s.incomes.find((i) => i.id === incomeId);

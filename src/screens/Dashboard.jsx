@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { fmt } from '../lib/format';
 import { WEEKDAY_LETTERS, dayTypeLabel, daysUntilPayday, formatShortDate, isSameMonth, last7Days, remainingDaysInMonth, todayISO } from '../lib/dates';
 import { cardStyle, labelStyle } from '../lib/styles';
