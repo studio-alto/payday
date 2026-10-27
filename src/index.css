@@ -21,6 +21,10 @@
   --good: #2f9e6f;
   --good-text: #1f7a54;
   --good-soft-bg: #e6f4ec;
+  --sidebar-bg: #121212;
+  --sidebar-text: #f5f5f5;
+  --sidebar-muted: #9ca3af;
+  --sidebar-active: rgba(255, 255, 255, 0.13);
   /* Money that's planned but not received yet (ingresos futuros) — its own yellow so it
      never reads as confirmed income (green) or as a warning (red). */
   --future: #f5b301;
@@ -45,6 +49,10 @@
   --good: #3ecf8e;
   --good-text: #3ecf8e;
   --good-soft-bg: #163829;
+  --sidebar-bg: #1f1f20;
+  --sidebar-text: #f5f5f5;
+  --sidebar-muted: #9ca3af;
+  --sidebar-active: rgba(255, 255, 255, 0.1);
   --future: #ffc93c;
   --future-text: #ffc93c;
   --future-soft-bg: #3a3012;
@@ -150,6 +158,17 @@ textarea {
   }
 }
 
+@keyframes sheetPop {
+  from {
+    transform: translate(-50%, calc(-50% + 16px));
+    opacity: 0;
+  }
+  to {
+    transform: translate(-50%, -50%);
+    opacity: 1;
+  }
+}
+
 @keyframes slideUp {
   from {
     transform: translateY(24px);
@@ -187,5 +206,155 @@ video {
 @media (max-width: 360px) {
   .meta-ahorro-grid {
     grid-template-columns: 1fr !important;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Responsive layout: phone (<768) stays exactly the single column it  */
+/* always was. Tablet (768+) widens it and puts cards in two columns.  */
+/* Desktop (1024+) swaps the floating bottom nav for a left sidebar,   */
+/* and the dashboard grows a calendar + timeline column at 1280+.      */
+/* ------------------------------------------------------------------ */
+
+:root {
+  --sidebar-w: 232px;
+  --sidebar-gap: 20px;
+}
+
+/* Hidden by default (phone/tablet); the desktop block below turns them on. */
+.app-sidebar,
+.dash-side,
+.only-desktop {
+  display: none;
+}
+
+/* Dashboard and any grid of cards: one column on phone, two from tablet up. */
+.dash-main,
+.cards-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.dash {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+@media (min-width: 768px) {
+  .app-scroll {
+    max-width: 920px !important;
+    padding-left: 28px !important;
+    padding-right: 28px !important;
+  }
+  .app-fixed-header {
+    max-width: 920px !important;
+    padding-left: 28px !important;
+    padding-right: 28px !important;
+  }
+  .dash-main,
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-flow: dense;
+    gap: 14px;
+    align-items: start;
+  }
+  .span-2 {
+    grid-column: 1 / -1;
+  }
+  .sheet {
+    bottom: auto !important;
+    top: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    border-radius: 24px !important;
+    max-height: 88vh;
+    overflow-y: auto;
+    animation-name: sheetPop !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .app-sidebar {
+    display: flex;
+  }
+  .only-desktop {
+    display: block;
+  }
+  .hide-desktop {
+    display: none !important;
+  }
+  .bottom-nav {
+    display: none !important;
+  }
+  .app-root {
+    padding-left: calc(var(--sidebar-w) + var(--sidebar-gap) * 2);
+  }
+  .app-scroll {
+    max-width: 1360px !important;
+    padding: 0 36px 56px 36px !important;
+  }
+  .app-fixed-header {
+    left: calc(var(--sidebar-w) + var(--sidebar-gap) * 2) !important;
+    right: 0 !important;
+    width: auto !important;
+    max-width: none !important;
+    transform: none !important;
+    padding-left: 36px !important;
+    padding-right: 36px !important;
+    padding-top: 32px !important;
+  }
+  .fh-inner {
+    max-width: var(--page-max-w, 1288px);
+    margin: 0 auto;
+    width: 100%;
+  }
+  /* Forms and settings read badly stretched across a wide screen: keep them to a
+     comfortable column. The width lives on .app-root so the fixed header follows it. */
+  .app-root.w-narrow {
+    --page-max-w: 760px;
+  }
+  .app-root.w-medium {
+    --page-max-w: 1040px;
+  }
+  .app-root.w-narrow .app-scroll,
+  .app-root.w-medium .app-scroll {
+    max-width: calc(var(--page-max-w) + 72px) !important;
+  }
+}
+
+@media (min-width: 1280px) {
+  .dash {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 340px;
+    gap: 22px;
+    align-items: start;
+  }
+  .dash-side {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    position: sticky;
+    top: calc(var(--header-h, 100px) + 14px);
+  }
+}
+
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .dash-side {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    align-items: start;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* Bento tints: the hero and the main goal pick up a soft color, like the reference. */
+  .tint-warm {
+    background: var(--accent-soft-bg) !important;
+  }
+  .tint-mint {
+    background: var(--good-soft-bg) !important;
   }
 }

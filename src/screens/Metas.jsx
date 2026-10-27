@@ -272,6 +272,7 @@ export default function Metas({ data, setData, onViewDetail, onEditIncome }) {
         </div>
       )}
 
+      <div className="cards-grid">
       {activeGoals.map((g) => {
         const pct = Math.min(100, Math.round((g.current / g.target) * 100));
         const completed = g.current >= g.target;
@@ -447,6 +448,7 @@ export default function Metas({ data, setData, onViewDetail, onEditIncome }) {
           </CardMenu>
         );
       })}
+      </div>
 
       {modalOpen && (
         <BottomSheet onClose={closeModal}>

@@ -21,7 +21,7 @@ export default function FixedHeader({ children }) {
   return (
     <div
       ref={ref}
-      className="app-hpad"
+      className="app-hpad app-fixed-header"
       style={{
         position: 'fixed',
         top: 0,
@@ -36,7 +36,7 @@ export default function FixedHeader({ children }) {
         boxSizing: 'border-box',
       }}
     >
-      {children}
+      <div className="fh-inner">{children}</div>
     </div>
   );
 }

@@ -54,6 +54,7 @@ export default function BottomNav({ activeTab, onChange }) {
 
   return (
     <div
+      className="bottom-nav"
       style={{
         position: 'fixed',
         left: '50%',

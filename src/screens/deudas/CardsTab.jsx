@@ -394,6 +394,7 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
         </div>
       )}
 
+      <div className="cards-grid">
       {sortedCards.map((c) => {
         const paidToDate = c.history.reduce((a, h) => a + h.amount, 0);
         const pct = paidToDate + c.balance > 0 ? Math.round((paidToDate / (paidToDate + c.balance)) * 100) : 0;
@@ -558,6 +559,7 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
           </CardMenu>
         );
       })}
+      </div>
 
       {modalOpen && (
         <BottomSheet onClose={closeModal}>

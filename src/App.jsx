@@ -10,6 +10,7 @@ import Splash from './components/Splash';
 import Welcome from './components/Welcome';
 import AppLock from './components/AppLock';
 import BottomNav from './components/BottomNav';
+import Sidebar from './components/Sidebar';
 import UpdateToast from './components/UpdateToast';
 import ScreenLoader from './components/ScreenLoader';
 import MonthlyRecap from './components/MonthlyRecap';
@@ -32,6 +33,10 @@ const RestaurarDatos = lazy(() => import('./screens/RestaurarDatos'));
 // lib/googleAuth.js) so activeTab's sessionStorage-based restore below and
 // Ajustes' own hasValidToken() check both see it immediately, not one render late.
 consumeGoogleRedirect();
+
+// Desktop content width per screen (see .w-narrow / .w-medium in index.css).
+const NARROW_TABS = ['registrar', 'config', 'restaurar', 'meta-detalle'];
+const MEDIUM_TABS = ['ingresos', 'deuda-detalle'];
 
 export default function App() {
   const [data, setData] = useLocalData();
@@ -181,6 +186,7 @@ export default function App() {
   return (
     <div
       data-theme={data.user.theme}
+      className={`app-root ${NARROW_TABS.includes(activeTab) ? 'w-narrow' : MEDIUM_TABS.includes(activeTab) ? 'w-medium' : ''}`}
       style={{
         width: '100%',
         minHeight: '100vh',
@@ -219,6 +225,7 @@ export default function App() {
         </Suspense>
       </div>
 
+      <Sidebar activeTab={activeTab} onChange={navigate} />
       <BottomNav activeTab={activeTab} onChange={navigate} />
     </div>
   );

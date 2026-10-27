@@ -6,6 +6,7 @@ export default function BottomSheet({ onClose, children }) {
         style={{ position: 'fixed', inset: 0, background: 'rgba(17,17,17,0.45)', zIndex: 40 }}
       />
       <div
+        className="sheet"
         style={{
           position: 'fixed',
           left: '50%',

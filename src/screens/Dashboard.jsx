@@ -9,6 +9,7 @@ import ProgressRing from '../components/ProgressRing';
 import SummaryIcon from '../components/SummaryIcon';
 import MonthComparisonCard from '../components/MonthComparisonCard';
 import BackupReminder from '../components/BackupReminder';
+import DashboardSide from '../components/DashboardSide';
 import { MethodTag } from '../components/PaymentMethodIcon';
 
 // One color per "Resumen general" row — a small, fixed palette (not the Variables
@@ -114,6 +115,11 @@ export default function Dashboard({ data, setData, onNavigate }) {
   const nextIncomeWhen = nextIncome ? (nextIncome.days === 0 ? 'Hoy' : nextIncome.days === 1 ? 'Mañana' : `En ${nextIncome.days} días`) : '';
   const nextIncomeWho = nextIncome ? (nextIncome.names.length > 0 ? nextIncome.names.join(' + ') : nextIncome.count === 1 ? 'Ingreso' : `${nextIncome.count} ingresos`) : '';
 
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Buenos días' : hour < 19 ? 'Buenas tardes' : 'Buenas noches';
+  // Two cards sharing a row look right; a lone one should fill it instead of leaving a hole.
+  const incomeRowShared = user.metaIngresoMensual > 0 && projectedIncomes.length > 0;
+
   const dueSoonLabel = (daysLeft) => (daysLeft < 0 ? 'vencido' : daysLeft === 0 ? 'vence hoy' : daysLeft === 1 ? 'vence en 1 día' : `vence en ${daysLeft} días`);
 
   const urgentExpenses = activeExpenses
@@ -146,7 +152,11 @@ export default function Dashboard({ data, setData, onNavigate }) {
       <FixedHeader>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div style={{ fontWeight: 800, fontSize: 30, color: 'var(--text)', letterSpacing: '-0.02em' }}>Inicio</div>
+          <div className="hide-desktop" style={{ fontWeight: 800, fontSize: 30, color: 'var(--text)', letterSpacing: '-0.02em' }}>Inicio</div>
+          <div className="only-desktop">
+            <div style={{ fontWeight: 800, fontSize: 32, color: 'var(--text)', letterSpacing: '-0.02em' }}>{greeting}</div>
+            <div style={{ fontSize: 14, color: 'var(--text-secondary)', marginTop: 2 }}>Así va tu plata este mes</div>
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <div style={{ display: 'flex', background: 'var(--card-bg)', borderRadius: 20, padding: 4, gap: 2 }}>
               <button
@@ -183,6 +193,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
             <button
               type="button"
               aria-label="Ajustes"
+              className="hide-desktop"
               onClick={() => onNavigate('config')}
               style={{
                 width: 40,
@@ -206,7 +217,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
         </div>
 
         {/* Franja semanal */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 4 }}>
+        <div className="hide-desktop" style={{ display: 'flex', justifyContent: 'space-between', gap: 4 }}>
           {weekStrip.map((wd) => (
             <div key={wd.date} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)' }}>{wd.letter}</div>
@@ -233,8 +244,10 @@ export default function Dashboard({ data, setData, onNavigate }) {
         </div>
       </FixedHeader>
 
+      <div className="dash">
+      <div className="dash-main">
       {urgentItems.length > 0 && (
-        <div style={{ ...cardStyle, background: 'var(--danger-soft-bg)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div className="span-2" style={{ ...cardStyle, background: 'var(--danger-soft-bg)', display: 'flex', flexDirection: 'column', gap: 6 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--danger-text)', letterSpacing: '0.06em' }}>PARA ESTAR PENDIENTE</div>
           {urgentItems.slice(0, 3).map((it) => (
             <div key={it.id} style={{ fontSize: 13, color: 'var(--text)' }}>
@@ -249,6 +262,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
 
       {pendingConfirmations.length > 0 && (
         <div
+          className="span-2"
           style={{
             ...cardStyle,
             background: 'var(--accent)',
@@ -303,11 +317,16 @@ export default function Dashboard({ data, setData, onNavigate }) {
         </div>
       )}
 
-      {shouldShowBackupReminder(data) && <BackupReminder data={data} setData={setData} onNavigate={onNavigate} />}
+      {shouldShowBackupReminder(data) && (
+        <div className="span-2">
+          <BackupReminder data={data} setData={setData} onNavigate={onNavigate} />
+        </div>
+      )}
 
       {/* Ganado este mes */}
       <button
         type="button"
+        className="span-2 tint-warm"
         onClick={() => onNavigate('ingresos')}
         style={{ ...cardStyle, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, alignItems: 'center', border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%' }}
       >
@@ -333,6 +352,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
       {user.metaIngresoMensual > 0 && (
         <button
           type="button"
+          className={incomeRowShared ? '' : 'span-2'}
           onClick={() => onNavigate('ingresos')}
           style={{ ...cardStyle, border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%' }}
         >
@@ -359,6 +379,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
       {projectedIncomes.length > 0 && (
         <button
           type="button"
+          className={incomeRowShared ? '' : 'span-2'}
           onClick={() => onNavigate('ingresos')}
           style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 10, border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%' }}
         >
@@ -389,9 +410,10 @@ export default function Dashboard({ data, setData, onNavigate }) {
       )}
 
       {/* Meta principal + Ahorro/Deudas/Disponible */}
-      <div className="meta-ahorro-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+      <div className="meta-ahorro-grid span-2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         <button
           type="button"
+          className="tint-mint"
           onClick={() => onNavigate('metas')}
           style={{ ...cardStyle, display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 0, border: 'none', cursor: 'pointer', width: '100%' }}
         >
@@ -438,8 +460,8 @@ export default function Dashboard({ data, setData, onNavigate }) {
         </div>
       </div>
 
-      {/* Accesos directos */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+      {/* Accesos directos (en escritorio ya están en el menú lateral) */}
+      <div className="span-2 hide-desktop" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div>
             <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--text)' }}>Ingresos</div>
@@ -557,7 +579,7 @@ export default function Dashboard({ data, setData, onNavigate }) {
           show gastos variables at all. Each row gets its own tinted color chip
           (icon circle + soft background) so the card reads at a glance instead
           of as a flat list of numbers. */}
-      <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div className={incomes.length > 0 ? '' : 'span-2'} style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--text)' }}>Resumen general</div>
 
         <button
@@ -639,10 +661,12 @@ export default function Dashboard({ data, setData, onNavigate }) {
         </div>
       </div>
 
-      <MonthComparisonCard data={data} />
+      <div className="span-2">
+        <MonthComparisonCard data={data} />
+      </div>
 
       {shortfallWarning && (
-        <div style={{ ...cardStyle, background: 'var(--danger-soft-bg)', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        <div className="span-2" style={{ ...cardStyle, background: 'var(--danger-soft-bg)', display: 'flex', flexDirection: 'column', gap: 4 }}>
           <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--danger-text)' }}>⚠️ Podrías quedarte corto este mes</div>
           <div style={{ fontSize: 12, color: 'var(--danger-text)' }}>
             Contando lo que ya tienes programado a recibir y el ritmo de tus últimos 30 días, después de tus gastos y tu regla de ahorro te faltarían unos{' '}
@@ -650,6 +674,12 @@ export default function Dashboard({ data, setData, onNavigate }) {
           </div>
         </div>
       )}
+      </div>
+
+      <div className="dash-side">
+        <DashboardSide data={data} onNavigate={onNavigate} />
+      </div>
+      </div>
     </div>
   );
 }
