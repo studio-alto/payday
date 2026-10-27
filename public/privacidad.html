@@ -201,6 +201,13 @@
   .not-box p { color: var(--text); }
   .not-box strong { color: var(--danger-text); }
 
+  section.card a { color: var(--accent-text); font-weight: 700; }
+  section.card h3 {
+    font-weight: 800;
+    font-size: 15px;
+    margin: 22px 0 8px;
+    color: var(--text);
+  }
   .divider-line { height: 1px; background: var(--divider); margin: 4px 0; }
 
   footer.contact {
@@ -227,7 +234,7 @@
     <a class="back-link" href="/">‹ Volver a Payday</a>
     <div class="wordmark">Pay<span>day</span></div>
     <h1>Política de Privacidad</h1>
-    <div class="meta">Última actualización: 15 de septiembre de 2026</div>
+    <div class="meta">Última actualización: 27 de octubre de 2026</div>
   </header>
 
   <div class="callout">
@@ -238,6 +245,8 @@
     <a href="#como-funciona">Cómo funciona</a>
     <a href="#donde-viven-datos">Dónde viven tus datos</a>
     <a href="#google">Integración con Google</a>
+    <a href="#google-datos">Datos de Google que usamos</a>
+    <a href="#google-proteccion">Cómo los protegemos</a>
     <a href="#respaldo">Respaldar tus datos</a>
     <a href="#no-hacemos">Qué no hacemos</a>
     <a href="#derechos">Tus derechos</a>
@@ -293,8 +302,30 @@
         <div class="value">No puede leer, listar ni modificar ningún otro evento de tu calendario.</div>
       </div>
     </div>
-    <p style="margin-top: 16px;">Esta conexión ocurre directamente entre tu navegador y los servidores de Google. <strong>Studio Alto nunca recibe ni almacena</strong> tu contraseña de Google, ni el permiso de acceso (token) que Google entrega, ni el contenido de lo que se sube o se crea. El token de acceso vive únicamente en la memoria temporal de tu navegador (sessionStorage) y desaparece al cerrar esa pestaña o sesión.</p>
-    <p>El uso que Payday hace de tu información de Google Calendar y Google Drive cumple con la <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Política de Datos de Usuario de los Servicios de API de Google</a>, incluidos los requisitos de Uso Limitado ("Limited Use").</p>
+    <p style="margin-top: 16px;">Esta conexión ocurre directamente entre tu navegador y los servidores de Google. <strong>Studio Alto nunca recibe ni almacena</strong> tu contraseña de Google, ni el permiso de acceso (token) que Google entrega, ni el contenido de lo que se sube o se crea.</p>
+
+    <h3 id="google-datos">Qué datos de Google accede Payday y para qué los usa</h3>
+    <p>Payday solo accede a los datos de tu cuenta de Google que se necesitan para dos funciones que tú activas. Los usa únicamente para esas funciones y para nada más:</p>
+    <ul>
+      <li><strong>Google Drive: archivos que Payday crea.</strong> Payday crea una carpeta y los archivos de respaldo (Excel y JSON) que tú le pides subir, los lista para mostrártelos y los descarga cuando eliges restaurar un respaldo. <em>Uso:</em> guardar y recuperar tu respaldo.</li>
+      <li><strong>Google Calendar: eventos que Payday crea.</strong> Payday crea y actualiza eventos de día completo, con el nombre y el monto de un pago de deuda, un gasto fijo o un ingreso que esperas. <em>Uso:</em> recordarte esas fechas en tu calendario.</li>
+    </ul>
+    <p style="margin-top: 12px;"><strong>No</strong> accedemos a tu nombre, correo, foto, contactos, a los demás archivos de tu Drive ni a los demás eventos de tu calendario.</p>
+    <p>Los datos de Google <strong>no se comparten ni se transfieren</strong> a terceros, no se usan para publicidad, para crear perfiles ni para entrenar modelos de inteligencia artificial, y ninguna persona de Studio Alto puede leerlos, porque nunca llegan a nosotros. Solo se divulgarían si una ley lo exigiera, y como no los tenemos no hay nada que entregar.</p>
+
+    <h3 id="google-proteccion">Cómo protegemos los datos sensibles</h3>
+    <ul>
+      <li><strong>Sin servidores propios:</strong> los datos de Google van directo de tu navegador a Google. No existe una base de datos nuestra que se pueda filtrar.</li>
+      <li><strong>Cifrado en tránsito:</strong> toda comunicación con Google usa HTTPS (TLS).</li>
+      <li><strong>Permiso temporal:</strong> el token de acceso solo vive en la memoria de la pestaña (sessionStorage), nunca se guarda en disco ni se envía a nosotros, y se borra al cerrar la sesión, al desconectar Google o cuando Google lo revoca.</li>
+      <li><strong>Permisos mínimos:</strong> usamos <code>drive.file</code> y <code>calendar.events</code>, los más acotados que Google ofrece para estas funciones.</li>
+      <li><strong>En tu cuenta y tu dispositivo:</strong> los archivos y eventos quedan en tu propio Google, protegidos por la seguridad de tu cuenta. Los datos locales de Payday están protegidos por el bloqueo de tu dispositivo y, si lo activas, por el bloqueo con PIN de la app (Ajustes → Seguridad).</li>
+    </ul>
+
+    <h3>Cuánto tiempo se conservan y cómo borrarlos</h3>
+    <p>Payday no conserva ningún dato de Google. Los archivos y eventos que crea permanecen en tu Google hasta que tú los borres. Puedes desconectar tu cuenta en Ajustes → Seguridad o quitarle el acceso a Payday desde <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">los permisos de tu cuenta de Google</a>, y Payday pierde el acceso de inmediato.</p>
+
+    <p>El uso que Payday hace de la información recibida de las API de Google cumple con la <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener">Política de Datos de Usuario de los Servicios de API de Google</a>, incluidos los requisitos de Uso Limitado (Limited Use).</p>
   </section>
 
   <section class="card" id="respaldo">
