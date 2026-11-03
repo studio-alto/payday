@@ -18,6 +18,10 @@ import { MethodTag } from '../components/PaymentMethodIcon';
 import PaymentMethodChips from '../components/PaymentMethodChips';
 import { normalizeMethod } from '../lib/paymentMethods';
 import PinPad from '../components/PinPad';
+import MonthlyRecap from '../components/MonthlyRecap';
+import { listMonthlyRecaps } from '../lib/monthlyRecap';
+
+const RECAPS_COLLAPSED = 6;
 
 const AHORRO_PCTS = [0, 10, 20, 30, 40, 50];
 const TARJETA_PCTS = [0, 10, 15, 20, 30, 40];
@@ -45,6 +49,13 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
   const setIncomeMode = (mode) => setData((s) => ({ ...s, user: { ...s.user, incomeMode: mode } }));
   const avgRecentIncome = referenceIncome(data.incomes, incomeMode, sueldosFijos);
   const [ratesStatus, setRatesStatus] = useState('idle');
+
+  // Every closed month with activity, rebuilt from the history logs each time — the
+  // same numbers the start-of-month recap popup shows, kept reachable afterwards.
+  const monthlyRecaps = listMonthlyRecaps(data);
+  const [openRecap, setOpenRecap] = useState(null);
+  const [showAllRecaps, setShowAllRecaps] = useState(false);
+  const visibleRecaps = showAllRecaps ? monthlyRecaps : monthlyRecaps.slice(0, RECAPS_COLLAPSED);
 
   const activeGoals = data.goals.filter((g) => !g.archived);
   const [sueldoModalOpen, setSueldoModalOpen] = useState(false);
@@ -337,6 +348,48 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
 
       {section === 'general' && (
         <>
+          <div style={labelStyle}>INFORMES MENSUALES</div>
+          <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {monthlyRecaps.length === 0 ? (
+              <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                Al empezar cada mes, la app te muestra el resumen del mes que terminó. Cuando cierre tu primer mes con
+                movimientos, ese informe va a quedar guardado aquí para que lo consultes cuando quieras.
+              </div>
+            ) : (
+              <>
+                {visibleRecaps.map((r) => {
+                  const title = r.label.charAt(0).toUpperCase() + r.label.slice(1);
+                  return (
+                    <button
+                      key={`${r.year}-${r.month}`}
+                      type="button"
+                      onClick={() => setOpenRecap(r)}
+                      style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '12px 14px', borderRadius: 14, background: 'var(--input-bg)', border: 'none', cursor: 'pointer', textAlign: 'left', width: '100%' }}
+                    >
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{title}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: 2 }}>
+                          Te quedó libre{' '}
+                          <b style={{ color: r.netBalance >= 0 ? 'var(--accent-text)' : 'var(--danger-text)' }}>{fmt(r.netBalance, user.currency)}</b>
+                        </div>
+                      </div>
+                      <span aria-hidden="true" style={{ fontSize: 18, color: 'var(--text-secondary)', flexShrink: 0 }}>›</span>
+                    </button>
+                  );
+                })}
+                {monthlyRecaps.length > RECAPS_COLLAPSED && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllRecaps((v) => !v)}
+                    style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent-text)', cursor: 'pointer', border: 'none', background: 'none', padding: '4px 0' }}
+                  >
+                    {showAllRecaps ? 'Ver menos' : `Ver todos (${monthlyRecaps.length})`}
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+
           <div style={labelStyle}>APARIENCIA</div>
           <div style={{ ...cardStyle, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 700 }}>Tema oscuro</div>
@@ -843,6 +896,8 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
       </div>
       </>
       )}
+
+      {openRecap && <MonthlyRecap recap={openRecap} currency={user.currency} onClose={() => setOpenRecap(null)} />}
 
       {pinFlow && (
         <BottomSheet onClose={closePinFlow}>

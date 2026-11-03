@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { computeMonthlyRecap, monthKey, previousMonth } from './monthlyRecap';
+import { computeMonthlyRecap, listMonthlyRecaps, monthKey, previousMonth } from './monthlyRecap';
 
 const emptyData = { incomes: [], goals: [], cards: [], expenses: [], gastosVariables: [] };
 
@@ -17,6 +17,33 @@ describe('previousMonth', () => {
 
   it('wraps to December of the prior year from January', () => {
     expect(previousMonth(2026, 0)).toEqual({ year: 2025, month: 11 });
+  });
+});
+
+describe('listMonthlyRecaps', () => {
+  const now = new Date(2026, 10, 3); // 3 Nov 2026
+
+  it('is empty when there is no history', () => {
+    expect(listMonthlyRecaps(emptyData, now)).toEqual([]);
+  });
+
+  it('lists closed months with activity, newest first, skipping empty ones and the month in progress', () => {
+    const data = {
+      ...emptyData,
+      incomes: [
+        { date: '2026-08-05', amount: 100, estado: 'confirmado', distribution: {} },
+        { date: '2026-10-05', amount: 300, estado: 'confirmado', distribution: {} },
+        { date: '2026-11-02', amount: 999, estado: 'confirmado', distribution: {} }, // current month, excluded
+        { date: '2026-06-01', amount: 50, estado: 'proyectado', distribution: {} }, // projected, ignored
+      ],
+    };
+    expect(listMonthlyRecaps(data, now).map((r) => `${r.year}-${r.month + 1}`)).toEqual(['2026-10', '2026-8']);
+  });
+
+  it('crosses year boundaries', () => {
+    const data = { ...emptyData, gastosVariables: [{ id: 'v', categoria: 'Mercado', amount: 10, date: '2025-12-20' }] };
+    const recaps = listMonthlyRecaps(data, new Date(2026, 1, 3));
+    expect(recaps.map((r) => `${r.year}-${r.month + 1}`)).toEqual(['2025-12']);
   });
 });
 

@@ -31,6 +31,28 @@ export function previousMonth(year, month) {
 // feature's own history log (income dates, goal/card/expense `history` entries) —
 // no separate ledger to keep in sync, so it's always consistent with what those
 // screens themselves show.
+export function listMonthlyRecaps(data, now = new Date()) {
+  const dates = [
+    ...(data.incomes || []).filter((i) => i.estado !== 'proyectado').map((i) => i.date),
+    ...(data.gastosVariables || []).map((g) => g.date),
+    ...[...(data.expenses || []), ...(data.goals || []), ...(data.cards || [])].flatMap((x) => (x.history || []).map((h) => h.date)),
+  ].filter(Boolean);
+  if (dates.length === 0) return [];
+
+  const earliest = dates.reduce((a, b) => (b < a ? b : a));
+  const start = new Date(earliest + 'T00:00:00');
+  const last = previousMonth(now.getFullYear(), now.getMonth());
+  const recaps = [];
+  let y = start.getFullYear();
+  let m = start.getMonth();
+  while (y < last.year || (y === last.year && m <= last.month)) {
+    const recap = computeMonthlyRecap(data, y, m);
+    if (recap.hasActivity) recaps.push(recap);
+    if (m === 11) { y += 1; m = 0; } else { m += 1; }
+  }
+  return recaps.reverse();
+}
+
 export function computeMonthlyRecap(data, year, month, throughDay = null) {
   const { incomes, goals, cards, expenses, gastosVariables } = data;
   const within = (dateStr) => inMonth(dateStr, year, month, throughDay);
