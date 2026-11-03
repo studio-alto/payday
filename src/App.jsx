@@ -1,6 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { useLocalData } from './lib/storage';
-import { consumeGoogleRedirect } from './lib/googleAuth';
 import { setExchangeRates } from './lib/format';
 import { fetchLiveExchangeRates } from './lib/exchangeRates';
 import { todayISO } from './lib/dates';
@@ -28,21 +27,15 @@ const Ingresos = lazy(() => import('./screens/Ingresos'));
 const Ajustes = lazy(() => import('./screens/Ajustes'));
 const RestaurarDatos = lazy(() => import('./screens/RestaurarDatos'));
 
-// Must run before the first render — if Google just redirected back after a
-// connect, this parses the access token out of the URL hash (see
-// lib/googleAuth.js) so activeTab's sessionStorage-based restore below and
-// Ajustes' own hasValidToken() check both see it immediately, not one render late.
-consumeGoogleRedirect();
-
 // Desktop content width per screen (see .w-narrow / .w-medium in index.css).
 const NARROW_TABS = ['registrar', 'config', 'restaurar', 'meta-detalle'];
 const MEDIUM_TABS = ['deuda-detalle'];
 
 export default function App() {
   const [data, setData] = useLocalData();
-  // Restores the tab after a Google Drive connect redirect (see
-  // startDriveConnect in screens/Ajustes.jsx) reloads the whole app —
-  // otherwise returning from Google would land back on Inicio.
+  // Restores the tab after a screen that reloads the whole app (see
+  // payday_return_tab in components/BackupReminder.jsx) — otherwise it would
+  // land back on Inicio.
   const [activeTab, setActiveTab] = useState(() => {
     const pending = sessionStorage.getItem('payday_return_tab');
     if (pending) sessionStorage.removeItem('payday_return_tab');

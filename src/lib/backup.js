@@ -5,9 +5,8 @@ const REMINDER_THRESHOLD_DAYS = 14;
 // Whether Inicio should nudge about backing up — only when there's real data worth
 // protecting (nothing registered yet means nothing to lose), and only once 14 days
 // have passed since whichever happened more recently: the last successful backup
-// (by any method — local share/download or Drive, both stamp the same
-// `user.lastBackupAt`) or the last time the reminder itself was dismissed. A single
-// shared field instead of separately-tracked "Drive status" — see the removed
+// (local share/download, stamped in `user.lastBackupAt`) or the last time the reminder itself was dismissed. A single
+// shared field instead of a separately-tracked status — see the removed
 // BackupStatusCard, which broke exactly because its own status could disagree with
 // Ajustes → Datos.
 export function shouldShowBackupReminder(data, now = new Date()) {
@@ -45,8 +44,7 @@ export function downloadBackupJson(data) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  // Full timestamp, not just the date, so two downloads on the same day (or the
-  // Drive JSON backup, which names itself the same way) never collide by name.
+  // Full timestamp, not just the date, so two downloads on the same day never collide by name.
   a.download = `payday-backup-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
   a.click();
   URL.revokeObjectURL(url);
@@ -80,7 +78,7 @@ export async function shareBackupJson(data) {
 // Guards against restoring a file that parses as JSON but doesn't have the shape
 // the rest of the app assumes (e.g. hand-edited, or exported by a future version
 // with a different schema) — those would otherwise crash later on a missing field.
-// Shared by every restore entry point: file import, pasted text, and a Drive backup.
+// Shared by every restore entry point: file import and pasted text.
 export function isValidBackup(parsed) {
   if (!parsed || typeof parsed !== 'object') return false;
   for (const key of ['incomes', 'goals', 'cards', 'expenses', 'gastosVariables', 'sueldosFijos']) {
@@ -114,8 +112,7 @@ export function isValidBackup(parsed) {
   return true;
 }
 
-// The counts shown before committing to a restore (file, pasted text, or a Drive
-// backup) — so "reemplazar mis datos" is never a leap of faith.
+// The counts shown before committing to a restore (file or pasted text) — so "reemplazar mis datos" is never a leap of faith.
 export function summarizeBackup(parsed) {
   return {
     incomes: parsed.incomes?.length || 0,

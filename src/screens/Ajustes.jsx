@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { todayISO, formatFullDate } from '../lib/dates';
 import { referenceIncome, effectiveIncomeMode } from '../lib/incomeStats';
 import { fetchLiveExchangeRates } from '../lib/exchangeRates';
@@ -6,8 +6,6 @@ import { fmt } from '../lib/format';
 import { uid } from '../lib/id';
 import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import { hashPin } from '../lib/pin';
-import { googleConfigured, hasValidToken, hasConnectedBefore, consumeRedirectResult, getAccessToken, connectGoogle, disconnectGoogle } from '../lib/googleAuth';
-import { backupSummaryToDrive, backupJsonToDrive } from '../lib/googleDrive';
 import { shareBackupJson } from '../lib/backup';
 import NumberInput from '../components/NumberInput';
 import FixedHeader from '../components/FixedHeader';
@@ -33,7 +31,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
   const { user } = data;
   const dark = user.theme === 'oscuro';
   // Restores the right tab after a full-page redirect bounces someone away and
-  // back — from Google connecting (lib/googleAuth), from RestaurarDatos, or from
+  // back — from RestaurarDatos or from
   // the backup reminder on Inicio — instead of always landing back on "General".
   const [section, setSection] = useState(() => {
     const pending = sessionStorage.getItem('payday_return_section');
@@ -178,9 +176,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
     setData((s) => ({ ...s, user: { ...s.user, theme: s.user.theme === 'oscuro' ? 'light' : 'oscuro' } }));
   };
 
-  // Stamps the same `user.lastBackupAt` regardless of which method succeeded (local
-  // share/download here, or Drive below) — one shared "last backed up" answer, not
-  // two that could disagree. Read by the Inicio reminder (lib/backup.js).
+  // Stamps `user.lastBackupAt`, read by the Inicio reminder (lib/backup.js).
   const shareBackup = async () => {
     await shareBackupJson(data);
     setData((s) => ({ ...s, user: { ...s.user, lastBackupAt: new Date().toISOString() } }));
@@ -204,60 +200,6 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
       setExcelStatus('idle');
     } catch {
       setExcelStatus('error');
-    }
-  };
-
-  const [driveStatus, setDriveStatus] = useState('idle'); // idle | loading | uploaded | emailed | error
-  const [driveError, setDriveError] = useState('');
-  const connectedToGoogle = hasValidToken();
-  // If a silent reconnect attempt (see startGoogleConnect below) just failed —
-  // Google bounced back with an error instead of a token — say so, since
-  // otherwise it looks like the button silently did nothing.
-  const [silentReconnectFailed, setSilentReconnectFailed] = useState(false);
-  useEffect(() => {
-    if (consumeRedirectResult() === 'error') setSilentReconnectFailed(true);
-  }, []);
-  const startGoogleConnect = () => {
-    // Remember where we were — connectGoogle() leaves the app entirely (Google's
-    // consent screen, then back), so the next load needs to know to land back on
-    // this tab instead of the default Home screen.
-    sessionStorage.setItem('payday_return_tab', 'config');
-    sessionStorage.setItem('payday_return_section', 'general');
-    setSilentReconnectFailed(false);
-    // Once connected before, the ~1h token expiring shouldn't mean re-approving
-    // by hand every time — try an invisible reconnect first (works as long as
-    // the browser's own Google session is still active) before falling back to
-    // the real consent screen. But if that silent attempt already failed once,
-    // trying it again would just fail the same way forever — show the real
-    // consent screen instead so the user can actually get back in.
-    connectGoogle({ silent: hasConnectedBefore() && !silentReconnectFailed });
-  };
-
-  const [disconnectStatus, setDisconnectStatus] = useState('idle'); // idle | loading | done | error
-  const disconnectGoogleAccount = async () => {
-    setDisconnectStatus('loading');
-    try {
-      await disconnectGoogle();
-      setDisconnectStatus('done');
-    } catch {
-      setDisconnectStatus('error');
-    }
-  };
-
-  const sendToDrive = async () => {
-    setDriveStatus('loading');
-    setDriveError('');
-    try {
-      const accessToken = getAccessToken();
-      await backupSummaryToDrive(accessToken, data);
-      // Alongside the human-readable Excel: a machine-readable JSON backup, so
-      // "Restaurar datos → Sincronizar con Google Drive" has something real to list.
-      await backupJsonToDrive(accessToken, data);
-      setData((s) => ({ ...s, user: { ...s.user, lastBackupAt: new Date().toISOString() } }));
-      setDriveStatus('uploaded');
-    } catch (err) {
-      setDriveError(err.message || 'Algo salió mal.');
-      setDriveStatus('error');
     }
   };
 
@@ -824,60 +766,17 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
         <div style={{ display: 'flex', gap: 10 }}>
           <div style={{ fontSize: 16, flexShrink: 0 }}>🔒</div>
           <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.4 }}>
-            Tus datos viven en este dispositivo, no en un servidor nuestro. Solo si tú decides respaldar, se sube una
-            copia a tu propio Google Drive.
+            Tus datos viven en este dispositivo, no en un servidor nuestro. Nadie más puede verlos, ni siquiera
+            nosotros.
           </div>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
           <div style={{ fontSize: 16, flexShrink: 0 }}>🔒</div>
           <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.4 }}>
-            Payday no ve nada de tu Drive hasta que tú autorizas la conexión, y solo accede a lo que esta app misma
-            crea, nunca al resto de tus archivos.
+            Los respaldos los guardas tú, donde quieras: un archivo que mandas a tu correo, a tu WhatsApp o a tu nube.
+            Payday no se conecta a ninguna cuenta tuya.
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <div style={{ fontSize: 16, flexShrink: 0 }}>🔒</div>
-          <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.4 }}>
-            Puedes desconectar tu cuenta de Google cuando quieras, y volver a conectarla después sin perder nada.
-          </div>
-        </div>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <div style={{ fontSize: 16, flexShrink: 0 }}>🔒</div>
-          <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.4 }}>
-            Tus respaldos quedan en una carpeta "Payday" dentro de tu Drive. Puedes abrirlos o borrarlos ahí mismo
-            cuando quieras.
-          </div>
-        </div>
-
-        {googleConfigured && (hasConnectedBefore() || disconnectStatus === 'done') && (
-          <>
-            <div style={{ height: 1, background: 'var(--divider)' }} />
-            {disconnectStatus !== 'done' ? (
-              <button
-                type="button"
-                onClick={disconnectGoogleAccount}
-                disabled={disconnectStatus === 'loading'}
-                style={{ ...actionRowStyle, color: 'var(--danger-text)', opacity: disconnectStatus === 'loading' ? 0.5 : 1 }}
-              >
-                {disconnectStatus === 'loading' ? 'Desconectando…' : 'Desconectar Google Drive'}
-              </button>
-            ) : (
-              <div style={{ fontSize: 12, color: 'var(--accent-text)', fontWeight: 700 }}>
-                Desconectado. Tus datos en Google Drive permanecen intactos.
-              </div>
-            )}
-            {disconnectStatus === 'error' && (
-              <div style={{ fontSize: 11, color: 'var(--danger-text)' }}>No se pudo desconectar. Intenta de nuevo.</div>
-            )}
-            <button
-              type="button"
-              onClick={() => window.open('https://myaccount.google.com/permissions', '_blank')}
-              style={{ fontSize: 11, color: 'var(--text-secondary)', cursor: 'pointer', textAlign: 'left', border: 'none', background: 'none', padding: 0 }}
-            >
-              También puedes revisar o quitar el acceso desde tu cuenta de Google →
-            </button>
-          </>
-        )}
       </div>
       </>
       )}
@@ -913,45 +812,8 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
           Compartir respaldo (JSON)
         </button>
         <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: -4 }}>
-          Mándalo a Drive, correo o donde prefieras guardarlo. Luego se puede restaurar en la app.
+          Mándalo a tu correo, a tu nube o donde prefieras guardarlo. Luego se puede restaurar en la app.
         </div>
-
-        {googleConfigured && (
-          <>
-            <div style={{ height: 1, background: 'var(--divider)', margin: '4px 0' }} />
-            <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>GOOGLE</div>
-            {!connectedToGoogle ? (
-              <>
-                <button type="button" onClick={startGoogleConnect} style={actionRowStyle}>
-                  Conectar con Google
-                </button>
-                <div style={{ fontSize: 11, color: silentReconnectFailed ? 'var(--danger-text)' : 'var(--text-secondary)', marginTop: -4 }}>
-                  {silentReconnectFailed
-                    ? 'No se pudo reconectar en silencio (puede que también haya que iniciar sesión de nuevo en Google). Toca el botón para autorizar otra vez.'
-                    : 'Te lleva a Google para autorizar, y vuelve aquí. Solo puede ver y crear los archivos de respaldo que suba esta app en tu Drive, nada más de tu cuenta.'}
-                </div>
-              </>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={sendToDrive}
-                  disabled={driveStatus === 'loading'}
-                  style={{ ...actionRowStyle, opacity: driveStatus === 'loading' ? 0.5 : 1 }}
-                >
-                  {driveStatus === 'loading' ? 'Subiendo…' : 'Subir Excel a Drive'}
-                </button>
-                <div style={{ fontSize: 11, color: driveStatus === 'error' ? 'var(--danger-text)' : 'var(--text-secondary)', marginTop: -4 }}>
-                  {driveStatus === 'error'
-                    ? driveError
-                    : driveStatus === 'uploaded'
-                      ? 'Listo, se subió a tu Drive, en una carpeta llamada "Payday".'
-                      : 'Ya conectado a Google.'}
-                </div>
-              </>
-            )}
-          </>
-        )}
 
         <div style={{ height: 1, background: 'var(--divider)', margin: '4px 0' }} />
         <button
@@ -965,7 +827,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
           Restaurar datos
         </button>
         <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: -4 }}>
-          Importar un archivo, restaurar desde Google Drive, o borrar todo y empezar de cero.
+          Importar un archivo de respaldo, o borrar todo y empezar de cero.
         </div>
       </div>
       </>

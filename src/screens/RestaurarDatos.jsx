@@ -1,9 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import { formatFullDate } from '../lib/dates';
+import { useRef, useState } from 'react';
 import { cardStyle, labelStyle } from '../lib/styles';
 import { isValidBackup, summarizeBackup, applyRestoredBackup } from '../lib/backup';
-import { googleConfigured, hasConnectedBefore, getAccessToken, connectGoogle } from '../lib/googleAuth';
-import { listJsonBackupsInDrive, downloadJsonBackupFromDrive } from '../lib/googleDrive';
 import FixedHeader from '../components/FixedHeader';
 import InlineConfirm from '../components/InlineConfirm';
 import Toast from '../components/Toast';
@@ -82,53 +79,7 @@ export default function RestaurarDatos({ setData, onNavigate }) {
     setConfirmFileImport(false);
   };
 
-  // --- 2. Sincronizar con Google Drive ---
-  const [driveState, setDriveState] = useState('idle'); // idle | loading | loaded | error
-  const [driveError, setDriveError] = useState('');
-  const [backups, setBackups] = useState([]);
-  const [confirmDriveId, setConfirmDriveId] = useState(null);
-  const connectedBefore = hasConnectedBefore();
-
-  const loadBackups = async () => {
-    setDriveState('loading');
-    setDriveError('');
-    try {
-      const token = getAccessToken();
-      const files = await listJsonBackupsInDrive(token, 3);
-      const withSummaries = await Promise.all(
-        files.map(async (f) => {
-          try {
-            const parsed = await downloadJsonBackupFromDrive(token, f.id);
-            if (!isValidBackup(parsed)) throw new Error('formato inválido');
-            return { ...f, parsed, summary: summarizeBackup(parsed) };
-          } catch {
-            return { ...f, parsed: null, summary: null };
-          }
-        }),
-      );
-      setBackups(withSummaries);
-      setDriveState('loaded');
-    } catch (err) {
-      setDriveError(err.message || 'No se pudo conectar con Drive.');
-      setDriveState('error');
-    }
-  };
-
-  useEffect(() => {
-    if (googleConfigured && getAccessToken()) loadBackups();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const connectDrive = () => {
-    sessionStorage.setItem('payday_return_tab', 'restaurar');
-    connectGoogle({ silent: connectedBefore });
-  };
-  const confirmRestoreDrive = (item) => {
-    finishRestore(item.parsed);
-    setConfirmDriveId(null);
-  };
-
-  // --- 3. Borrar todo ---
+  // --- 2. Borrar todo ---
   const [wipeStep, setWipeStep] = useState(0);
   const wipeAll = () => {
     setData((s) => ({ ...s, incomes: [], goals: [], cards: [], expenses: [], gastosVariables: [], sueldosFijos: [] }));
@@ -182,67 +133,7 @@ export default function RestaurarDatos({ setData, onNavigate }) {
         )}
       </div>
 
-      {/* 2. Sincronizar con Google Drive */}
-      {googleConfigured && (
-        <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          <div style={labelStyle}>SINCRONIZAR CON GOOGLE DRIVE</div>
-
-          {!getAccessToken() ? (
-            <>
-              <button type="button" onClick={connectDrive} style={actionRowStyle}>
-                Conectar Google
-              </button>
-              <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>
-                {connectedBefore
-                  ? 'Tu sesión con Google expiró. Te reconectamos y volvemos aquí.'
-                  : 'Te lleva a Google para autorizar, y vuelve aquí a mostrar tus respaldos.'}
-              </div>
-            </>
-          ) : (
-            <>
-              {driveState === 'loading' && <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>Buscando tus respaldos…</div>}
-              {driveState === 'error' && (
-                <>
-                  <div style={{ fontSize: 12, color: 'var(--danger-text)' }}>{driveError}</div>
-                  <button type="button" onClick={loadBackups} style={actionRowStyle}>
-                    Reintentar
-                  </button>
-                </>
-              )}
-              {driveState === 'loaded' && backups.length === 0 && (
-                <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                  Todavía no tienes respaldos en Drive. Sube uno desde Ajustes → General ("Subir Excel a Drive").
-                </div>
-              )}
-              {driveState === 'loaded' &&
-                backups.map((b) => (
-                  <div key={b.id} style={{ background: 'var(--input-bg)', borderRadius: 14, padding: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{formatFullDate(b.createdTime.slice(0, 10))}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
-                      {b.summary ? `Contiene ${summaryLine(b.summary)}.` : 'No se pudo leer este respaldo.'}
-                    </div>
-                    {b.summary && confirmDriveId !== b.id && (
-                      <button type="button" onClick={() => setConfirmDriveId(b.id)} style={{ ...actionRowStyle, background: 'var(--accent)', color: 'white' }}>
-                        Restaurar este backup
-                      </button>
-                    )}
-                    {confirmDriveId === b.id && (
-                      <InlineConfirm
-                        message="¿Reemplazar mis datos actuales con este respaldo? No se puede deshacer."
-                        confirmLabel="Sí, reemplazar"
-                        cancelLabel="Cancelar"
-                        onConfirm={() => confirmRestoreDrive(b)}
-                        onCancel={() => setConfirmDriveId(null)}
-                      />
-                    )}
-                  </div>
-                ))}
-            </>
-          )}
-        </div>
-      )}
-
-      {/* 3. Borrar todo y empezar de cero */}
+      {/* 2. Borrar todo y empezar de cero */}
       <div style={{ ...cardStyle, display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={labelStyle}>BORRAR TODO Y EMPEZAR DE CERO</div>
         <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
