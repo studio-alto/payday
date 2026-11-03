@@ -5,7 +5,7 @@ import { uid } from '../../lib/id';
 import { cardStyle, textInputStyle, primaryButtonStyle } from '../../lib/styles';
 import BottomSheet from '../../components/BottomSheet';
 import InlineConfirm from '../../components/InlineConfirm';
-import NumberInput from '../../components/NumberInput';
+import MoneyInput from '../../components/MoneyInput';
 import CardMenu from '../../components/CardMenu';
 import MonthSwitcher from './MonthSwitcher';
 import { MethodTag } from '../../components/PaymentMethodIcon';
@@ -386,7 +386,7 @@ export default function GastosFijosTab({ data, setData, monthNav, addRef }) {
             placeholder="Nombre (ej: Netflix, Internet, Transporte)"
             style={textInputStyle()}
           />
-          <NumberInput value={expenseForm.amount} onChange={setExpenseField('amount')} placeholder="Monto mensual" style={textInputStyle()} />
+          <MoneyInput value={expenseForm.amount} onChange={setExpenseField('amount')} placeholder="Monto mensual" style={textInputStyle()} />
           <input
             type="text"
             inputMode="numeric"

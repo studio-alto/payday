@@ -32,6 +32,17 @@ describe('ensureRecurringIncomes', () => {
     });
   });
 
+  it('keeps cents when splitting a sueldo fijo that has them', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date(2026, 8, 10));
+
+    const sueldoFijo = { id: 'sf1', name: 'Sueldo X', amount: 1000000.5, payDayOfMonth: 15, ahorroPct: 10, tarjetaPct: 0 };
+    const { incomes } = ensureRecurringIncomes({ incomes: [], sueldosFijos: [sueldoFijo] });
+
+    expect(incomes[0].amount).toBe(1000000.5);
+    expect(incomes[0].distribution.ahorro).toBe(100000.05);
+  });
+
   it('carries the sueldo fijo\'s payment method onto the generated income, ignoring unknown values', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date(2026, 8, 10));

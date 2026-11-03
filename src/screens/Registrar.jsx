@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { fmt } from '../lib/format';
+import { round2 } from '../lib/money';
 import { DAY_TYPES, todayISO } from '../lib/dates';
 import { uid } from '../lib/id';
 import { cardStyle, labelStyle, fieldLabelStyle, textInputStyle, primaryButtonStyle, secondaryButtonStyle } from '../lib/styles';
-import NumberInput from '../components/NumberInput';
 import MoneyInput from '../components/MoneyInput';
 import DateField from '../components/DateField';
 import FixedHeader from '../components/FixedHeader';
@@ -86,7 +86,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
   // Deudas' percentage presets/input work off what's actually left after ahorro,
   // not the full income — otherwise a "valid-looking" 40% of the total can quietly
   // exceed what's still available once ahorro already took its share.
-  const disponibleParaDeudas = Math.max(0, regAmount - ahorroMonto);
+  const disponibleParaDeudas = round2(Math.max(0, regAmount - ahorroMonto));
   const debtMethod = data.user.debtMethod || 'bola_nieve';
   // Cards a person can actually pick to send this abono to by hand, instead of letting
   // bola de nieve/avalancha decide — same active-with-balance scope CardsTab uses.
@@ -97,7 +97,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
   // Whatever doesn't fit any debt (debtWaterfall.leftover) never reaches a card balance —
   // it has to stay part of "disponible", not get subtracted as if it were paid toward
   // debt, or that amount would silently vanish from every total in the app.
-  const tarjetaAplicado = form.esFuturo ? tarjetaMonto : tarjetaMonto - debtWaterfall.leftover;
+  const tarjetaAplicado = form.esFuturo ? tarjetaMonto : round2(tarjetaMonto - debtWaterfall.leftover);
   const budgetNecesidades = data.user.budgetNecesidades ?? 50;
   const budgetDeseos = data.user.budgetDeseos ?? 30;
   const budgetAhorro = data.user.budgetAhorro ?? 20;
@@ -123,14 +123,14 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
   const toggleEsFuturo = () => setForm((f) => ({ ...f, esFuturo: !f.esFuturo, date: f.esFuturo ? (f.date > today ? today : f.date) : f.date }));
   const setType = (key) => setForm((f) => ({ ...f, type: key }));
   const setAmountPreset = (amt) => setForm((f) => ({ ...f, amount: String(amt) }));
-  const addZeros = () => setForm((f) => (f.amount ? { ...f, amount: f.amount + '000' } : f));
+  const addZeros = () => setForm((f) => (f.amount ? { ...f, amount: String(round2(Number(f.amount) * 1000)) } : f));
   const setAhorroPct = (pct) => {
     setAhorroPctText('');
-    setForm((f) => ({ ...f, ahorroMonto: String(Math.round(regAmount * pct)) }));
+    setForm((f) => ({ ...f, ahorroMonto: String(round2(regAmount * pct)) }));
   };
   const setTarjetaPct = (pct) => {
     setTarjetaPctText('');
-    setForm((f) => ({ ...f, tarjetaMonto: String(Math.round(disponibleParaDeudas * pct)) }));
+    setForm((f) => ({ ...f, tarjetaMonto: String(round2(disponibleParaDeudas * pct)) }));
   };
   const setAhorroMontoManual = (e) => {
     setAhorroPctText('');
@@ -144,13 +144,13 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
     const digits = e.target.value.replace(/\D/g, '').slice(0, 3);
     const pct = Math.min(100, Number(digits) || 0);
     setAhorroPctText(digits);
-    setForm((f) => ({ ...f, ahorroMonto: String(Math.round(regAmount * (pct / 100))) }));
+    setForm((f) => ({ ...f, ahorroMonto: String(round2(regAmount * (pct / 100))) }));
   };
   const setTarjetaPctManual = (e) => {
     const digits = e.target.value.replace(/\D/g, '').slice(0, 3);
     const pct = Math.min(100, Number(digits) || 0);
     setTarjetaPctText(digits);
-    setForm((f) => ({ ...f, tarjetaMonto: String(Math.round(disponibleParaDeudas * (pct / 100))) }));
+    setForm((f) => ({ ...f, tarjetaMonto: String(round2(disponibleParaDeudas * (pct / 100))) }));
   };
 
   const setTarjetaCardId = (cardId) => setForm((f) => ({ ...f, tarjetaCardId: cardId }));
@@ -200,7 +200,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
       // Only what actually landed on a card counts as "tarjeta" from here on — any part
       // that didn't fit any debt stays disponible instead of disappearing from every
       // total (Dashboard, recap, Excel) that reads distribution.tarjeta.
-      const tarjetaAplicado = form.esFuturo ? tarjetaMonto : applied.debtAllocations.reduce((a, x) => a + x.amount, 0);
+      const tarjetaAplicado = form.esFuturo ? tarjetaMonto : round2(applied.debtAllocations.reduce((a, x) => a + x.amount, 0));
       const entry = { ...baseEntry, distribution: { ...baseEntry.distribution, tarjeta: tarjetaAplicado, debtAllocations: applied.debtAllocations } };
 
       return {
@@ -284,7 +284,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
           </div>
           <div style={{ display: 'flex', gap: 8, alignItems: 'stretch' }}>
             <div style={{ flex: 1 }}>
-              <NumberInput value={form.amount} onChange={setField('amount')} placeholder="¿Cuánto ganaste?" style={textInputStyle(true)} />
+              <MoneyInput value={form.amount} onChange={setField('amount')} placeholder="¿Cuánto ganaste?" style={textInputStyle(true)} />
             </div>
             <button
               type="button"

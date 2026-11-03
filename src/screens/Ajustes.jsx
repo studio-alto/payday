@@ -8,6 +8,7 @@ import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import { hashPin } from '../lib/pin';
 import { shareBackupJson } from '../lib/backup';
 import NumberInput from '../components/NumberInput';
+import MoneyInput from '../components/MoneyInput';
 import FixedHeader from '../components/FixedHeader';
 import BottomSheet from '../components/BottomSheet';
 import InlineConfirm from '../components/InlineConfirm';
@@ -622,7 +623,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
             placeholder="Nombre (ej: Sueldo empresa X)"
             style={textInputStyle()}
           />
-          <NumberInput value={sueldoForm.amount} onChange={setSueldoField('amount')} placeholder="Monto mensual" style={textInputStyle()} />
+          <MoneyInput value={sueldoForm.amount} onChange={setSueldoField('amount')} placeholder="Monto mensual" style={textInputStyle()} />
           <div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 700 }}>DÍA DE PAGO DEL MES</div>
             <NumberInput

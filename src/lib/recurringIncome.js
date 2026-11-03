@@ -1,6 +1,7 @@
 import { uid } from './id';
 import { daysUntilPayday, isoOffset, isSameMonth } from './dates';
 import { normalizeMethod } from './paymentMethods';
+import { round2 } from './money';
 
 // Next occurrence of a recurring salary's payday — this month's if it hasn't
 // passed yet, otherwise next month's (same lookahead daysUntilPayday already
@@ -30,8 +31,8 @@ export function ensureRecurringIncomes(data) {
     const alreadyExists = incomes.some((i) => i.recurringId === sf.id && isSameMonth(i.date, new Date(targetDate + 'T00:00:00')));
     if (alreadyExists) return;
     changed = true;
-    const ahorro = Math.round(sf.amount * ((sf.ahorroPct || 0) / 100));
-    const tarjeta = Math.round(sf.amount * ((sf.tarjetaPct || 0) / 100));
+    const ahorro = round2(sf.amount * ((sf.ahorroPct || 0) / 100));
+    const tarjeta = round2(sf.amount * ((sf.tarjetaPct || 0) / 100));
     incomes = [
       ...incomes,
       {
