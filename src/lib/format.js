@@ -7,6 +7,8 @@ export function setExchangeRates(next) {
   rates = { ...rates, ...next };
 }
 
+import { hasCents } from './money';
+
 export function fmt(amount, currency) {
   const n = amount || 0;
   if (currency === 'USD') {
@@ -15,5 +17,6 @@ export function fmt(amount, currency) {
   if (currency === 'EUR') {
     return '€' + (n / rates.EUR).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
+  if (hasCents(n)) return '$' + n.toLocaleString('es-CO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   return '$' + Math.round(n).toLocaleString('es-CO');
 }

@@ -3,7 +3,7 @@ import { fmt } from '../lib/format';
 import { formatShortDate, monthsSince, todayISO, addMonthsISO, formatMonthYear, advanceDueDate } from '../lib/dates';
 import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import { monthlyInterestCost, simulateCardPayoff, formatMonthsLabel, debtPriorityRank, reverseIncomeEffects, METHODS } from '../lib/debt';
-import NumberInput from '../components/NumberInput';
+import MoneyInput from '../components/MoneyInput';
 import DateField from '../components/DateField';
 import BottomSheet from '../components/BottomSheet';
 import FixedHeader from '../components/FixedHeader';
@@ -13,6 +13,7 @@ import CardMenu from '../components/CardMenu';
 import { MethodTag } from '../components/PaymentMethodIcon';
 import PaymentMethodChips from '../components/PaymentMethodChips';
 import { normalizeMethod } from '../lib/paymentMethods';
+import { round2 } from '../lib/money';
 
 const EXTRA_PRESETS = [0, 20000, 50000, 100000, 200000];
 
@@ -187,12 +188,12 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
         if (editingHistoryIdx !== null) {
           const oldAmount = c.history[editingHistoryIdx].amount;
           const history = c.history.map((h, i) => (i === editingHistoryIdx ? { ...h, date: payForm.date || today, amount, note: payForm.note, metodo: payForm.metodo } : h));
-          return { ...c, balance: Math.max(0, c.balance + oldAmount - amount), history };
+          return { ...c, balance: round2(Math.max(0, c.balance + oldAmount - amount)), history };
         }
         const paidOn = payForm.date || today;
         return {
           ...c,
-          balance: Math.max(0, c.balance - amount),
+          balance: round2(Math.max(0, c.balance - amount)),
           nextPayment: advanceDueDate(c.nextPayment, paidOn),
           history: [...c.history, { date: paidOn, amount, note: payForm.note, metodo: payForm.metodo }],
         };
@@ -209,7 +210,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
       cards: s.cards.map((c) => {
         if (c.id !== card.id) return c;
         const entry = c.history[idx];
-        return { ...c, balance: c.balance + entry.amount, history: c.history.filter((_, i) => i !== idx) };
+        return { ...c, balance: round2(c.balance + entry.amount), history: c.history.filter((_, i) => i !== idx) };
       }),
     }));
     setDeleteHistoryIdx(null);
@@ -355,7 +356,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
           <ExplainerNote>
             El pago mínimo que debes hacer cada mes por esta deuda. En tarjetas de crédito suele cambiar de un mes a otro. Actualízalo aquí cuando cambie.
           </ExplainerNote>
-          <NumberInput value={cuotaText} onChange={(e) => setCuotaText(e.target.value)} placeholder="Ej: 400.000" style={textInputStyle()} />
+          <MoneyInput value={cuotaText} onChange={(e) => setCuotaText(e.target.value)} placeholder="Ej: 400.000" style={textInputStyle()} />
           <button
             type="button"
             onClick={saveCuota}
@@ -374,7 +375,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
             poco distinto (fechas de corte, promociones, cobros mínimos), así que es más confiable copiarlo de ahí que
             calcularlo con la tasa.
           </ExplainerNote>
-          <NumberInput value={interesText} onChange={(e) => setInteresText(e.target.value)} placeholder="Ej: 15.000" style={textInputStyle()} />
+          <MoneyInput value={interesText} onChange={(e) => setInteresText(e.target.value)} placeholder="Ej: 15.000" style={textInputStyle()} />
           <button
             type="button"
             onClick={saveInteres}
@@ -392,7 +393,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
             Cuánto pediste prestado en un inicio. Es solo de referencia para que veas cuánto llevas recorrido: no afecta
             ningún cálculo de esta pantalla, esos siempre parten del saldo pendiente de hoy.
           </ExplainerNote>
-          <NumberInput value={montoOriginalText} onChange={(e) => setMontoOriginalText(e.target.value)} placeholder="Ej: 5.000.000" style={textInputStyle()} />
+          <MoneyInput value={montoOriginalText} onChange={(e) => setMontoOriginalText(e.target.value)} placeholder="Ej: 5.000.000" style={textInputStyle()} />
           <button
             type="button"
             onClick={saveMontoOriginal}
@@ -550,7 +551,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
               </button>
             ))}
           </div>
-          <NumberInput value={extraText} onChange={(e) => setExtraText(e.target.value)} placeholder="Otro monto" style={textInputStyle()} />
+          <MoneyInput value={extraText} onChange={(e) => setExtraText(e.target.value)} placeholder="Otro monto" style={textInputStyle()} />
         </div>
 
         {hasSurplus && (
@@ -702,7 +703,7 @@ export default function DeudaDetalle({ data, setData, cardId, onNavigate, onEdit
       {payModalOpen && (
         <BottomSheet onClose={() => { setPayModalOpen(false); setEditingHistoryIdx(null); }}>
           <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{editingHistoryIdx !== null ? 'Editar abono' : 'Registrar pago'}</div>
-          <NumberInput
+          <MoneyInput
             value={payForm.amount}
             onChange={(e) => setPayForm((f) => ({ ...f, amount: e.target.value }))}
             placeholder="Monto a pagar"

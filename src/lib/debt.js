@@ -1,3 +1,4 @@
+import { round2 } from './money';
 export const METHODS = [
   { key: 'bola_nieve', label: 'Bola de nieve', hint: 'Prioriza el saldo más pequeño primero' },
   { key: 'avalancha', label: 'Avalancha', hint: 'Prioriza la tasa de interés más alta primero' },
@@ -51,7 +52,7 @@ export function computeDebtWaterfall(cards, method, amount) {
     const applied = Math.min(remaining, c.balance);
     if (applied > 0) {
       allocations.push({ cardId: c.id, name: c.name, amount: applied });
-      remaining -= applied;
+      remaining = round2(remaining - applied);
     }
   }
   return { allocations, leftover: remaining };
@@ -65,7 +66,7 @@ export function computeManualDebtAllocation(cards, cardId, amount) {
   const card = cards.find((c) => c.id === cardId && c.balance > 0);
   if (!card || amount <= 0) return { allocations: [], leftover: Math.max(0, amount) };
   const applied = Math.min(amount, card.balance);
-  return { allocations: applied > 0 ? [{ cardId: card.id, name: card.name, amount: applied }] : [], leftover: amount - applied };
+  return { allocations: applied > 0 ? [{ cardId: card.id, name: card.name, amount: applied }] : [], leftover: round2(amount - applied) };
 }
 
 // Simulates paying off all debts month by month: interest accrues, minimum payments
@@ -219,7 +220,7 @@ export function reverseIncomeEffects(income, goals, cards) {
   if (goalId && ahorro) {
     newGoals = goals.map((g) =>
       g.id === goalId
-        ? { ...g, current: g.current - ahorro, history: (g.history || []).filter((h) => h.incomeId !== income.id) }
+        ? { ...g, current: round2(g.current - ahorro), history: (g.history || []).filter((h) => h.incomeId !== income.id) }
         : g,
     );
   }
@@ -227,7 +228,7 @@ export function reverseIncomeEffects(income, goals, cards) {
     newCards = cards.map((c) => {
       const alloc = debtAllocations.find((a) => a.cardId === c.id);
       if (!alloc) return c;
-      return { ...c, balance: c.balance + alloc.amount, history: c.history.filter((h) => h.incomeId !== income.id) };
+      return { ...c, balance: round2(c.balance + alloc.amount), history: c.history.filter((h) => h.incomeId !== income.id) };
     });
   }
   return { goals: newGoals, cards: newCards };
@@ -243,7 +244,7 @@ export function applyIncomeEffects(income, goals, cards, debtMethod) {
     goalId && ahorro > 0
       ? goals.map((g) =>
           g.id === goalId
-            ? { ...g, current: g.current + ahorro, history: [...(g.history || []), { date: income.date, amount: ahorro, incomeId: income.id }] }
+            ? { ...g, current: round2(g.current + ahorro), history: [...(g.history || []), { date: income.date, amount: ahorro, incomeId: income.id }] }
             : g,
         )
       : goals;
@@ -259,7 +260,7 @@ export function applyIncomeEffects(income, goals, cards, debtMethod) {
     if (!alloc) return c;
     return {
       ...c,
-      balance: Math.max(0, c.balance - alloc.amount),
+      balance: round2(Math.max(0, c.balance - alloc.amount)),
       history: [...c.history, { date: income.date, amount: alloc.amount, note: `Automático · ${income.name || 'Ingreso'}`, incomeId: income.id }],
     };
   });

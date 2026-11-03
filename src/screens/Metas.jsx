@@ -7,13 +7,14 @@ import { formatMonthsLabel } from '../lib/debt';
 import { formatFullDate, todayISO } from '../lib/dates';
 import BottomSheet from '../components/BottomSheet';
 import InlineConfirm from '../components/InlineConfirm';
-import NumberInput from '../components/NumberInput';
+import MoneyInput from '../components/MoneyInput';
 import PlusIcon from '../components/PlusIcon';
 import FixedHeader from '../components/FixedHeader';
 import CardMenu from '../components/CardMenu';
 import DateField from '../components/DateField';
 import ProgressRing from '../components/ProgressRing';
 import { CHART_COLORS } from '../lib/colors';
+import { round2 } from '../lib/money';
 
 const GOAL_PRESETS = ['Fondo de emergencia', 'Viaje', 'Laptop', 'Curso', 'Otra'];
 
@@ -57,7 +58,7 @@ export default function Metas({ data, setData, onViewDetail, onEditIncome }) {
       return {
         ...s,
         incomes: s.incomes.map((i) => (targets.some((t) => t.id === i.id) ? { ...i, distribution: { ...i.distribution, goalId } } : i)),
-        goals: s.goals.map((g) => (g.id === goalId ? { ...g, current: g.current + addedTotal, history: [...(g.history || []), ...entries] } : g)),
+        goals: s.goals.map((g) => (g.id === goalId ? { ...g, current: round2(g.current + addedTotal), history: [...(g.history || []), ...entries] } : g)),
       };
     });
     setClaimTarget('');
@@ -150,7 +151,7 @@ export default function Metas({ data, setData, onViewDetail, onEditIncome }) {
     setData((s) => ({
       ...s,
       goals: s.goals.map((g) =>
-        g.id === id ? { ...g, current: g.current + amount, history: [...(g.history || []), { date: todayISO(), amount }] } : g,
+        g.id === id ? { ...g, current: round2(g.current + amount), history: [...(g.history || []), { date: todayISO(), amount }] } : g,
       ),
     }));
     setAddingToGoalId(null);
@@ -413,7 +414,7 @@ export default function Metas({ data, setData, onViewDetail, onEditIncome }) {
 
             {addingToGoalId === g.id && (
               <div style={{ marginTop: 10, padding: 12, borderRadius: 14, background: isOverdue ? 'rgba(255,255,255,0.18)' : 'var(--input-bg)', display: 'flex', gap: 8 }}>
-                <NumberInput
+                <MoneyInput
                   autoFocus
                   value={addAmount}
                   onChange={(e) => setAddAmount(e.target.value)}
@@ -466,8 +467,8 @@ export default function Metas({ data, setData, onViewDetail, onEditIncome }) {
             ))}
           </div>
           <input type="text" value={form.name} onChange={setField('name')} placeholder="Nombre de la meta" style={textInputStyle()} />
-          <NumberInput value={form.target} onChange={setField('target')} placeholder="Monto objetivo" style={textInputStyle()} />
-          <NumberInput value={form.current} onChange={setField('current')} placeholder="Monto actual (opcional)" style={textInputStyle()} />
+          <MoneyInput value={form.target} onChange={setField('target')} placeholder="Monto objetivo" style={textInputStyle()} />
+          <MoneyInput value={form.current} onChange={setField('current')} placeholder="Monto actual (opcional)" style={textInputStyle()} />
           <div>
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 4, fontWeight: 700 }}>
               ¿PARA CUÁNDO LA QUIERES? (OPCIONAL)

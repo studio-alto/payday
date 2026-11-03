@@ -5,7 +5,7 @@ import { uid } from '../../lib/id';
 import { cardStyle, textInputStyle, primaryButtonStyle } from '../../lib/styles';
 import BottomSheet from '../../components/BottomSheet';
 import InlineConfirm from '../../components/InlineConfirm';
-import NumberInput from '../../components/NumberInput';
+import MoneyInput from '../../components/MoneyInput';
 import DateField from '../../components/DateField';
 import CardMenu from '../../components/CardMenu';
 import ProgressRing from '../../components/ProgressRing';
@@ -13,6 +13,7 @@ import { MethodTag } from '../../components/PaymentMethodIcon';
 import PaymentMethodChips from '../../components/PaymentMethodChips';
 import { normalizeMethod } from '../../lib/paymentMethods';
 import { sortDebtsByPriority, debtPriorityRank, simulatePayoffPlan, formatMonthsLabel, monthlyPaidTotals, reverseIncomeEffects, METHODS } from '../../lib/debt';
+import { round2 } from '../../lib/money';
 
 const TIPOS = ['Tarjeta de crédito', 'Préstamo', 'Otro'];
 
@@ -193,12 +194,12 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
           const { index } = editingHistoryTarget;
           const oldAmount = c.history[index].amount;
           const history = c.history.map((h, i) => (i === index ? { ...h, date: payForm.date || today, amount, note: payForm.note, metodo: payForm.metodo } : h));
-          return { ...c, balance: Math.max(0, c.balance + oldAmount - amount), history };
+          return { ...c, balance: round2(Math.max(0, c.balance + oldAmount - amount)), history };
         }
         const paidOn = payForm.date || today;
         return {
           ...c,
-          balance: Math.max(0, c.balance - amount),
+          balance: round2(Math.max(0, c.balance - amount)),
           nextPayment: advanceDueDate(c.nextPayment, paidOn),
           history: [...c.history, { date: paidOn, amount, note: payForm.note, metodo: payForm.metodo }],
         };
@@ -216,7 +217,7 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
       cards: s.cards.map((c) => {
         if (c.id !== cardId) return c;
         const entry = c.history[index];
-        return { ...c, balance: c.balance + entry.amount, history: c.history.filter((_, i) => i !== index) };
+        return { ...c, balance: round2(c.balance + entry.amount), history: c.history.filter((_, i) => i !== index) };
       }),
     }));
     setDeleteHistoryTarget(null);
@@ -338,7 +339,7 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 700 }}>
             EXTRA MENSUAL PARA DEUDAS (además de los pagos mínimos)
           </div>
-          <NumberInput value={data.user.extraDeudaMensual || ''} onChange={setExtraMensual} placeholder="Ej: 100.000" style={textInputStyle()} />
+          <MoneyInput value={data.user.extraDeudaMensual || ''} onChange={setExtraMensual} placeholder="Ej: 100.000" style={textInputStyle()} />
 
           <div style={{ marginTop: 12 }}>
             {payoffPlan.perCard.length === 0 ? (
@@ -574,8 +575,8 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
             ))}
           </select>
           <input type="text" value={form.name} onChange={setField('name')} placeholder="Nombre (ej: Visa Roja, Préstamo banco X)" style={textInputStyle()} />
-          <NumberInput value={form.balance} onChange={setField('balance')} placeholder="Saldo pendiente" style={textInputStyle()} />
-          <NumberInput value={form.originalAmount} onChange={setField('originalAmount')} placeholder="Monto total original (opcional)" style={textInputStyle()} />
+          <MoneyInput value={form.balance} onChange={setField('balance')} placeholder="Saldo pendiente" style={textInputStyle()} />
+          <MoneyInput value={form.originalAmount} onChange={setField('originalAmount')} placeholder="Monto total original (opcional)" style={textInputStyle()} />
           <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginTop: -6 }}>
             Cuánto pediste prestado en un inicio. Es solo de referencia, no afecta ningún cálculo — déjalo vacío si no lo recuerdas.
           </div>
@@ -583,7 +584,7 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
             <div style={{ fontSize: 11, color: 'var(--text-secondary)', marginBottom: 6, fontWeight: 700 }}>PRÓXIMO PAGO</div>
             <DateField value={form.nextPayment} onChange={setField('nextPayment')} style={textInputStyle()} />
           </div>
-          <NumberInput value={form.minPayment} onChange={setField('minPayment')} placeholder="Pago mínimo (opcional)" style={textInputStyle()} />
+          <MoneyInput value={form.minPayment} onChange={setField('minPayment')} placeholder="Pago mínimo (opcional)" style={textInputStyle()} />
           <input
             type="text"
             inputMode="decimal"
@@ -610,7 +611,7 @@ export default function CardsTab({ data, setData, onViewDetail, onEditIncome, ad
       {payModalOpen && (
         <BottomSheet onClose={closePayModal}>
           <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>{editingHistoryTarget ? 'Editar abono' : 'Registrar pago'}</div>
-          <NumberInput
+          <MoneyInput
             value={payForm.amount}
             onChange={(e) => setPayForm((f) => ({ ...f, amount: e.target.value }))}
             placeholder="Monto a pagar"

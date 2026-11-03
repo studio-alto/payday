@@ -70,6 +70,12 @@ describe('computeDebtWaterfall', () => {
     expect(leftover).toBe(0);
   });
 
+  it('keeps cents clean when a payment with cents rolls over', () => {
+    const { allocations, leftover } = computeDebtWaterfall(cards, 'bola_nieve', 100.1);
+    expect(allocations.map((a) => a.amount)).toEqual([100, 0.1]);
+    expect(leftover).toBe(0);
+  });
+
   it('reports leftover when the amount exceeds total debt', () => {
     const { allocations, leftover } = computeDebtWaterfall(cards, 'bola_nieve', 700);
     expect(allocations.reduce((a, x) => a + x.amount, 0)).toBe(600);

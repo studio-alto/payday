@@ -4,6 +4,7 @@ import { DAY_TYPES, todayISO } from '../lib/dates';
 import { uid } from '../lib/id';
 import { cardStyle, labelStyle, fieldLabelStyle, textInputStyle, primaryButtonStyle, secondaryButtonStyle } from '../lib/styles';
 import NumberInput from '../components/NumberInput';
+import MoneyInput from '../components/MoneyInput';
 import DateField from '../components/DateField';
 import FixedHeader from '../components/FixedHeader';
 import PaymentMethodChips from '../components/PaymentMethodChips';
@@ -520,7 +521,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
               />
             </div>
             <div style={{ flex: 1 }}>
-              <NumberInput
+              <MoneyInput
                 value={form.ahorroMonto}
                 onChange={setAhorroMontoManual}
                 placeholder="Monto ($)"
@@ -622,7 +623,7 @@ export default function Registrar({ data, setData, onNavigate, editingIncome, on
               />
             </div>
             <div style={{ flex: 1 }}>
-              <NumberInput
+              <MoneyInput
                 value={form.tarjetaMonto}
                 onChange={setTarjetaMontoManual}
                 placeholder="Monto ($)"

@@ -4,13 +4,14 @@ import { formatFullDate, todayISO } from '../lib/dates';
 import { cardStyle, labelStyle, textInputStyle } from '../lib/styles';
 import { computeSavingsProjection, estimateMonthsToGoal, projectGoalByContribution, CONTRIBUTION_FREQUENCIES } from '../lib/goalProjection';
 import { formatMonthsLabel } from '../lib/debt';
-import NumberInput from '../components/NumberInput';
+import MoneyInput from '../components/MoneyInput';
 import DateField from '../components/DateField';
 import BottomSheet from '../components/BottomSheet';
 import FixedHeader from '../components/FixedHeader';
 import InlineConfirm from '../components/InlineConfirm';
 import ProgressRing from '../components/ProgressRing';
 import CardMenu from '../components/CardMenu';
+import { round2 } from '../lib/money';
 
 function ExplainerNote({ children }) {
   return <div style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, marginTop: 8 }}>{children}</div>;
@@ -70,7 +71,7 @@ export default function MetaDetalle({ data, setData, goalId, onNavigate, onEditI
       goals: s.goals.map((g) => {
         if (g.id !== goal.id) return g;
         const entry = g.history[idx];
-        return { ...g, current: Math.max(0, g.current - entry.amount), history: g.history.filter((_, i) => i !== idx) };
+        return { ...g, current: round2(Math.max(0, g.current - entry.amount)), history: g.history.filter((_, i) => i !== idx) };
       }),
     }));
     setConfirmDeleteIdx(null);
@@ -91,7 +92,7 @@ export default function MetaDetalle({ data, setData, goalId, onNavigate, onEditI
         if (g.id !== goal.id) return g;
         const oldAmount = g.history[editingIdx].amount;
         const history = g.history.map((h, i) => (i === editingIdx ? { ...h, amount, date: editForm.date } : h));
-        return { ...g, current: Math.max(0, g.current - oldAmount + amount), history };
+        return { ...g, current: round2(Math.max(0, g.current - oldAmount + amount)), history };
       }),
     }));
     setEditModalOpen(false);
@@ -202,7 +203,7 @@ export default function MetaDetalle({ data, setData, goalId, onNavigate, onEditI
             ))}
           </div>
           <div style={{ marginTop: 10 }}>
-            <NumberInput
+            <MoneyInput
               value={simAmount}
               onChange={(e) => setSimAmount(e.target.value)}
               placeholder={`Monto cada ${freqDef.noun}`}
@@ -275,7 +276,7 @@ export default function MetaDetalle({ data, setData, goalId, onNavigate, onEditI
       {editModalOpen && (
         <BottomSheet onClose={() => setEditModalOpen(false)}>
           <div style={{ fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>Editar aporte</div>
-          <NumberInput
+          <MoneyInput
             value={editForm.amount}
             onChange={(e) => setEditForm((f) => ({ ...f, amount: e.target.value }))}
             placeholder="Monto"
