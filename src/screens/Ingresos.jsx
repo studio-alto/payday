@@ -241,7 +241,7 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
         </div>
 
         {jobNames.length > 0 && (
-          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 10 }}>
+          <div className="chip-row" style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 10 }}>
             <button type="button" onClick={() => setSelectedJob(null)} aria-pressed={!selectedJob} style={jobChipStyle(!selectedJob)}>
               Todos
             </button>
@@ -254,7 +254,7 @@ export default function Ingresos({ data, setData, onNavigate, onEdit }) {
         )}
 
         {usedMethods.length > 0 && (
-          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 10 }}>
+          <div className="chip-row" style={{ display: 'flex', gap: 8, overflowX: 'auto', marginBottom: 10 }}>
             <button type="button" onClick={() => setSelectedMetodo(null)} aria-pressed={!selectedMetodo} style={jobChipStyle(!selectedMetodo)}>
               Todo método
             </button>

@@ -249,6 +249,11 @@ video {
 }
 
 @media (min-width: 768px) {
+  /* Filter chips: a swipeable row on phones, but wide screens have room to show them all. */
+  .chip-row {
+    flex-wrap: wrap;
+    overflow-x: visible !important;
+  }
   .app-scroll {
     max-width: 920px !important;
     padding-left: 28px !important;
