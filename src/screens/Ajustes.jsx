@@ -9,7 +9,6 @@ import { hashPin } from '../lib/pin';
 import { googleConfigured, hasValidToken, hasConnectedBefore, consumeRedirectResult, getAccessToken, connectGoogle, disconnectGoogle } from '../lib/googleAuth';
 import { backupSummaryToDrive, backupJsonToDrive } from '../lib/googleDrive';
 import { shareBackupJson } from '../lib/backup';
-import { syncFinancialEventsToCalendar } from '../lib/googleCalendar';
 import NumberInput from '../components/NumberInput';
 import FixedHeader from '../components/FixedHeader';
 import BottomSheet from '../components/BottomSheet';
@@ -210,8 +209,6 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
 
   const [driveStatus, setDriveStatus] = useState('idle'); // idle | loading | uploaded | emailed | error
   const [driveError, setDriveError] = useState('');
-  const [calendarStatus, setCalendarStatus] = useState('idle'); // idle | loading | synced | error
-  const [calendarError, setCalendarError] = useState('');
   const connectedToGoogle = hasValidToken();
   // If a silent reconnect attempt (see startGoogleConnect below) just failed —
   // Google bounced back with an error instead of a token — say so, since
@@ -261,18 +258,6 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
     } catch (err) {
       setDriveError(err.message || 'Algo salió mal.');
       setDriveStatus('error');
-    }
-  };
-  const syncCalendar = async () => {
-    setCalendarStatus('loading');
-    setCalendarError('');
-    try {
-      const accessToken = getAccessToken();
-      await syncFinancialEventsToCalendar(accessToken, data);
-      setCalendarStatus('synced');
-    } catch (err) {
-      setCalendarError(err.message || 'Algo salió mal.');
-      setCalendarStatus('error');
     }
   };
 
@@ -846,8 +831,8 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
         <div style={{ display: 'flex', gap: 10 }}>
           <div style={{ fontSize: 16, flexShrink: 0 }}>🔒</div>
           <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.4 }}>
-            Payday no ve nada de tu Drive o Calendar hasta que tú autorizas la conexión, y solo accede a lo que esta
-            app misma crea, nunca al resto de tus archivos.
+            Payday no ve nada de tu Drive hasta que tú autorizas la conexión, y solo accede a lo que esta app misma
+            crea, nunca al resto de tus archivos.
           </div>
         </div>
         <div style={{ display: 'flex', gap: 10 }}>
@@ -943,7 +928,7 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
                 <div style={{ fontSize: 11, color: silentReconnectFailed ? 'var(--danger-text)' : 'var(--text-secondary)', marginTop: -4 }}>
                   {silentReconnectFailed
                     ? 'No se pudo reconectar en silencio (puede que también haya que iniciar sesión de nuevo en Google). Toca el botón para autorizar otra vez.'
-                    : 'Te lleva a Google para autorizar, y vuelve aquí. Solo puede ver y crear archivos que suba esta app en Drive, y crear/editar eventos en tu Calendar, nada más de tu cuenta.'}
+                    : 'Te lleva a Google para autorizar, y vuelve aquí. Solo puede ver y crear los archivos de respaldo que suba esta app en tu Drive, nada más de tu cuenta.'}
                 </div>
               </>
             ) : (
@@ -962,21 +947,6 @@ export default function Ajustes({ data, setData, canInstall, isInstalled, onInst
                     : driveStatus === 'uploaded'
                       ? 'Listo, se subió a tu Drive, en una carpeta llamada "Payday".'
                       : 'Ya conectado a Google.'}
-                </div>
-                <button
-                  type="button"
-                  onClick={syncCalendar}
-                  disabled={calendarStatus === 'loading'}
-                  style={{ ...actionRowStyle, opacity: calendarStatus === 'loading' ? 0.5 : 1 }}
-                >
-                  {calendarStatus === 'loading' ? 'Sincronizando…' : 'Sincronizar recordatorios con Calendar'}
-                </button>
-                <div style={{ fontSize: 11, color: calendarStatus === 'error' ? 'var(--danger-text)' : 'var(--text-secondary)', marginTop: -4 }}>
-                  {calendarStatus === 'error'
-                    ? calendarError
-                    : calendarStatus === 'synced'
-                      ? 'Listo, se crearon/actualizaron los eventos de tus deudas, gastos fijos e ingresos esperados en tu Calendar.'
-                      : 'Crea un evento por cada deuda (próximo pago), gasto fijo (próximo vencimiento) e ingreso esperado. Vuelve a tocar el botón cuando quieras que se actualicen.'}
                 </div>
               </>
             )}

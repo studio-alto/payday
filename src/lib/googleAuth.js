@@ -1,4 +1,4 @@
-// Shared Google sign-in for both Drive backup and Calendar reminders — the
+// Shared Google sign-in for the Drive backup — the
 // "middle ground" version of accounts: no backend, no user database, no
 // passwords to manage. Uses a plain OAuth 2.0 implicit-flow redirect (not
 // Google Identity Services' popup-based token client) because an
@@ -7,11 +7,11 @@
 // redirect to Google and back is just navigation, which standalone mode
 // allows fine.
 //
-// One combined consent covers both scopes, each as narrow as Google allows:
-// `drive.file` (only files this app creates, never the rest of Drive) and
-// `calendar.events` (create/edit events, not read the rest of the calendar).
+// The single scope is as narrow as Google allows: `drive.file` (only files this
+// app creates, never the rest of Drive). It is non-sensitive, so the app needs no
+// scope verification — which is why Calendar sync was dropped.
 const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-const SCOPES = ['https://www.googleapis.com/auth/drive.file', 'https://www.googleapis.com/auth/calendar.events'];
+const SCOPES = ['https://www.googleapis.com/auth/drive.file'];
 const TOKEN_KEY = 'payday_google_token';
 // Survives across sessions (unlike the token itself) so a later reconnect knows
 // it can try silently first instead of assuming this is a first-ever connect.

@@ -1,9 +1,8 @@
 import { todayISO } from './dates';
 import { buildBackupPayload } from './backup';
 
-// Drive-specific half of the Google integration — see googleAuth.js for the
-// shared sign-in (redirect flow, token storage) both this and googleCalendar.js
-// build on.
+// Drive backup — see googleAuth.js for the sign-in (redirect flow, token
+// storage) it builds on.
 async function findOrCreatePaydayFolder(accessToken) {
   const q = encodeURIComponent("mimeType='application/vnd.google-apps.folder' and name='Payday' and trashed=false");
   const listRes = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&spaces=drive&fields=files(id,name)`, {
